@@ -2,11 +2,13 @@ These are just temporary files I'm using while learning gorums.
 
 Start the subscribers first.
 
+`go run ./subscriber/subscriber.go -endpoint="localhost:11116"`
+
 `go run ./subscriber/subscriber.go -endpoint="localhost:11115"`
 
-`go run ./subscriber/subscriber.go -endpoint="localhost:11114"`
-
 Then the brokers.
+
+`go run ./broker/broker.go -endpoint="localhost:11114" -id=4`
 
 `go run ./broker/broker.go -endpoint="localhost:11113" -id=3`
 
