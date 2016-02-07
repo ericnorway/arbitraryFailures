@@ -57,12 +57,12 @@ func parseArgs() bool {
 }
 
 type Broker struct {
-	ForwardChan chan pb.PubRequest
+	forwardChan chan pb.PubRequest
 }
 
 func NewBroker() *Broker {
 	return &Broker{
-		ForwardChan: make(chan pb.PubRequest, 32),
+		forwardChan: make(chan pb.PubRequest, 32),
 	}
 }
 
@@ -81,7 +81,7 @@ func (r *Broker) Publish(stream pb.PublisherAC_PublishServer) error {
 				Message: fmt.Sprintf("%v\n", err),
 			})
 		}
-		r.ForwardChan <- *req
+		r.forwardChan <- *req
 		fmt.Printf("Publish received.\n")
 	}
 	return nil
@@ -148,7 +148,7 @@ func (r *Broker) Forwarding() {
 	
 	for {
 		select {
-			case pubReq := <-r.ForwardChan:
+			case pubReq := <-r.forwardChan:
 				forwardConfig.Forward(&pb.FwdRequest{
 					PublisherID: pubReq.PublisherID,
 					PublicationID: pubReq.PublicationID,

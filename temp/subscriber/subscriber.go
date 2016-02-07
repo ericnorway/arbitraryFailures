@@ -46,25 +46,25 @@ func parseArgs() bool {
 }
 
 type Subscriber struct {
-	ForwardChan chan pb.FwdRequest
+	forwardChan chan pb.FwdRequest
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The third index references the broker ID.
 	// The byte slice contains the publication.
-	PubsReceived map[int64] map[int64] map[int64] []byte
+	pubsReceived map[int64] map[int64] map[int64] []byte
 	
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The byte slice contains the publication.
-	PubsLearned map[int64] map[int64] []byte
+	pubsLearned map[int64] map[int64] []byte
 }
 
 func NewSubscriber() *Subscriber {
 	return &Subscriber{
-		ForwardChan: make(chan pb.FwdRequest, 32),
-		PubsReceived: make(map[int64] map[int64] map[int64] []byte),
-		PubsLearned: make(map[int64] map[int64] []byte),
+		forwardChan: make(chan pb.FwdRequest, 32),
+		pubsReceived: make(map[int64] map[int64] map[int64] []byte),
+		pubsLearned: make(map[int64] map[int64] []byte),
 	}
 }
 
@@ -113,7 +113,7 @@ func (s *Subscriber) Forward(stream pb.BrokerAC_ForwardServer) error {
 			})
 		}
 		
-		s.ForwardChan <- *req
+		s.forwardChan <- *req
 	}
 	return nil
 }
@@ -123,15 +123,15 @@ func (s *Subscriber) ProcessPublications() {
 
 	for {
 		select {
-			case pub := <-s.ForwardChan:
-				if s.PubsReceived[pub.PublisherID] == nil {
-					s.PubsReceived[pub.PublisherID] = make(map[int64] map[int64] []byte)
+			case pub := <-s.forwardChan:
+				if s.pubsReceived[pub.PublisherID] == nil {
+					s.pubsReceived[pub.PublisherID] = make(map[int64] map[int64] []byte)
 				}
-				if s.PubsReceived[pub.PublisherID][pub.PublicationID] == nil {
-					s.PubsReceived[pub.PublisherID][pub.PublicationID] = make(map[int64] []byte)
+				if s.pubsReceived[pub.PublisherID][pub.PublicationID] == nil {
+					s.pubsReceived[pub.PublisherID][pub.PublicationID] = make(map[int64] []byte)
 				}
-				if s.PubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == nil {
-					s.PubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = pub.Publication
+				if s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == nil {
+					s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = pub.Publication
 					s.CheckQuorum(pub.PublisherID, pub.PublicationID, 2)
 				}
 			default:
@@ -141,22 +141,22 @@ func (s *Subscriber) ProcessPublications() {
 
 func (s *Subscriber) CheckQuorum(publisherID int64, publicationID int64, quorumSize int) bool {
 	// It's nil, so nothing to check.
-	if s.PubsReceived[publisherID] == nil {
-		s.PubsReceived[publisherID] = make(map[int64] map[int64] []byte)
+	if s.pubsReceived[publisherID] == nil {
+		s.pubsReceived[publisherID] = make(map[int64] map[int64] []byte)
 		return false
 	}
 	// It's nil, so nothing to check.
-	if s.PubsReceived[publisherID][publicationID] == nil {
-		s.PubsReceived[publisherID][publicationID] = make(map[int64] []byte)
+	if s.pubsReceived[publisherID][publicationID] == nil {
+		s.pubsReceived[publisherID][publicationID] = make(map[int64] []byte)
 		return false
 	}
 	
 	// Make the map so not trying to access nil reference
-	if s.PubsLearned[publisherID] == nil {
-		s.PubsLearned[publisherID] = make(map[int64] []byte)
+	if s.pubsLearned[publisherID] == nil {
+		s.pubsLearned[publisherID] = make(map[int64] []byte)
 	}
 	// If already learned this publication
-	if s.PubsLearned[publisherID][publicationID] != nil {
+	if s.pubsLearned[publisherID][publicationID] != nil {
 		fmt.Printf("Already learned publication %v from publisher %v.\n", publicationID, publisherID)
 		return false
 	}
@@ -165,11 +165,11 @@ func (s *Subscriber) CheckQuorum(publisherID int64, publicationID int64, quorumS
 	// publication value with this publisher ID and publication ID.
 	countMap := make(map[string] int)
 	
-	for _, publication := range s.PubsReceived[publisherID][publicationID] {
+	for _, publication := range s.pubsReceived[publisherID][publicationID] {
 		pub := string(publication)
 		countMap[pub] = countMap[pub] + 1
 		if countMap[pub] >= quorumSize {
-			s.PubsLearned[publisherID][publicationID] = publication
+			s.pubsLearned[publisherID][publicationID] = publication
 			fmt.Printf("Learned publication %v from publisher %v.\n", publicationID, publisherID)
 			return true
 		}
