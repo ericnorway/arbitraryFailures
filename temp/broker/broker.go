@@ -106,7 +106,7 @@ func startBroker(endpoint string) {
 	
 	broker := NewBroker()
 	
-	go broker.Forwarding()
+	go broker.forwarding()
 	
 	grpcServer := grpc.NewServer()
 	pb.RegisterPublisherACServer(grpcServer, broker)
@@ -117,8 +117,8 @@ func startBroker(endpoint string) {
 	}
 }
 
-func (r *Broker) Forwarding() {
-	fmt.Printf("Started Forwarding().\n")
+func (r *Broker) forwarding() {
+	fmt.Printf("Started forwarding().\n")
 
 	grpcOpts := []grpc.DialOption{
 		grpc.WithBlock(),

@@ -21,7 +21,7 @@ func TestCheckQuorum(t *testing.T) {
 			}
 			
 			// Check that the subscriber only learns when a quorum is reached.
-			result := test.subscriber.CheckQuorum(subtest.fwdRequest.PublisherID, subtest.fwdRequest.PublicationID, subtest.quorumSize)
+			result := test.subscriber.checkQuorum(subtest.fwdRequest.PublisherID, subtest.fwdRequest.PublicationID, subtest.quorumSize)
 			if result != subtest.wantLearned {
 				t.Errorf("CheckQuorum\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 						i+1, test.desc, j+1, subtest.wantLearned, result)
@@ -637,7 +637,7 @@ var quorumTests = []struct {
 
 func TestProcessPublications(t *testing.T) {
 	for i, test := range processTests {
-		go test.subscriber.ProcessPublications()	
+		go test.subscriber.processPublications()	
 	
 		for j, subtest := range test.subtests {
 			test.subscriber.forwardChan <- subtest.fwdRequest

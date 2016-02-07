@@ -86,7 +86,7 @@ func startSubscriber(endpoint string) {
 	}
 	
 	subscriber := NewSubscriber()
-	go subscriber.ProcessPublications()
+	go subscriber.processPublications()
 	
 	grpcServer := grpc.NewServer()
 	pb.RegisterBrokerACServer(grpcServer, subscriber)
@@ -118,28 +118,33 @@ func (s *Subscriber) Forward(stream pb.BrokerAC_ForwardServer) error {
 	return nil
 }
 
-func (s *Subscriber) ProcessPublications() {
-	fmt.Printf("Started ProcessPublications().\n")
+func (s *Subscriber) processPublications() {
+	fmt.Printf("Started processPublications().\n")
 
 	for {
 		select {
 			case pub := <-s.forwardChan:
+				// Make the map so not trying to access nil reference
 				if s.pubsReceived[pub.PublisherID] == nil {
 					s.pubsReceived[pub.PublisherID] = make(map[int64] map[int64] []byte)
 				}
+				// Make the map so not trying to access nil reference
 				if s.pubsReceived[pub.PublisherID][pub.PublicationID] == nil {
 					s.pubsReceived[pub.PublisherID][pub.PublicationID] = make(map[int64] []byte)
 				}
+				// Publication has not been received yet for this publisher ID, publication ID, broker ID
 				if s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == nil {
+					// So record it
 					s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = pub.Publication
-					s.CheckQuorum(pub.PublisherID, pub.PublicationID, 2)
+					// Check if there is a quorum yet for this publisher ID and publication ID
+					s.checkQuorum(pub.PublisherID, pub.PublicationID, 2)
 				}
 			default:
 		}
 	}
 }
 
-func (s *Subscriber) CheckQuorum(publisherID int64, publicationID int64, quorumSize int) bool {
+func (s *Subscriber) checkQuorum(publisherID int64, publicationID int64, quorumSize int) bool {
 	// It's nil, so nothing to check.
 	if s.pubsReceived[publisherID] == nil {
 		s.pubsReceived[publisherID] = make(map[int64] map[int64] []byte)
