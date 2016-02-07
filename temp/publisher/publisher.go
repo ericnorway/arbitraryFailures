@@ -20,7 +20,7 @@ func main() {
 	dialOpts := pb.WithGrpcDialOptions(grpcOpts...)
 
 	mgr, err := pb.NewManager(
-		[]string{"localhost:11111", "localhost:11112", "localhost:11113"},
+		[]string{"localhost:11111", "localhost:11112", "localhost:11113", "localhost:11114"},
 		dialOpts,
 	)
 	if err != nil {
@@ -33,7 +33,7 @@ func main() {
 	ids := mgr.MachineIDs()
 
 	// A publish configuration
-	pubConfig, err := mgr.NewConfiguration(ids, 3, time.Second)
+	pubConfig, err := mgr.NewConfiguration(ids, 4, time.Second)
 	if err != nil {
 		fmt.Printf("error creating read config: %v\n", err)
 		return

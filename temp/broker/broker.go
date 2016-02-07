@@ -128,7 +128,7 @@ func (r *Broker) forwarding() {
 	dialOpts := pb.WithGrpcDialOptions(grpcOpts...)
 
 	mgr, err := pb.NewManager(
-		[]string{"localhost:11114", "localhost:11115"},
+		[]string{"localhost:11115", "localhost:11116"},
 		dialOpts,
 	)
 	if err != nil {

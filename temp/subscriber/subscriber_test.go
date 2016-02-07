@@ -170,6 +170,117 @@ var quorumTests = []struct {
 	},
 	{
 		NewSubscriber(),
+		"1 publisher, 1 publication, 4 brokers, quorum 3",
+		[]quorumTest{
+			{
+				fwdRequest: pb.FwdRequest{
+					PublisherID: 1,
+					PublicationID: 1,
+					BrokerID: 1,
+					Publication: []byte(message1),
+				},
+				quorumSize: 3,
+				wantLearned: false,
+				wantMessage: nil,
+			},
+			{
+				fwdRequest: pb.FwdRequest{
+					PublisherID: 1,
+					PublicationID: 1,
+					BrokerID: 2,
+					Publication: []byte(message1),
+				},
+				quorumSize: 3,
+				wantLearned: false,
+				wantMessage: nil,
+			},
+			{
+				fwdRequest: pb.FwdRequest{
+					PublisherID: 1,
+					PublicationID: 1,
+					BrokerID: 3,
+					Publication: []byte(message1),
+				},
+				quorumSize: 3,
+				wantLearned: true,
+				wantMessage: []byte(message1),
+			},
+			{
+				fwdRequest: pb.FwdRequest{
+					PublisherID: 1,
+					PublicationID: 1,
+					BrokerID: 4,
+					Publication: []byte(message1),
+				},
+				quorumSize: 3,
+				wantLearned: false,
+				wantMessage: []byte(message1),
+			},
+		},
+	},
+	{
+		NewSubscriber(),
+		"1 publisher, 1 publication, 5 brokers, quorum 4",
+		[]quorumTest{
+			{
+				fwdRequest: pb.FwdRequest{
+					PublisherID: 1,
+					PublicationID: 1,
+					BrokerID: 1,
+					Publication: []byte(message1),
+				},
+				quorumSize: 4,
+				wantLearned: false,
+				wantMessage: nil,
+			},
+			{
+				fwdRequest: pb.FwdRequest{
+					PublisherID: 1,
+					PublicationID: 1,
+					BrokerID: 2,
+					Publication: []byte(message1),
+				},
+				quorumSize: 4,
+				wantLearned: false,
+				wantMessage: nil,
+			},
+			{
+				fwdRequest: pb.FwdRequest{
+					PublisherID: 1,
+					PublicationID: 1,
+					BrokerID: 3,
+					Publication: []byte(message1),
+				},
+				quorumSize: 4,
+				wantLearned: false,
+				wantMessage: nil,
+			},
+			{
+				fwdRequest: pb.FwdRequest{
+					PublisherID: 1,
+					PublicationID: 1,
+					BrokerID: 4,
+					Publication: []byte(message1),
+				},
+				quorumSize: 4,
+				wantLearned: true,
+				wantMessage: []byte(message1),
+			},
+			{
+				fwdRequest: pb.FwdRequest{
+					PublisherID: 1,
+					PublicationID: 1,
+					BrokerID: 5,
+					Publication: []byte(message1),
+				},
+				quorumSize: 4,
+				wantLearned: false,
+				wantMessage: []byte(message1),
+			},
+		},
+	},
+	{
+		NewSubscriber(),
 		"1 publisher, 1 publication (first and second the same), 3 brokers",
 		[]quorumTest{
 			{

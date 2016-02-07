@@ -137,7 +137,7 @@ func (s *Subscriber) processPublications() {
 					// So record it
 					s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = pub.Publication
 					// Check if there is a quorum yet for this publisher ID and publication ID
-					s.checkQuorum(pub.PublisherID, pub.PublicationID, 2)
+					s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
 				}
 			default:
 		}
