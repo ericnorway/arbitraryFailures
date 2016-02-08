@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package proto;
+
+service AbPubBroker {
+	rpc Publish(stream AbPubRequest) returns (stream AbErrorMsg) {}
+}
+
+service AbSubBroker {
+	rpc Subscribe(stream AbSubRequest) returns (stream AbFwdPublication) {}
+}
+
+message AbPubRequest {
+	int64 PublisherID = 1;
+	int64 PublicationID = 2;
+	bytes Publication = 3;
+}
+
+message AbErrorMsg{
+	string Message = 1;
+}
+
+message AbSubRequest {
+	int64 SubscriberID = 1;
+}
+
+message AbFwdPublication {
+	int64 PublisherID = 1;
+	int64 PublicationID = 2;
+	int64 BrokerID = 3;
+	bytes Publication = 4;
+}
