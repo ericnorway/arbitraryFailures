@@ -42,7 +42,7 @@ func main() {
 	
 	subscriber.AbStartBrokerClients(brokerAddrs)
 	
-	subscriber.processPublications()
+	subscriber.ProcessPublications()
 	
 	for {
 	}

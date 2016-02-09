@@ -41,6 +41,7 @@ func (s *Subscriber) AbStartBrokerClient(brokerAddr string) bool {
 		return false
 	}
 	
+	// Read loop
 	go func() {
 		for {
 			fwdPub, err := stream.Recv()
@@ -59,19 +60,18 @@ func (s *Subscriber) AbStartBrokerClient(brokerAddr string) bool {
 		fmt.Printf("AB Receive ended.\n")
 	}()
 	
-	
 	err = stream.Send(&pb.AbSubRequest {
 		SubscriberID: 1,
 	})
 	if err != nil {
 		return false
 	}
-	s.AbAddChannel(brokerAddr)
+	s.abAddChannel(brokerAddr)
 	
 	return true
 }
 
-func (s *Subscriber) AbAddChannel(addr string) chan *pb.AbSubRequest {
+func (s *Subscriber) abAddChannel(addr string) chan *pb.AbSubRequest {
 	s.abSubChansMutex.Lock()
 	defer s.abSubChansMutex.Unlock()
 	
@@ -80,15 +80,15 @@ func (s *Subscriber) AbAddChannel(addr string) chan *pb.AbSubRequest {
 	return ch
 }
 
-func (s *Subscriber) AbRemoveChannel(addr string) {
+func (s *Subscriber) abRemoveChannel(addr string) {
 	s.abSubChansMutex.Lock()
 	s.abSubChansMutex.Unlock()
 	
 	delete(s.abSubChans, addr)
 }
 
-func (s *Subscriber) processPublications() {
-	fmt.Printf("Started processPublications().\n")
+func (s *Subscriber) ProcessPublications() {
+	fmt.Printf("Started ProcessPublications().\n")
 
 	for {
 		select {

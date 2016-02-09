@@ -4,31 +4,31 @@ import (
 	"bytes"
 	"testing"
 	"time"
-	pb "github.com/ericnorway/arbitraryFailures/temp/proto"
+	pb "github.com/ericnorway/arbitraryFailures/abTemp/proto"
 )
 
 func TestCheckQuorum(t *testing.T) {
 	for i, test := range quorumTests {
 		for j, subtest := range test.subtests {
-			if test.subscriber.pubsReceived[subtest.fwdRequest.PublisherID] == nil {
-				test.subscriber.pubsReceived[subtest.fwdRequest.PublisherID] = make(map[int64] map[int64] []byte)
+			if test.subscriber.pubsReceived[subtest.fwdPub.PublisherID] == nil {
+				test.subscriber.pubsReceived[subtest.fwdPub.PublisherID] = make(map[int64] map[int64] []byte)
 			}
-			if test.subscriber.pubsReceived[subtest.fwdRequest.PublisherID][subtest.fwdRequest.PublicationID] == nil {
-				test.subscriber.pubsReceived[subtest.fwdRequest.PublisherID][subtest.fwdRequest.PublicationID] = make(map[int64] []byte)
+			if test.subscriber.pubsReceived[subtest.fwdPub.PublisherID][subtest.fwdPub.PublicationID] == nil {
+				test.subscriber.pubsReceived[subtest.fwdPub.PublisherID][subtest.fwdPub.PublicationID] = make(map[int64] []byte)
 			}
-			if test.subscriber.pubsReceived[subtest.fwdRequest.PublisherID][subtest.fwdRequest.PublicationID][subtest.fwdRequest.BrokerID] == nil {
-				test.subscriber.pubsReceived[subtest.fwdRequest.PublisherID][subtest.fwdRequest.PublicationID][subtest.fwdRequest.BrokerID] = subtest.fwdRequest.Publication
+			if test.subscriber.pubsReceived[subtest.fwdPub.PublisherID][subtest.fwdPub.PublicationID][subtest.fwdPub.BrokerID] == nil {
+				test.subscriber.pubsReceived[subtest.fwdPub.PublisherID][subtest.fwdPub.PublicationID][subtest.fwdPub.BrokerID] = subtest.fwdPub.Publication
 			}
 			
 			// Check that the subscriber only learns when a quorum is reached.
-			result := test.subscriber.checkQuorum(subtest.fwdRequest.PublisherID, subtest.fwdRequest.PublicationID, subtest.quorumSize)
+			result := test.subscriber.checkQuorum(subtest.fwdPub.PublisherID, subtest.fwdPub.PublicationID, subtest.quorumSize)
 			if result != subtest.wantLearned {
 				t.Errorf("CheckQuorum\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 						i+1, test.desc, j+1, subtest.wantLearned, result)
 			}
 			
 			// Check that the slearned value is correct.
-			msg, exists := test.subscriber.pubsLearned[subtest.fwdRequest.PublisherID][subtest.fwdRequest.PublicationID]
+			msg, exists := test.subscriber.pubsLearned[subtest.fwdPub.PublisherID][subtest.fwdPub.PublicationID]
 			if exists {
 				if !bytes.Equal(msg, subtest.wantMessage) {
 					t.Errorf("CheckQuorum\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
@@ -40,7 +40,7 @@ func TestCheckQuorum(t *testing.T) {
 }
 
 type quorumTest struct {
-	fwdRequest pb.FwdRequest
+	fwdPub pb.AbFwdPublication
 	quorumSize int
 	wantLearned bool
 	wantMessage []byte
@@ -61,7 +61,7 @@ var quorumTests = []struct {
 		"1 publisher, 1 publication, 1 broker",
 		[]quorumTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -78,7 +78,7 @@ var quorumTests = []struct {
 		"1 publisher, 1 publication, 1 broker, received twice",
 		[]quorumTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -89,7 +89,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -106,7 +106,7 @@ var quorumTests = []struct {
 		"1 publisher, 1 publication, 2 brokers",
 		[]quorumTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -117,7 +117,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 2,
@@ -134,7 +134,7 @@ var quorumTests = []struct {
 		"1 publisher, 1 publication, 3 brokers",
 		[]quorumTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -145,7 +145,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 2,
@@ -156,7 +156,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message1),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 3,
@@ -173,7 +173,7 @@ var quorumTests = []struct {
 		"1 publisher, 1 publication, 4 brokers, quorum 3",
 		[]quorumTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -184,7 +184,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 2,
@@ -195,7 +195,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 3,
@@ -206,7 +206,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message1),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 4,
@@ -223,7 +223,7 @@ var quorumTests = []struct {
 		"1 publisher, 1 publication, 5 brokers, quorum 4",
 		[]quorumTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -234,7 +234,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 2,
@@ -245,7 +245,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 3,
@@ -256,7 +256,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 4,
@@ -267,7 +267,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message1),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 5,
@@ -284,7 +284,7 @@ var quorumTests = []struct {
 		"1 publisher, 1 publication (first and second the same), 3 brokers",
 		[]quorumTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -295,7 +295,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 2,
@@ -306,7 +306,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message1),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 3,
@@ -323,7 +323,7 @@ var quorumTests = []struct {
 		"1 publisher, 1 publication (first and last the same), 3 brokers",
 		[]quorumTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -334,7 +334,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 2,
@@ -345,7 +345,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 3,
@@ -362,7 +362,7 @@ var quorumTests = []struct {
 		"1 publisher, 1 publication (second and last the same), 3 brokers",
 		[]quorumTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -373,7 +373,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 2,
@@ -384,7 +384,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 3,
@@ -401,7 +401,7 @@ var quorumTests = []struct {
 		"1 publisher, 1 publication (all different), 3 brokers",
 		[]quorumTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -412,7 +412,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 2,
@@ -423,7 +423,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 3,
@@ -440,7 +440,7 @@ var quorumTests = []struct {
 		"1 publisher, 2 publications, 3 brokers",
 		[]quorumTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -451,7 +451,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 2,
@@ -462,7 +462,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message1),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 3,
@@ -473,7 +473,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message1),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 2,
 					BrokerID: 1,
@@ -484,7 +484,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 2,
 					BrokerID: 2,
@@ -495,7 +495,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message2),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 2,
 					BrokerID: 3,
@@ -512,7 +512,7 @@ var quorumTests = []struct {
 		"3 publishers, several publications, 3 brokers",
 		[]quorumTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -523,7 +523,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 3,
@@ -534,7 +534,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message1),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 2,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -545,7 +545,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 2,
@@ -556,7 +556,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message1),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 2,
 					PublicationID: 1,
 					BrokerID: 2,
@@ -567,7 +567,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message2),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 2,
 					BrokerID: 1,
@@ -578,7 +578,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 3,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -589,7 +589,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 2,
 					PublicationID: 1,
 					BrokerID: 3,
@@ -600,7 +600,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message2),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 2,
 					BrokerID: 2,
@@ -611,7 +611,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message4),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 3,
 					PublicationID: 1,
 					BrokerID: 2,
@@ -622,7 +622,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message3),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 3,
 					PublicationID: 1,
 					BrokerID: 3,
@@ -633,7 +633,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message3),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 2,
 					BrokerID: 3,
@@ -644,7 +644,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message4),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 3,
 					PublicationID: 2,
 					BrokerID: 3,
@@ -655,7 +655,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 3,
 					PublicationID: 2,
 					BrokerID: 2,
@@ -666,7 +666,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message1),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 3,
 					BrokerID: 1,
@@ -677,7 +677,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 3,
 					BrokerID: 2,
@@ -688,7 +688,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message1),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 3,
 					PublicationID: 2,
 					BrokerID: 1,
@@ -699,7 +699,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message1),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 3,
 					BrokerID: 3,
@@ -710,7 +710,7 @@ var quorumTests = []struct {
 				wantMessage: []byte(message1),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 4,
 					BrokerID: 1,
@@ -721,7 +721,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 4,
 					BrokerID: 2,
@@ -732,7 +732,7 @@ var quorumTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 4,
 					BrokerID: 3,
@@ -748,15 +748,15 @@ var quorumTests = []struct {
 
 func TestProcessPublications(t *testing.T) {
 	for i, test := range processTests {
-		go test.subscriber.processPublications()	
+		go test.subscriber.ProcessPublications()	
 	
 		for j, subtest := range test.subtests {
-			test.subscriber.forwardChan <- subtest.fwdRequest
+			test.subscriber.abFwdChan <- &subtest.fwdPub
 			// Give ProcessPublications() time to process the publication.
 			time.Sleep(1 * time.Millisecond)
 			
 			// Check that the learned value is correct.
-			msg, exists := test.subscriber.pubsLearned[subtest.fwdRequest.PublisherID][subtest.fwdRequest.PublicationID]
+			msg, exists := test.subscriber.pubsLearned[subtest.fwdPub.PublisherID][subtest.fwdPub.PublicationID]
 			if exists {
 				if !bytes.Equal(msg, subtest.wantMessage) {
 					t.Errorf("CheckQuorum\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
@@ -768,7 +768,7 @@ func TestProcessPublications(t *testing.T) {
 }
 
 type processTest struct {
-	fwdRequest pb.FwdRequest
+	fwdPub pb.AbFwdPublication
 	wantMessage []byte
 }
 
@@ -782,7 +782,7 @@ var processTests = []struct {
 		"1 publisher, 1 publication, 1 broker",
 		[]processTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -797,7 +797,7 @@ var processTests = []struct {
 		"1 publisher, 1 publication, 1 broker, received twice",
 		[]processTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -806,7 +806,7 @@ var processTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -821,7 +821,7 @@ var processTests = []struct {
 		"1 publisher, 1 publication, 2 brokers",
 		[]processTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -830,7 +830,7 @@ var processTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 2,
@@ -845,7 +845,7 @@ var processTests = []struct {
 		"1 publisher, 1 publication, 3 brokers",
 		[]processTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -854,7 +854,7 @@ var processTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 2,
@@ -863,7 +863,7 @@ var processTests = []struct {
 				wantMessage: []byte(message1),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 3,
@@ -878,7 +878,7 @@ var processTests = []struct {
 		"1 publisher, 1 publication (first and second the same), 3 brokers",
 		[]processTest{
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 1,
@@ -887,7 +887,7 @@ var processTests = []struct {
 				wantMessage: nil,
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 2,
@@ -896,7 +896,7 @@ var processTests = []struct {
 				wantMessage: []byte(message1),
 			},
 			{
-				fwdRequest: pb.FwdRequest{
+				fwdPub: pb.AbFwdPublication{
 					PublisherID: 1,
 					PublicationID: 1,
 					BrokerID: 3,
