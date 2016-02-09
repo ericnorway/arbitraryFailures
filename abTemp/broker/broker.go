@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"net"
 	"sync"
@@ -10,52 +9,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-var (
-	help = flag.Bool(
-		"help",
-		false,
-		"Show usage help",
-	)
-	endpoint = flag.String(
-		"endpoint",
-		"",
-		"The endpoint to listen on.",
-	)
-	brokerID = flag.Int(
-		"id",
-		0,
-		"The ID for this broker.",		
-	)
-)
-
-func usage() {
-	flag.PrintDefaults()
-}
-
-// parseArgs() parses the command line arguments.
-// The return argument indicates whether or not the function was successful.
-func parseArgs() bool {
-	flag.Usage = usage
-	flag.Parse()
-	if *help {
-		flag.Usage()
-		return false
-	}
-
-	if *endpoint == "" {
-		fmt.Printf("Need to specify an endpoint.\n")
-		return false
-	}
-	
-	if *brokerID == 0 {
-		fmt.Printf("Need to specify an ID.\n")
-		return false
-	}
-
-	return true
-}
-
 type Broker struct {
+	abPubChan chan *pb.AbPubRequest
 	abFwdChansMutex sync.RWMutex
 	abFwdChans map[string] chan *pb.AbFwdPublication
 	forwardedPub map[int64] map[int64] bool
@@ -63,6 +18,7 @@ type Broker struct {
 
 func NewBroker() *Broker {
 	return &Broker{
+		abPubChan: make(chan *pb.AbPubRequest),
 		abFwdChans: make(map[string] chan *pb.AbFwdPublication),
 		forwardedPub: make(map[int64] map[int64] bool),
 	}
@@ -90,6 +46,8 @@ func startBroker(endpoint string) {
 	grpcServer := grpc.NewServer()
 	pb.RegisterAbPubBrokerServer(grpcServer, broker)
 	pb.RegisterAbSubBrokerServer(grpcServer, broker)
+	go broker.processAbMessages()
+	
 	fmt.Printf("Preparing to serve incoming requests.\n")
 	err = grpcServer.Serve(listener)
 	if err != nil {
