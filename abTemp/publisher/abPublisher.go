@@ -29,6 +29,7 @@ func (p *Publisher) AbStartBrokerClients(brokerAddrs []string) {
 		fmt.Printf("Waiting for connections...\n")
 		time.Sleep(time.Second)
 	}
+	fmt.Printf("...done\n")
 }
 
 func (p *Publisher) AbStartBrokerClient(brokerAddr string) bool {
