@@ -9,6 +9,8 @@ import (
 )
 
 func (b *Broker) abAddChannel(addr string) chan *pb.AbFwdPublication {
+	fmt.Printf("AB forward channel to %v added.\n", addr)
+	
 	b.abFwdChansMutex.Lock()
 	defer b.abFwdChansMutex.Unlock()
 	
@@ -18,6 +20,8 @@ func (b *Broker) abAddChannel(addr string) chan *pb.AbFwdPublication {
 }
 
 func (b *Broker) abRemoveChannel(addr string) {
+	fmt.Printf("AB forward channel to %v removed.\n", addr)
+
 	b.abFwdChansMutex.Lock()
 	b.abFwdChansMutex.Unlock()
 	
@@ -38,10 +42,8 @@ func (b *Broker) Publish(stream pb.AbPubBroker_PublishServer) error {
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
-			fmt.Printf("EOF\n")
 			return err
 		} else if err != nil {
-			fmt.Printf("%v\n", err)
 			return err
 		}
 		
@@ -52,8 +54,6 @@ func (b *Broker) Publish(stream pb.AbPubBroker_PublishServer) error {
 }
 
 func (b *Broker) Subscribe(stream pb.AbSubBroker_SubscribeServer) error {
-	fmt.Printf("Started Subscribe().\n")
-	
 	pr, _ := peer.FromContext(stream.Context())
 	addr := pr.Addr.String()
 	ch := b.abAddChannel(addr)
@@ -65,7 +65,7 @@ func (b *Broker) Subscribe(stream pb.AbSubBroker_SubscribeServer) error {
 				case fwd := <-ch:
 					err := stream.Send(fwd)
 					if err != nil {
-						fmt.Printf("Error while forwarding message to subscriber: %v\n", err)
+						b.abRemoveChannel(addr)
 						break;
 					}
 			}
@@ -76,15 +76,12 @@ func (b *Broker) Subscribe(stream pb.AbSubBroker_SubscribeServer) error {
 	for {
 		_, err := stream.Recv()
 		if err == io.EOF {
-			fmt.Printf("EOF\n")
 			b.abRemoveChannel(addr)
 			return err
 		} else if err != nil {
-			fmt.Printf("%v\n", err)
 			b.abRemoveChannel(addr)
 			return err
 		}
-		fmt.Printf("Subscribe received.\n")
 	}
 	
 	return nil

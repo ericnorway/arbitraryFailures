@@ -55,11 +55,11 @@ func (p *Publisher) AbStartBrokerClient(brokerAddr string) bool {
 		for {
 			_, err := stream.Recv()
 			if err == io.EOF {
-				fmt.Printf("AB Broker ended stream.\n")
+				p.abRemoveChannel(brokerAddr)
 				break		
 			}
 			if err != nil {
-				fmt.Printf("Error while AB receiving: %v\n", err)
+				p.abRemoveChannel(brokerAddr)
 				break
 			}
 		}
@@ -75,7 +75,6 @@ func (p *Publisher) AbStartBrokerClient(brokerAddr string) bool {
 			case req := <-ch:
 				err := stream.Send(req)
 				if err != nil {
-					fmt.Printf("Error while publishing: %v\n", err)
 					p.abRemoveChannel(brokerAddr)
 					break
 				}
@@ -86,6 +85,8 @@ func (p *Publisher) AbStartBrokerClient(brokerAddr string) bool {
 }
 
 func (p *Publisher) abAddChannel(addr string) chan *pb.AbPubRequest {
+	fmt.Printf("AB publish channel to %v added.\n", addr)
+
 	p.abPubChansMutex.Lock()
 	defer p.abPubChansMutex.Unlock()
 	
@@ -95,6 +96,8 @@ func (p *Publisher) abAddChannel(addr string) chan *pb.AbPubRequest {
 }
 
 func (p *Publisher) abRemoveChannel(addr string) {
+	fmt.Printf("AB publish channel to %v removed.\n", addr)
+
 	p.abPubChansMutex.Lock()
 	p.abPubChansMutex.Unlock()
 	
