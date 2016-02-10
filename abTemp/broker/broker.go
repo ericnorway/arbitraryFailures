@@ -13,14 +13,14 @@ type Broker struct {
 	abPubChan chan *pb.AbPubRequest
 	abFwdChansMutex sync.RWMutex
 	abFwdChans map[string] chan *pb.AbFwdPublication
-	forwardedPub map[int64] map[int64] bool
+	abForwardedPub map[int64] map[int64] bool
 }
 
 func NewBroker() *Broker {
 	return &Broker{
 		abPubChan: make(chan *pb.AbPubRequest),
 		abFwdChans: make(map[string] chan *pb.AbFwdPublication),
-		forwardedPub: make(map[int64] map[int64] bool),
+		abForwardedPub: make(map[int64] map[int64] bool),
 	}
 }
 

@@ -94,25 +94,31 @@ func (b Broker) processAbMessages() {
 	for {
 		select {
 			case req := <-b.abPubChan:
-				fwdReq := pb.AbFwdPublication{
-					PublisherID: req.PublisherID,
-					PublicationID: req.PublicationID,
-					BrokerID: int64(*brokerID),
-					Publication: req.Publication,
+				if b.abForwardedPub[req.PublisherID] == nil {
+					b.abForwardedPub[req.PublisherID] = make(map[int64] bool)
 				}
 				
-				// Add the publication to all forwarding channels
-				b.abFwdChansMutex.RLock()
-				for _, ch := range b.abFwdChans {
-					ch<- &fwdReq
-				}
-				b.abFwdChansMutex.RUnlock()
+				// If this publication has not been forwared yet
+				if b.abForwardedPub[req.PublisherID][req.PublicationID] == false {
+					fwdReq := pb.AbFwdPublication{
+						PublisherID: req.PublisherID,
+						PublicationID: req.PublicationID,
+						BrokerID: int64(*brokerID),
+						Publication: req.Publication,
+					}
+				
+					// Add the publication to all forwarding channels
+					b.abFwdChansMutex.RLock()
+					for _, ch := range b.abFwdChans {
+						ch<- &fwdReq
+					}
+					b.abFwdChansMutex.RUnlock()
 		
-				// Mark this publication as sent
-				if b.forwardedPub[req.PublisherID] == nil {
-					b.forwardedPub[req.PublisherID] = make(map[int64] bool)
+					// Mark this publication as sent
+					b.abForwardedPub[req.PublisherID][req.PublicationID] = true
+				} else {
+					fmt.Printf("Already forwarded publication %v by publisher %v\n", req.PublicationID, req.PublisherID)
 				}
-				b.forwardedPub[req.PublisherID][req.PublicationID] = true
 		}
 	}
 }
