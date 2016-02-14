@@ -3,11 +3,53 @@ package main
 import (
 	"fmt"
 	"io"
+	"net"
+	"sync"
 	
 	"github.com/ericnorway/arbitraryFailures/abTemp3/common"
 	pb "github.com/ericnorway/arbitraryFailures/abTemp3/proto"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
 )
+
+type Broker struct {
+	pubChan chan *pb.Publication
+	subChansMutex sync.RWMutex
+	subChans map[string] chan *pb.Publication
+	forwardedPub map[int64] map[int64] bool
+}
+
+func NewBroker() *Broker {
+	return &Broker{
+		pubChan: make(chan *pb.Publication),
+		subChans: make(map[string] chan *pb.Publication),
+		forwardedPub: make(map[int64] map[int64] bool),
+	}
+}
+
+func StartBroker(endpoint string) {
+	fmt.Printf("Broker started.\n")
+
+	listener, err := net.Listen("tcp", endpoint)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	} else {
+		fmt.Printf("Listener started on %v\n", endpoint)
+	}
+	
+	broker := NewBroker()
+	
+	grpcServer := grpc.NewServer()
+	pb.RegisterPubBrokerServer(grpcServer, broker)
+	pb.RegisterSubBrokerServer(grpcServer, broker)
+	go broker.handleMessages()
+	
+	fmt.Printf("Preparing to serve incoming requests.\n")
+	err = grpcServer.Serve(listener)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+}
 
 func (b *Broker) addSubChannel(addr string) chan *pb.Publication {
 	fmt.Printf("Subscriber channel to %v added.\n", addr)
@@ -30,8 +72,6 @@ func (b *Broker) removeSubChannel(addr string) {
 }
 
 func (b *Broker) Publish(stream pb.PubBroker_PublishServer) error {
-	fmt.Printf("Started Publish().\n")
-	
 	// Write loop
 	go func() {
 		for {
@@ -100,7 +140,6 @@ func (b Broker) handleMessages() {
 }
 
 func (b Broker) handleAbPublish(req *pb.Publication) {
-	fmt.Printf("handleAbPublish()\n")
 	if b.forwardedPub[req.PublisherID] == nil {
 		b.forwardedPub[req.PublisherID] = make(map[int64] bool)
 	}

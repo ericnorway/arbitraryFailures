@@ -2,23 +2,11 @@ package main
 
 import (
 	"fmt"
-	"sync"
 	"time"
-
+	
 	"github.com/ericnorway/arbitraryFailures/abTemp3/common"
 	pb "github.com/ericnorway/arbitraryFailures/abTemp3/proto"
 )
-
-type Publisher struct {
-	toBrokerChansMutex sync.RWMutex
-	toBrokerChans map[string] chan *pb.Publication
-}
-
-func NewPublisher() *Publisher {
-	return &Publisher{
-		toBrokerChans: make(map[string] chan *pb.Publication),
-	}
-}
 
 func main() {
 	fmt.Printf("Publisher started.\n")

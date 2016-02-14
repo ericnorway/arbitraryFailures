@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"sync"
 	"time"
 
 	pb "github.com/ericnorway/arbitraryFailures/abTemp3/proto"
@@ -10,6 +11,17 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
+
+type Publisher struct {
+	toBrokerChansMutex sync.RWMutex
+	toBrokerChans map[string] chan *pb.Publication
+}
+
+func NewPublisher() *Publisher {
+	return &Publisher{
+		toBrokerChans: make(map[string] chan *pb.Publication),
+	}
+}
 
 func (p *Publisher) Publish(pubReq *pb.Publication) {
 	p.toBrokerChansMutex.RLock()

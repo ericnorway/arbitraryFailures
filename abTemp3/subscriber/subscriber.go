@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"sync"
 	"time"
 
 	pb "github.com/ericnorway/arbitraryFailures/abTemp3/proto"
@@ -10,6 +11,43 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
+
+type Subscriber struct {
+	toBrokerChansMutex sync.RWMutex
+	toBrokerChans map[string] chan *pb.SubRequest
+	fromBrokerChan chan *pb.Publication
+	
+	// The first index references the publisher ID.
+	// The second index references the publication ID.
+	// The third index references the broker ID.
+	// The byte slice contains the publication.
+	pubsReceived map[int64] map[int64] map[int64] []byte
+	
+	// The first index references the publisher ID.
+	// The second index references the publication ID.
+	// The byte slice contains the publication.
+	pubsLearned map[int64] map[int64] []byte
+	
+	topics map[int64] bool
+}
+
+func NewSubscriber() *Subscriber {
+	return &Subscriber{
+		toBrokerChans: make(map[string] chan *pb.SubRequest),
+		fromBrokerChan: make(chan *pb.Publication),
+		pubsReceived: make(map[int64] map[int64] map[int64] []byte),
+		pubsLearned: make(map[int64] map[int64] []byte),
+		topics: make(map[int64] bool),
+	}
+}
+
+func (s *Subscriber) AddTopic(topic int64) {
+	s.topics[topic] = true
+}
+
+func (s *Subscriber) RemoveTopic(topic int64) {
+	delete(s.topics, topic)
+}
 
 func (s *Subscriber) startBrokerClients(brokerAddrs []string) {
 	for i := range brokerAddrs {
@@ -41,9 +79,14 @@ func (s *Subscriber) startBrokerClient(brokerAddr string) bool {
 		return false
 	}
 	
+	var topics []int64
+	for i := range s.topics {
+		topics = append(topics, i)
+	}
+	
 	err = stream.Send(&pb.SubRequest {
 		SubscriberID: 1,
-		Topics: []int64{1},
+		Topics: topics,
 	})
 	if err != nil {
 		return false
