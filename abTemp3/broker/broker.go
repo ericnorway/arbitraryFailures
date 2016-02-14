@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"sync"
-	
+
 	"github.com/ericnorway/arbitraryFailures/abTemp3/common"
 	pb "github.com/ericnorway/arbitraryFailures/abTemp3/proto"
 	"google.golang.org/grpc"
@@ -13,17 +12,16 @@ import (
 )
 
 type Broker struct {
-	pubChan chan *pb.Publication
-	subChansMutex sync.RWMutex
-	subChans map[string] chan *pb.Publication
-	forwardedPub map[int64] map[int64] bool
+	pubChan      chan *pb.Publication
+	subs         *Subscribers
+	forwardedPub map[int64]map[int64]bool
 }
 
 func NewBroker() *Broker {
 	return &Broker{
-		pubChan: make(chan *pb.Publication),
-		subChans: make(map[string] chan *pb.Publication),
-		forwardedPub: make(map[int64] map[int64] bool),
+		pubChan:      make(chan *pb.Publication),
+		subs:         NewSubscribers(),
+		forwardedPub: make(map[int64]map[int64]bool),
 	}
 }
 
@@ -36,39 +34,19 @@ func StartBroker(endpoint string) {
 	} else {
 		fmt.Printf("Listener started on %v\n", endpoint)
 	}
-	
+
 	broker := NewBroker()
-	
+
 	grpcServer := grpc.NewServer()
 	pb.RegisterPubBrokerServer(grpcServer, broker)
 	pb.RegisterSubBrokerServer(grpcServer, broker)
 	go broker.handleMessages()
-	
+
 	fmt.Printf("Preparing to serve incoming requests.\n")
 	err = grpcServer.Serve(listener)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
-}
-
-func (b *Broker) addSubChannel(addr string) chan *pb.Publication {
-	fmt.Printf("Subscriber channel to %v added.\n", addr)
-	
-	b.subChansMutex.Lock()
-	defer b.subChansMutex.Unlock()
-	
-	ch := make(chan *pb.Publication, 32)
-	b.subChans[addr] = ch
-	return ch
-}
-
-func (b *Broker) removeSubChannel(addr string) {
-	fmt.Printf("Subscriber channel to %v removed.\n", addr)
-
-	b.subChansMutex.Lock()
-	b.subChansMutex.Unlock()
-	
-	delete(b.subChans, addr)
 }
 
 func (b *Broker) Publish(stream pb.PubBroker_PublishServer) error {
@@ -77,7 +55,7 @@ func (b *Broker) Publish(stream pb.PubBroker_PublishServer) error {
 		for {
 			// Nothing to write yet
 		}
-	} ()
+	}()
 
 	// Read loop.
 	for {
@@ -87,81 +65,86 @@ func (b *Broker) Publish(stream pb.PubBroker_PublishServer) error {
 		} else if err != nil {
 			return err
 		}
-		
+
 		// Add pub req for processing
-		b.pubChan<- req
+		b.pubChan <- req
 	}
 	return nil
 }
 
 func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
+	// Read initial subscribe message
+	subscribe, err := stream.Recv()
+	if err == io.EOF {
+		return err
+	} else if err != nil {
+		return err
+	}
+
 	pr, _ := peer.FromContext(stream.Context())
 	addr := pr.Addr.String()
-	ch := b.addSubChannel(addr)
-	topics := make(map[int64] bool)
-	
+	id := subscribe.SubscriberID
+	sub := b.subs.addSubscriber(id, addr, subscribe.Topics)
+
 	// Write loop
 	go func() {
 		for {
 			select {
-				case pub := <-ch:
-					if topics[pub.Topic] == true {
-						err := stream.Send(pub)
-						if err != nil {
-							b.removeSubChannel(addr)
-							break;
-						}
-					}
+			case pub := <-sub.toSubCh:
+				err := stream.Send(pub)
+				if err != nil {
+					b.subs.removeSubscriber(id)
+					break
+				}
 			}
 		}
-	} ()
-	
+	}()
+
 	// Read loop
 	for {
-		subscribe, err := stream.Recv()
+		_, err := stream.Recv()
 		if err == io.EOF {
-			b.removeSubChannel(addr)
+			b.subs.removeSubscriber(id)
 			return err
 		} else if err != nil {
-			b.removeSubChannel(addr)
+			b.subs.removeSubscriber(id)
 			return err
 		}
-		
-		for _, topic := range subscribe.Topics {
-			topics[topic] = true
-		}
 	}
-	
+
 	return nil
 }
 
 func (b Broker) handleMessages() {
 	for {
 		select {
-			case req := <-b.pubChan:
-				if req.PubType == common.AB {
-					b.handleAbPublish(req)
-				}
+		case req := <-b.pubChan:
+			if req.PubType == common.AB {
+				b.handleAbPublish(req)
+			}
 		}
 	}
 }
 
 func (b Broker) handleAbPublish(req *pb.Publication) {
 	if b.forwardedPub[req.PublisherID] == nil {
-		b.forwardedPub[req.PublisherID] = make(map[int64] bool)
+		b.forwardedPub[req.PublisherID] = make(map[int64]bool)
 	}
-				
+
 	// If this publication has not been forwared yet
 	if b.forwardedPub[req.PublisherID][req.PublicationID] == false {
 		req.BrokerID = int64(*brokerID)
-	
-		// Add the publication to all forwarding channels
-		b.subChansMutex.RLock()
-		for _, ch := range b.subChans {
-			ch<- req
+
+		// Forward the publication to all subscribers
+		b.subs.RLock()
+		for _, sub := range b.subs.subs {
+			// Only if they are interested in the topic
+			if sub.topics[req.Topic] == true {
+				sub.toSubCh <- req
+			}
 		}
-		b.subChansMutex.RUnlock()
-		
+		b.subs.RUnlock()
+
 		// Mark this publication as sent
 		b.forwardedPub[req.PublisherID][req.PublicationID] = true
 	} else {

@@ -19,7 +19,7 @@ var (
 	brokerID = flag.Int(
 		"id",
 		0,
-		"The ID for this broker.",		
+		"The ID for this broker.",
 	)
 )
 
@@ -41,7 +41,7 @@ func ParseArgs() bool {
 		fmt.Printf("Need to specify an endpoint.\n")
 		return false
 	}
-	
+
 	if *brokerID == 0 {
 		fmt.Printf("Need to specify an ID.\n")
 		return false
