@@ -98,16 +98,19 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	pr, _ := peer.FromContext(stream.Context())
 	addr := pr.Addr.String()
 	ch := b.addSubChannel(addr)
+	topics := make(map[int64] bool)
 	
 	// Write loop
 	go func() {
 		for {
 			select {
-				case fwd := <-ch:
-					err := stream.Send(fwd)
-					if err != nil {
-						b.removeSubChannel(addr)
-						break;
+				case pub := <-ch:
+					if topics[pub.Topic] == true {
+						err := stream.Send(pub)
+						if err != nil {
+							b.removeSubChannel(addr)
+							break;
+						}
 					}
 			}
 		}
@@ -115,13 +118,17 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	
 	// Read loop
 	for {
-		_, err := stream.Recv()
+		subscribe, err := stream.Recv()
 		if err == io.EOF {
 			b.removeSubChannel(addr)
 			return err
 		} else if err != nil {
 			b.removeSubChannel(addr)
 			return err
+		}
+		
+		for _, topic := range subscribe.Topics {
+			topics[topic] = true
 		}
 	}
 	
