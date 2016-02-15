@@ -259,3 +259,163 @@ var _SubBroker_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 }
+
+// Client API for InterBroker service
+
+type InterBrokerClient interface {
+	Echo(ctx context.Context, opts ...grpc.CallOption) (InterBroker_EchoClient, error)
+	Ready(ctx context.Context, opts ...grpc.CallOption) (InterBroker_ReadyClient, error)
+}
+
+type interBrokerClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewInterBrokerClient(cc *grpc.ClientConn) InterBrokerClient {
+	return &interBrokerClient{cc}
+}
+
+func (c *interBrokerClient) Echo(ctx context.Context, opts ...grpc.CallOption) (InterBroker_EchoClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_InterBroker_serviceDesc.Streams[0], c.cc, "/proto.InterBroker/Echo", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &interBrokerEchoClient{stream}
+	return x, nil
+}
+
+type InterBroker_EchoClient interface {
+	Send(*Publication) error
+	Recv() (*PubResponse, error)
+	grpc.ClientStream
+}
+
+type interBrokerEchoClient struct {
+	grpc.ClientStream
+}
+
+func (x *interBrokerEchoClient) Send(m *Publication) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *interBrokerEchoClient) Recv() (*PubResponse, error) {
+	m := new(PubResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *interBrokerClient) Ready(ctx context.Context, opts ...grpc.CallOption) (InterBroker_ReadyClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_InterBroker_serviceDesc.Streams[1], c.cc, "/proto.InterBroker/Ready", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &interBrokerReadyClient{stream}
+	return x, nil
+}
+
+type InterBroker_ReadyClient interface {
+	Send(*Publication) error
+	Recv() (*PubResponse, error)
+	grpc.ClientStream
+}
+
+type interBrokerReadyClient struct {
+	grpc.ClientStream
+}
+
+func (x *interBrokerReadyClient) Send(m *Publication) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *interBrokerReadyClient) Recv() (*PubResponse, error) {
+	m := new(PubResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// Server API for InterBroker service
+
+type InterBrokerServer interface {
+	Echo(InterBroker_EchoServer) error
+	Ready(InterBroker_ReadyServer) error
+}
+
+func RegisterInterBrokerServer(s *grpc.Server, srv InterBrokerServer) {
+	s.RegisterService(&_InterBroker_serviceDesc, srv)
+}
+
+func _InterBroker_Echo_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(InterBrokerServer).Echo(&interBrokerEchoServer{stream})
+}
+
+type InterBroker_EchoServer interface {
+	Send(*PubResponse) error
+	Recv() (*Publication, error)
+	grpc.ServerStream
+}
+
+type interBrokerEchoServer struct {
+	grpc.ServerStream
+}
+
+func (x *interBrokerEchoServer) Send(m *PubResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *interBrokerEchoServer) Recv() (*Publication, error) {
+	m := new(Publication)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _InterBroker_Ready_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(InterBrokerServer).Ready(&interBrokerReadyServer{stream})
+}
+
+type InterBroker_ReadyServer interface {
+	Send(*PubResponse) error
+	Recv() (*Publication, error)
+	grpc.ServerStream
+}
+
+type interBrokerReadyServer struct {
+	grpc.ServerStream
+}
+
+func (x *interBrokerReadyServer) Send(m *PubResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *interBrokerReadyServer) Recv() (*Publication, error) {
+	m := new(Publication)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+var _InterBroker_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.InterBroker",
+	HandlerType: (*InterBrokerServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Echo",
+			Handler:       _InterBroker_Echo_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "Ready",
+			Handler:       _InterBroker_Ready_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
+}

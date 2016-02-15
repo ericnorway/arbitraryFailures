@@ -10,6 +10,11 @@ service SubBroker {
 	rpc Subscribe(stream SubRequest) returns (stream Publication) {}
 }
 
+service InterBroker {
+	rpc Echo(stream Publication) returns (stream PubResponse) {}
+	rpc Ready(stream Publication) returns (stream PubResponse) {}
+}
+
 message Publication {
 	int32 PubType = 1;
 	int64 PublisherID = 2;
