@@ -15,8 +15,12 @@ func main() {
 
 	subscriber.StartBrokerClients(brokerAddrs)
 
-	subscriber.ProcessPublications()
+	go subscriber.ProcessPublications()
 
 	for {
+		select {
+			case pub := <-subscriber.ToUser:
+				fmt.Printf("Got publication %v from publisher %v.\n", pub.PublicationID, pub.PublisherID)
+		}
 	}
 }

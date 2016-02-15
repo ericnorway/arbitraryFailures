@@ -20,6 +20,8 @@ type Subscriber struct {
 	toBrokerChansMutex sync.RWMutex
 	toBrokerChans      map[string]chan *pb.SubRequest
 	fromBrokerChan     chan *pb.Publication
+	ToUser             chan *pb.Publication
+	FromUser           chan *pb.SubRequest
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
@@ -39,7 +41,9 @@ type Subscriber struct {
 func NewSubscriber() *Subscriber {
 	return &Subscriber{
 		toBrokerChans:  make(map[string]chan *pb.SubRequest),
-		fromBrokerChan: make(chan *pb.Publication),
+		fromBrokerChan: make(chan *pb.Publication, 8),
+		ToUser:         make(chan *pb.Publication, 8),
+		FromUser:       make(chan *pb.SubRequest, 8),
 		pubsReceived:   make(map[int64]map[int64]map[int64][]byte),
 		pubsLearned:    make(map[int64]map[int64][]byte),
 		topics:         make(map[int64]bool),
@@ -71,7 +75,7 @@ func (s *Subscriber) StartBrokerClients(brokerAddrs []string) {
 }
 
 // startBrokerClient starts an individual broker clients. It takes as input
-// a  broker address.
+// a broker address.
 func (s *Subscriber) startBrokerClient(brokerAddr string) bool {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
@@ -122,7 +126,18 @@ func (s *Subscriber) startBrokerClient(brokerAddr string) bool {
 		}
 	}()
 
-	// TODO: add write loop
+	// Write loop
+	go func() {
+		for {
+			select {
+			case subReq := <-s.FromUser:
+				err = stream.Send(subReq)
+				if err != nil {
+					return
+				}
+			}
+		}
+	}()
 
 	return true
 }
@@ -182,7 +197,11 @@ func (s *Subscriber) processAbPublication(pub *pb.Publication) {
 		// So record it
 		s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = pub.Content
 		// Check if there is a quorum yet for this publisher ID and publication ID
-		s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
+		foundQuorum := s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
+		
+		if foundQuorum {
+			s.ToUser<- pub
+		}
 	}
 }
 
@@ -207,7 +226,7 @@ func (s *Subscriber) checkQuorum(publisherID int64, publicationID int64, quorumS
 	}
 	// If already learned this publication
 	if s.pubsLearned[publisherID][publicationID] != nil {
-		fmt.Printf("Already learned publication %v from publisher %v.\n", publicationID, publisherID)
+		// fmt.Printf("Already learned publication %v from publisher %v.\n", publicationID, publisherID)
 		return false
 	}
 
@@ -220,7 +239,7 @@ func (s *Subscriber) checkQuorum(publisherID int64, publicationID int64, quorumS
 		countMap[pub] = countMap[pub] + 1
 		if countMap[pub] >= quorumSize {
 			s.pubsLearned[publisherID][publicationID] = publication
-			fmt.Printf("Learned publication %v from publisher %v.\n", publicationID, publisherID)
+			// fmt.Printf("Learned publication %v from publisher %v.\n", publicationID, publisherID)
 			return true
 		}
 	}
