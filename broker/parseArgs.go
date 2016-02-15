@@ -27,7 +27,7 @@ func usage() {
 	flag.PrintDefaults()
 }
 
-// ParseArgs() parses the command line arguments.
+// ParseArgs parses the command line arguments.
 // The return argument indicates whether or not the function was successful.
 func ParseArgs() bool {
 	flag.Usage = usage

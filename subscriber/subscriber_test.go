@@ -805,7 +805,7 @@ var quorumTests = []struct {
 
 func TestProcessPublications(t *testing.T) {
 	for i, test := range processTests {
-		go test.subscriber.processPublications()
+		go test.subscriber.ProcessPublications()
 
 		for j, subtest := range test.subtests {
 			test.subscriber.fromBrokerChan <- &subtest.pub

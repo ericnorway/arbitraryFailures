@@ -15,7 +15,7 @@ func TestAbProcessing(t *testing.T) {
 
 		// Add "subscribers" (channels)
 		for j := 0; j < test.numSubscribers; j++ {
-			test.broker.addSubChannel(strconv.Itoa(j))
+			test.broker.subs.AddSubscriber(int64(j), strconv.Itoa(j), []int64{1, 2, 3})
 		}
 
 		for j, subtest := range test.subtests {
@@ -23,17 +23,17 @@ func TestAbProcessing(t *testing.T) {
 			test.broker.pubChan <- &subtest.pubReq
 
 			// Check that all "subscribers" got the forwarded publication
-			test.broker.subChansMutex.RLock()
-			for _, ch := range test.broker.subChans {
+			test.broker.subs.RLock()
+			for _, sub := range test.broker.subs.subs {
 				select {
-				case pub := <-ch:
+				case pub := <-sub.toSubCh:
 					if !Equals(*pub, subtest.want) {
 						t.Errorf("AbProcessing\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 							i+1, test.desc, j+1, &subtest.want, pub)
 					}
 				}
 			}
-			test.broker.subChansMutex.RUnlock()
+			test.broker.subs.RUnlock()
 		}
 	}
 }
@@ -202,12 +202,14 @@ var abProcessingTests = []struct {
 					PubType:       common.AB,
 					PublisherID:   3,
 					PublicationID: 1,
+					Topic:         1,
 					Content:       []byte(message1),
 				},
 				want: pb.Publication{
 					PubType:       common.AB,
 					PublisherID:   3,
 					PublicationID: 1,
+					Topic:         1,
 					BrokerID:      0,
 					Content:       []byte(message1),
 				},

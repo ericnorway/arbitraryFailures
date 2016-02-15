@@ -4,6 +4,7 @@ import (
 	"fmt"
 )
 
+// main starts a subscriber.
 func main() {
 	fmt.Printf("Subscriber started.\n")
 
@@ -12,9 +13,9 @@ func main() {
 	subscriber := NewSubscriber()
 	subscriber.AddTopic(1)
 
-	subscriber.startBrokerClients(brokerAddrs)
+	subscriber.StartBrokerClients(brokerAddrs)
 
-	subscriber.processPublications()
+	subscriber.ProcessPublications()
 
 	for {
 	}

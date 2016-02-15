@@ -11,12 +11,15 @@ import (
 	"google.golang.org/grpc/peer"
 )
 
+// Broker is a struct containing channels used in communicating
+// with read and write loops.
 type Broker struct {
 	pubChan      chan *pb.Publication
-	subs         *Subscribers
+	subs         *Subscribers // A map of subscribers
 	forwardedPub map[int64]map[int64]bool
 }
 
+// NewBroker returns a new Broker
 func NewBroker() *Broker {
 	return &Broker{
 		pubChan:      make(chan *pb.Publication),
@@ -25,6 +28,8 @@ func NewBroker() *Broker {
 	}
 }
 
+// StartBroker creates and starts a new Broker.
+// The Broker will listen on the endpoint provided.
 func StartBroker(endpoint string) {
 	fmt.Printf("Broker started.\n")
 
@@ -49,7 +54,9 @@ func StartBroker(endpoint string) {
 	}
 }
 
+// Publish handles incoming Publish requests from publishers
 func (b *Broker) Publish(stream pb.PubBroker_PublishServer) error {
+
 	// Write loop
 	go func() {
 		for {
@@ -72,7 +79,9 @@ func (b *Broker) Publish(stream pb.PubBroker_PublishServer) error {
 	return nil
 }
 
+// Subscribe handles incoming Subscribe requests from subscribers
 func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
+
 	// Read initial subscribe message
 	subscribe, err := stream.Recv()
 	if err == io.EOF {
@@ -84,7 +93,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	pr, _ := peer.FromContext(stream.Context())
 	addr := pr.Addr.String()
 	id := subscribe.SubscriberID
-	sub := b.subs.addSubscriber(id, addr, subscribe.Topics)
+	sub := b.subs.AddSubscriber(id, addr, subscribe.Topics)
 
 	// Write loop
 	go func() {
@@ -93,7 +102,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 			case pub := <-sub.toSubCh:
 				err := stream.Send(pub)
 				if err != nil {
-					b.subs.removeSubscriber(id)
+					b.subs.RemoveSubscriber(id)
 					break
 				}
 			}
@@ -104,10 +113,10 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	for {
 		_, err := stream.Recv()
 		if err == io.EOF {
-			b.subs.removeSubscriber(id)
+			b.subs.RemoveSubscriber(id)
 			return err
 		} else if err != nil {
-			b.subs.removeSubscriber(id)
+			b.subs.RemoveSubscriber(id)
 			return err
 		}
 	}
@@ -115,17 +124,22 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	return nil
 }
 
+// handleMessages handles incoming messages
 func (b Broker) handleMessages() {
 	for {
 		select {
+		// If it's a publish request
 		case req := <-b.pubChan:
 			if req.PubType == common.AB {
+				// Handle an Authenticated Broadcast publish request
 				b.handleAbPublish(req)
 			}
 		}
 	}
 }
 
+// handleAbPublish handles Authenticated Broadcast publish requests.
+// It takes the request as input.
 func (b Broker) handleAbPublish(req *pb.Publication) {
 	if b.forwardedPub[req.PublisherID] == nil {
 		b.forwardedPub[req.PublisherID] = make(map[int64]bool)

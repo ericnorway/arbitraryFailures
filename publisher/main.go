@@ -8,6 +8,7 @@ import (
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
 
+// main starts a publisher and publishes three publications.
 func main() {
 	fmt.Printf("Publisher started.\n")
 
@@ -15,7 +16,7 @@ func main() {
 
 	publisher := NewPublisher()
 
-	publisher.startBrokerClients(brokerAddrs)
+	publisher.StartBrokerClients(brokerAddrs)
 
 	time.Sleep(time.Second)
 
