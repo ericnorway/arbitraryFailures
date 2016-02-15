@@ -79,6 +79,52 @@ func (b *Broker) Publish(stream pb.PubBroker_PublishServer) error {
 	return nil
 }
 
+// Echo handles incoming RBR echo requests from other brokers
+func (b *Broker) Echo(stream pb.InterBroker_EchoServer) error {
+
+	// Write loop
+	go func() {
+		for {
+			// Nothing to write yet
+		}
+	}()
+
+	// Read loop.
+	for {
+		_, err := stream.Recv()
+		if err == io.EOF {
+			return err
+		} else if err != nil {
+			return err
+		}
+		fmt.Printf("Echo received.")
+	}
+	return nil
+}
+
+// Ready handles incoming RBR ready requests from other brokers
+func (b *Broker) Ready(stream pb.InterBroker_ReadyServer) error {
+
+	// Write loop
+	go func() {
+		for {
+			// Nothing to write yet
+		}
+	}()
+
+	// Read loop.
+	for {
+		_, err := stream.Recv()
+		if err == io.EOF {
+			return err
+		} else if err != nil {
+			return err
+		}
+		fmt.Printf("Ready received.")
+	}
+	return nil
+}
+
 // Subscribe handles incoming Subscribe requests from subscribers
 func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 
@@ -90,6 +136,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 		return err
 	}
 
+	// Create subscriber client
 	pr, _ := peer.FromContext(stream.Context())
 	addr := pr.Addr.String()
 	id := subscribe.SubscriberID
@@ -111,7 +158,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 
 	// Read loop
 	for {
-		_, err := stream.Recv()
+		req, err := stream.Recv()
 		if err == io.EOF {
 			b.subs.RemoveSubscriber(id)
 			return err
@@ -119,6 +166,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 			b.subs.RemoveSubscriber(id)
 			return err
 		}
+		b.subs.fromSubCh<- req
 	}
 
 	return nil
@@ -134,6 +182,8 @@ func (b Broker) handleMessages() {
 				// Handle an Authenticated Broadcast publish request
 				b.handleAbPublish(req)
 			}
+		case req := <-b.subs.fromSubCh:
+			b.handleTopicChange(req)
 		}
 	}
 }
@@ -164,4 +214,8 @@ func (b Broker) handleAbPublish(req *pb.Publication) {
 	} else {
 		fmt.Printf("Already forwarded publication %v by publisher %v\n", req.PublicationID, req.PublisherID)
 	}
+}
+
+func (b Broker) handleTopicChange(req *pb.SubRequest) {
+	b.subs.ChangeTopics(req.SubscriberID, req.Topics)
 }

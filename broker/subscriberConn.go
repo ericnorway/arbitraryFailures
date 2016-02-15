@@ -10,12 +10,14 @@ import (
 // Subscribers is a struct containing a map of subscribers.
 type Subscribers struct {
 	sync.RWMutex
+	fromSubCh chan *pb.SubRequest
 	subs map[int64]Subscriber
 }
 
 // NewSubscribers returns a new Subscribers.
 func NewSubscribers() *Subscribers {
 	return &Subscribers{
+		fromSubCh: make(chan *pb.SubRequest, 32),
 		subs: make(map[int64]Subscriber),
 	}
 }
@@ -65,5 +67,16 @@ func (s *Subscribers) RemoveSubscriber(id int64) {
 // ChangeTopics changes the Subscriber's topics to the ones provided.
 // It takes as input the Subscriber ID and a list of topics.
 func (s *Subscribers) ChangeTopics(id int64, topics []int64) {
+	fmt.Printf("Changing topics for subscriber %v.\n", id)
 
+	s.Lock()
+	s.Unlock()
+	
+	for i := range s.subs[id].topics {
+		s.subs[id].topics[i] = false
+	}
+	
+	for _, topic := range topics {
+		s.subs[id].topics[topic] = true
+	}
 }
