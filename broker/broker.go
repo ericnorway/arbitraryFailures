@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 
 	"github.com/ericnorway/arbitraryFailures/common"
 	pb "github.com/ericnorway/arbitraryFailures/proto"
@@ -15,17 +16,64 @@ import (
 // Broker is a struct containing channels used in communicating
 // with read and write loops.
 type Broker struct {
-	publishers   *Publishers // A map of publishers
-	subscribers  *Subscribers // A map of subscribers
-	forwardedPub map[int64]map[int64]bool
+	// PUBLISHER CHANNEL VARIABLES
+	fromPublisherCh   chan *pb.Publication
+	
+	// BROKER CHANNEL VARIABLES
+	toBrokerEchoChs   *BrokerEchoChannels
+	fromBrokerEchoCh  chan *pb.Publication
+	toBrokerReadyChs  *BrokerReadyChannels
+	fromBrokerReadyCh chan *pb.Publication
+	
+	// SUBSCRIBER CHANNEL VARIABLES
+	fromSubscriberCh  chan *pb.SubRequest
+	subscribers       *Subscribers // A map of subscribers' information
+
+	// MESSAGE TRACKING VARIABLES
+
+	// The first index references the publisher ID.
+	// The second index references the publication ID.
+	// The bool contains whether or not it was sent yet.
+	forwardSent map[int64]map[int64]bool
+
+	// The first index references the publisher ID.
+	// The second index references the publication ID.
+	// The bool contains whether or not it was sent yet.
+	echoSent map[int64]map[int64]bool
+
+	// The first index references the publisher ID.
+	// The second index references the publication ID.
+	// The third index references the broker ID.
+	// The byte slice contains the publication.
+	echoesReceived map[int64]map[int64]map[int64][]byte
+
+	// The first index references the publisher ID.
+	// The second index references the publication ID.
+	// The bool contains whether or not it was sent yet.
+	readySent map[int64]map[int64]bool
+
+	// The first index references the publisher ID.
+	// The second index references the publication ID.
+	// The third index references the broker ID.
+	// The byte slice contains the publication.
+	readiesReceived map[int64]map[int64]map[int64][]byte
 }
 
 // NewBroker returns a new Broker
 func NewBroker() *Broker {
 	return &Broker{
-		publishers:   NewPublishers(),
-		subscribers:  NewSubscribers(),
-		forwardedPub: make(map[int64]map[int64]bool),
+		fromPublisherCh:   make(chan *pb.Publication, 32),
+		toBrokerEchoChs:   NewBrokerEchoChannels(),
+		fromBrokerEchoCh:  make(chan *pb.Publication, 32),
+		toBrokerReadyChs:  NewBrokerReadyChannels(),
+		fromBrokerReadyCh: make(chan *pb.Publication, 32),
+		fromSubscriberCh:  make(chan *pb.SubRequest, 32),
+		subscribers:       NewSubscribers(),
+		forwardSent:       make(map[int64]map[int64]bool),
+		echoSent:          make(map[int64]map[int64]bool),
+		echoesReceived:    make(map[int64]map[int64]map[int64][]byte),
+		readySent:         make(map[int64]map[int64]bool),
+		readiesReceived:   make(map[int64]map[int64]map[int64][]byte),
 	}
 }
 
@@ -46,6 +94,8 @@ func StartBroker(endpoint string) {
 	grpcServer := grpc.NewServer()
 	pb.RegisterPubBrokerServer(grpcServer, broker)
 	pb.RegisterSubBrokerServer(grpcServer, broker)
+	pb.RegisterInterBrokerServer(grpcServer, broker)
+	broker.ConnectToOtherBrokers(endpoint)
 	go broker.handleMessages()
 
 	fmt.Printf("Preparing to serve incoming requests.\n")
@@ -55,59 +105,70 @@ func StartBroker(endpoint string) {
 	}
 }
 
-// Publish handles incoming Publish requests from publishers
-func (b *Broker) Publish(stream pb.PubBroker_PublishServer) error {
+func (b *Broker) ConnectToOtherBrokers(endpoint string) {
 
-	// Read initial publish message
-	req, err := stream.Recv()
-	if err == io.EOF {
-		return err
-	} else if err != nil {
-		return err
-	}
-
-	// Create publisher client
-	pr, _ := peer.FromContext(stream.Context())
-	addr := pr.Addr.String()
-	id := req.PublisherID
-	/*publisher := */b.publishers.AddPublisherInfo(id, addr)
+	brokerAddrs := []string{"localhost:11111", "localhost:11112", "localhost:11113", "localhost:11114"}
 	
-	// Add pub req for processing
-	b.publishers.fromPublisherCh<- req
-
-	// Write loop
-	go func() {
-		for {
-			// Nothing to write yet
+	for i, addr := range brokerAddrs {
+		if addr != endpoint {
+			go b.ConnectToBroker(int64(i), addr)
 		}
-	}()
+	}
 	
-	// Read loop.
+	for len(b.toBrokerEchoChs.chs) < 3 {
+		fmt.Printf("Waiting for connections...\n")
+		time.Sleep(time.Second)
+	}
+	fmt.Printf("...done\n")
+}
+
+func (b *Broker) ConnectToBroker(brokerID int64, brokerAddr string) {
+	fmt.Printf("Trying to connect to %v\n", brokerAddr)
+	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithInsecure(), grpc.WithBlock())
+
+	conn, err := grpc.Dial(brokerAddr, opts...)
+	if err != nil {
+		fmt.Printf("Error while connecting to server: %v\n", err)
+		return
+	}
+	defer conn.Close()
+
+	client := pb.NewInterBrokerClient(conn)
+	toBrokerEchoCh := b.toBrokerEchoChs.AddBrokerEchoChannel(brokerID)
+	toBrokerReadyCh := b.toBrokerReadyChs.AddBrokerReadyChannel(brokerID)
+
 	for {
-		req, err := stream.Recv()
-		if err == io.EOF {
-			b.publishers.RemovePublisherInfo(id)
-			return err
-		} else if err != nil {
-			b.publishers.RemovePublisherInfo(id)
-			return err
+		select {
+		case pub := <-toBrokerEchoCh:
+			_, err := client.Echo(context.Background(), pub)
+			if err != nil {
+			}
+		case pub := <-toBrokerReadyCh:
+			_, err := client.Ready(context.Background(), pub)
+			if err != nil {
+			}
 		}
-
-		// Add pub req for processing
-		b.publishers.fromPublisherCh<- req
 	}
-	return nil
+}
+
+// Publish handles incoming Publish requests from publishers
+func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubResponse, error) {
+
+	b.fromPublisherCh <- pub
+
+	return &pb.PubResponse{AlphaReached: false}, nil
 }
 
 // Echo handles incoming RBR echo requests from other brokers
-func (b *Broker) Echo(context.Context, *pb.Publication) (*pb.EchoResponse, error){
-
+func (b *Broker) Echo(ctx context.Context, pub *pb.Publication) (*pb.EchoResponse, error) {
+	b.fromBrokerEchoCh<- pub
 	return &pb.EchoResponse{}, nil
 }
 
 // Ready handles incoming RBR ready requests from other brokers
-func (b *Broker) Ready(context.Context, *pb.Publication) (*pb.ReadyResponse, error) {
-
+func (b *Broker) Ready(ctx context.Context, pub *pb.Publication) (*pb.ReadyResponse, error) {
+	b.fromBrokerReadyCh<- pub
 	return &pb.ReadyResponse{}, nil
 }
 
@@ -127,7 +188,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	addr := pr.Addr.String()
 	id := req.SubscriberID
 	subscriber := b.subscribers.AddSubscriberInfo(id, addr, req.Topics)
-	
+
 	// The request is handled in AddSubscriberInfo()
 
 	// Write loop
@@ -154,7 +215,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 			b.subscribers.RemoveSubscriberInfo(id)
 			return err
 		}
-		b.subscribers.fromSubscriberCh<- req
+		b.fromSubscriberCh <- req
 	}
 
 	return nil
@@ -165,12 +226,19 @@ func (b Broker) handleMessages() {
 	for {
 		select {
 		// If it's a publish request
-		case req := <-b.publishers.fromPublisherCh:
+		case req := <-b.fromPublisherCh:
 			if req.PubType == common.AB {
 				// Handle an Authenticated Broadcast publish request
 				b.handleAbPublish(req)
+			} else if req.PubType == common.BRB {
+				// Handle a Bracha's Reliable Broadcast publish request
+				b.handleRbrPublish(req)
 			}
-		case req := <-b.subscribers.fromSubscriberCh:
+		case req := <-b.fromBrokerEchoCh:
+			fmt.Printf("TODO: Handle Echo: %v\n", req)
+		case req := <-b.fromBrokerReadyCh:
+			fmt.Printf("TODO: Handle Ready: %v\n", req)
+		case req := <-b.fromSubscriberCh:
 			b.handleTopicChange(req)
 		}
 	}
@@ -179,12 +247,12 @@ func (b Broker) handleMessages() {
 // handleAbPublish handles Authenticated Broadcast publish requests.
 // It takes the request as input.
 func (b Broker) handleAbPublish(req *pb.Publication) {
-	if b.forwardedPub[req.PublisherID] == nil {
-		b.forwardedPub[req.PublisherID] = make(map[int64]bool)
+	if b.forwardSent[req.PublisherID] == nil {
+		b.forwardSent[req.PublisherID] = make(map[int64]bool)
 	}
 
-	// If this publication has not been forwared yet
-	if b.forwardedPub[req.PublisherID][req.PublicationID] == false {
+	// If this publication has not been forwarded yet
+	if b.forwardSent[req.PublisherID][req.PublicationID] == false {
 		req.BrokerID = int64(*brokerID)
 
 		// Forward the publication to all subscribers
@@ -198,9 +266,35 @@ func (b Broker) handleAbPublish(req *pb.Publication) {
 		b.subscribers.RUnlock()
 
 		// Mark this publication as sent
-		b.forwardedPub[req.PublisherID][req.PublicationID] = true
+		b.forwardSent[req.PublisherID][req.PublicationID] = true
 	} else {
 		fmt.Printf("Already forwarded publication %v by publisher %v\n", req.PublicationID, req.PublisherID)
+	}
+}
+
+// handleAbPublish handles Bracha's Reliable Broadcast publish requests.
+// It takes the request as input.
+func (b Broker) handleRbrPublish(req *pb.Publication) {
+	fmt.Printf("%v\n", req)
+	if b.echoSent[req.PublisherID] == nil {
+		b.echoSent[req.PublisherID] = make(map[int64]bool)
+	}
+
+	// If this publication has not been echoed yet
+	if b.echoSent[req.PublisherID][req.PublicationID] == false {
+		req.BrokerID = int64(*brokerID)
+
+		// Echo the publication to all brokers
+		b.toBrokerEchoChs.RLock()
+		for _, ch := range b.toBrokerEchoChs.chs {
+			 ch<- req
+		}
+		b.toBrokerEchoChs.RUnlock()
+
+		// Mark this publication as echoed
+		b.echoSent[req.PublisherID][req.PublicationID] = true
+	} else {
+		fmt.Printf("Already echoed publication %v by publisher %v\n", req.PublicationID, req.PublisherID)
 	}
 }
 

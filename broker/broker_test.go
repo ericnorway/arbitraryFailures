@@ -20,7 +20,7 @@ func TestAbProcessing(t *testing.T) {
 
 		for j, subtest := range test.subtests {
 			// Add publication request
-			test.broker.publishers.fromPublisherCh<- &subtest.pubReq
+			test.broker.publishers.fromPublisherCh <- &subtest.pubReq
 
 			// Check that all "subscribers" got the forwarded publication
 			test.broker.subscribers.RLock()

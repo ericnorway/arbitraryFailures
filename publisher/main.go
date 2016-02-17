@@ -30,7 +30,7 @@ func main() {
 	time.Sleep(time.Second)
 
 	publisher.Publish(&pb.Publication{
-		PubType:       common.AB,
+		PubType:       common.BRB,
 		PublisherID:   1,
 		PublicationID: 2,
 		Topic:         2,

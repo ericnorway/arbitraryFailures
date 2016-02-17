@@ -46,8 +46,7 @@ func (m *Publication) String() string { return proto1.CompactTextString(m) }
 func (*Publication) ProtoMessage()    {}
 
 type PubResponse struct {
-	AlphaReached bool   `protobuf:"varint,1,opt,name=alphaReached" json:"alphaReached,omitempty"`
-	Message      string `protobuf:"bytes,2,opt,name=Message" json:"Message,omitempty"`
+	AlphaReached bool `protobuf:"varint,1,opt,name=AlphaReached" json:"AlphaReached,omitempty"`
 }
 
 func (m *PubResponse) Reset()         { *m = PubResponse{} }
@@ -92,7 +91,7 @@ var _ grpc.ClientConn
 // Client API for PubBroker service
 
 type PubBrokerClient interface {
-	Publish(ctx context.Context, opts ...grpc.CallOption) (PubBroker_PublishClient, error)
+	Publish(ctx context.Context, in *Publication, opts ...grpc.CallOption) (*PubResponse, error)
 }
 
 type pubBrokerClient struct {
@@ -103,85 +102,47 @@ func NewPubBrokerClient(cc *grpc.ClientConn) PubBrokerClient {
 	return &pubBrokerClient{cc}
 }
 
-func (c *pubBrokerClient) Publish(ctx context.Context, opts ...grpc.CallOption) (PubBroker_PublishClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_PubBroker_serviceDesc.Streams[0], c.cc, "/proto.PubBroker/Publish", opts...)
+func (c *pubBrokerClient) Publish(ctx context.Context, in *Publication, opts ...grpc.CallOption) (*PubResponse, error) {
+	out := new(PubResponse)
+	err := grpc.Invoke(ctx, "/proto.PubBroker/Publish", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &pubBrokerPublishClient{stream}
-	return x, nil
-}
-
-type PubBroker_PublishClient interface {
-	Send(*Publication) error
-	Recv() (*PubResponse, error)
-	grpc.ClientStream
-}
-
-type pubBrokerPublishClient struct {
-	grpc.ClientStream
-}
-
-func (x *pubBrokerPublishClient) Send(m *Publication) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *pubBrokerPublishClient) Recv() (*PubResponse, error) {
-	m := new(PubResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 // Server API for PubBroker service
 
 type PubBrokerServer interface {
-	Publish(PubBroker_PublishServer) error
+	Publish(context.Context, *Publication) (*PubResponse, error)
 }
 
 func RegisterPubBrokerServer(s *grpc.Server, srv PubBrokerServer) {
 	s.RegisterService(&_PubBroker_serviceDesc, srv)
 }
 
-func _PubBroker_Publish_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(PubBrokerServer).Publish(&pubBrokerPublishServer{stream})
-}
-
-type PubBroker_PublishServer interface {
-	Send(*PubResponse) error
-	Recv() (*Publication, error)
-	grpc.ServerStream
-}
-
-type pubBrokerPublishServer struct {
-	grpc.ServerStream
-}
-
-func (x *pubBrokerPublishServer) Send(m *PubResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *pubBrokerPublishServer) Recv() (*Publication, error) {
-	m := new(Publication)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
+func _PubBroker_Publish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(Publication)
+	if err := dec(in); err != nil {
 		return nil, err
 	}
-	return m, nil
+	out, err := srv.(PubBrokerServer).Publish(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 var _PubBroker_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.PubBroker",
 	HandlerType: (*PubBrokerServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams: []grpc.StreamDesc{
+	Methods: []grpc.MethodDesc{
 		{
-			StreamName:    "Publish",
-			Handler:       _PubBroker_Publish_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
+			MethodName: "Publish",
+			Handler:    _PubBroker_Publish_Handler,
 		},
 	},
+	Streams: []grpc.StreamDesc{},
 }
 
 // Client API for SubBroker service

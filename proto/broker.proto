@@ -3,7 +3,7 @@ syntax = "proto3";
 package proto;
 
 service PubBroker {
-	rpc Publish(stream Publication) returns (stream PubResponse) {}
+	rpc Publish(Publication) returns (PubResponse) {}
 }
 
 service SubBroker {
@@ -26,8 +26,7 @@ message Publication {
 }
 
 message PubResponse{
-	bool alphaReached = 1;
-	string Message = 2;
+	bool AlphaReached = 1;
 }
 
 message EchoResponse{}

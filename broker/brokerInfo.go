@@ -7,54 +7,66 @@ import (
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
 
-// Brokers is a struct containing a map of brokers' information.
-type Brokers struct {
+type BrokerEchoChannels struct {
 	sync.RWMutex
-	fromBrokerCh chan *pb.Publication
-	brokers map[int64]BrokerInfo
+	chs   map[int64]chan *pb.Publication
 }
 
-// NewBrokers returns a new Brokers.
-func NewBrokers() *Brokers {
-	return &Brokers{
-		fromBrokerCh: make(chan *pb.Publication, 32),
-		brokers: make(map[int64]BrokerInfo),
+type BrokerReadyChannels struct {
+	sync.RWMutex
+	chs map[int64]chan *pb.Publication
+}
+
+func NewBrokerEchoChannels() *BrokerEchoChannels {
+	return &BrokerEchoChannels{
+		chs:      make(map[int64]chan *pb.Publication),
 	}
 }
 
-// BrokerInfo is a struct containing information about the broker.
-type BrokerInfo struct {
-	id      int64
-	addr    string
-	toBrokerCh chan *pb.Publication
-}
-
-// AddBrokerInfo adds a new BrokerInfo to Brokers. It returns the new BrokerInfo.
-// It takes as input the Broker ID and address.
-func (p *Brokers) AddBrokerInfo(id int64, addr string) BrokerInfo {
-	fmt.Printf("Broker information for broker %v added.\n", id)
-
-	brokerInfo := BrokerInfo{
-		id:      id,
-		addr:    addr,
-		toBrokerCh: make(chan *pb.Publication, 32),
+func NewBrokerReadyChannels() *BrokerReadyChannels {
+	return &BrokerReadyChannels{
+		chs:      make(map[int64]chan *pb.Publication),
 	}
-
-	p.Lock()
-	defer p.Unlock()
-
-	p.brokers[id] = brokerInfo
-
-	return brokerInfo
 }
 
-// RemoveBrokerInfo removes a BrokerInfo from Brokers.
-// It takes as input the Broker ID
-func (p *Brokers) RemoveBrokerInfo(id int64) {
-	fmt.Printf("Broker information for broker %v removed.\n", id)
+func (b *BrokerEchoChannels) AddBrokerEchoChannel(id int64) chan *pb.Publication {
+	fmt.Printf("Broker echo channel %v added.\n", id)
+	ch := make(chan *pb.Publication, 32)
+	
+	b.Lock()
+	defer b.Unlock()
 
-	p.Lock()
-	p.Unlock()
+	b.chs[id] = ch
 
-	delete(p.brokers, id)
+	return ch
+}
+
+func (b *BrokerEchoChannels) RemoveBrokerEchoChannel(id int64) {
+	fmt.Printf("Broker echo channel %v removed.\n", id)
+
+	b.Lock()
+	b.Unlock()
+
+	delete(b.chs, id)
+}
+
+func (b *BrokerReadyChannels) AddBrokerReadyChannel(id int64) chan *pb.Publication {
+	fmt.Printf("Broker ready channel %v added.\n", id)
+	ch := make(chan *pb.Publication, 32)
+	
+	b.Lock()
+	defer b.Unlock()
+
+	b.chs[id] = ch
+
+	return ch
+}
+
+func (b *BrokerReadyChannels) RemoveBrokerReadyChannel(id int64) {
+	fmt.Printf("Broker ready channel %v removed.\n", id)
+
+	b.Lock()
+	b.Unlock()
+
+	delete(b.chs, id)
 }

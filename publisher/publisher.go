@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"sync"
 	"time"
 
@@ -51,56 +50,35 @@ func (p *Publisher) StartBrokerClients(brokerAddrs []string) {
 }
 
 // startBrokerClient starts an individual broker client.
-func (p *Publisher) startBrokerClient(brokerAddr string) bool {
+func (p *Publisher) startBrokerClient(brokerAddr string) {
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithInsecure())
+	opts = append(opts, grpc.WithInsecure(), grpc.WithBlock())
 
 	conn, err := grpc.Dial(brokerAddr, opts...)
 	if err != nil {
 		fmt.Printf("Error while connecting to server: %v\n", err)
-		return false
+		return
 	}
+	defer conn.Close()
 
 	client := pb.NewPubBrokerClient(conn)
-
-	stream, err := client.Publish(context.Background())
-	if err != nil {
-		fmt.Printf("Error while starting the Publish stream: %v\n", err)
-		return false
-	}
-
-	// Read loop
-	go func() {
-		for {
-			_, err := stream.Recv()
-			if err == io.EOF {
-				p.removeChannel(brokerAddr)
-				break
-			}
-			if err != nil {
-				p.removeChannel(brokerAddr)
-				break
-			}
-		}
-
-		fmt.Printf("Receive ended.\n")
-	}()
-
 	ch := p.addChannel(brokerAddr)
 
-	// Write loop
 	for {
 		select {
-		case req := <-ch:
-			err := stream.Send(req)
+		case pub := <-ch:
+			resp, err := client.Publish(context.Background(), pub)
 			if err != nil {
 				p.removeChannel(brokerAddr)
-				break
+       		fmt.Printf("Error publishing to %v, %v\n", brokerAddr, err)
+       		return
+			}
+			
+			if resp.AlphaReached == true {
+				fmt.Printf("Alpha reached.\n")
 			}
 		}
 	}
-
-	return true
 }
 
 // addChannel adds a channel to the map of to broker channels.
