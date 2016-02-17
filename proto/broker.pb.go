@@ -11,6 +11,8 @@ It is generated from these files:
 It has these top-level messages:
 	Publication
 	PubResponse
+	EchoResponse
+	ReadyResponse
 	SubRequest
 */
 package proto
@@ -44,12 +46,27 @@ func (m *Publication) String() string { return proto1.CompactTextString(m) }
 func (*Publication) ProtoMessage()    {}
 
 type PubResponse struct {
-	Message string `protobuf:"bytes,1,opt,name=Message" json:"Message,omitempty"`
+	AlphaReached bool   `protobuf:"varint,1,opt,name=alphaReached" json:"alphaReached,omitempty"`
+	Message      string `protobuf:"bytes,2,opt,name=Message" json:"Message,omitempty"`
 }
 
 func (m *PubResponse) Reset()         { *m = PubResponse{} }
 func (m *PubResponse) String() string { return proto1.CompactTextString(m) }
 func (*PubResponse) ProtoMessage()    {}
+
+type EchoResponse struct {
+}
+
+func (m *EchoResponse) Reset()         { *m = EchoResponse{} }
+func (m *EchoResponse) String() string { return proto1.CompactTextString(m) }
+func (*EchoResponse) ProtoMessage()    {}
+
+type ReadyResponse struct {
+}
+
+func (m *ReadyResponse) Reset()         { *m = ReadyResponse{} }
+func (m *ReadyResponse) String() string { return proto1.CompactTextString(m) }
+func (*ReadyResponse) ProtoMessage()    {}
 
 type SubRequest struct {
 	SubscriberID int64   `protobuf:"varint,1,opt,name=SubscriberID" json:"SubscriberID,omitempty"`
@@ -63,6 +80,8 @@ func (*SubRequest) ProtoMessage()    {}
 func init() {
 	proto1.RegisterType((*Publication)(nil), "proto.Publication")
 	proto1.RegisterType((*PubResponse)(nil), "proto.PubResponse")
+	proto1.RegisterType((*EchoResponse)(nil), "proto.EchoResponse")
+	proto1.RegisterType((*ReadyResponse)(nil), "proto.ReadyResponse")
 	proto1.RegisterType((*SubRequest)(nil), "proto.SubRequest")
 }
 
@@ -263,8 +282,8 @@ var _SubBroker_serviceDesc = grpc.ServiceDesc{
 // Client API for InterBroker service
 
 type InterBrokerClient interface {
-	Echo(ctx context.Context, opts ...grpc.CallOption) (InterBroker_EchoClient, error)
-	Ready(ctx context.Context, opts ...grpc.CallOption) (InterBroker_ReadyClient, error)
+	Echo(ctx context.Context, in *Publication, opts ...grpc.CallOption) (*EchoResponse, error)
+	Ready(ctx context.Context, in *Publication, opts ...grpc.CallOption) (*ReadyResponse, error)
 }
 
 type interBrokerClient struct {
@@ -275,147 +294,71 @@ func NewInterBrokerClient(cc *grpc.ClientConn) InterBrokerClient {
 	return &interBrokerClient{cc}
 }
 
-func (c *interBrokerClient) Echo(ctx context.Context, opts ...grpc.CallOption) (InterBroker_EchoClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_InterBroker_serviceDesc.Streams[0], c.cc, "/proto.InterBroker/Echo", opts...)
+func (c *interBrokerClient) Echo(ctx context.Context, in *Publication, opts ...grpc.CallOption) (*EchoResponse, error) {
+	out := new(EchoResponse)
+	err := grpc.Invoke(ctx, "/proto.InterBroker/Echo", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &interBrokerEchoClient{stream}
-	return x, nil
+	return out, nil
 }
 
-type InterBroker_EchoClient interface {
-	Send(*Publication) error
-	Recv() (*PubResponse, error)
-	grpc.ClientStream
-}
-
-type interBrokerEchoClient struct {
-	grpc.ClientStream
-}
-
-func (x *interBrokerEchoClient) Send(m *Publication) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *interBrokerEchoClient) Recv() (*PubResponse, error) {
-	m := new(PubResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *interBrokerClient) Ready(ctx context.Context, opts ...grpc.CallOption) (InterBroker_ReadyClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_InterBroker_serviceDesc.Streams[1], c.cc, "/proto.InterBroker/Ready", opts...)
+func (c *interBrokerClient) Ready(ctx context.Context, in *Publication, opts ...grpc.CallOption) (*ReadyResponse, error) {
+	out := new(ReadyResponse)
+	err := grpc.Invoke(ctx, "/proto.InterBroker/Ready", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &interBrokerReadyClient{stream}
-	return x, nil
-}
-
-type InterBroker_ReadyClient interface {
-	Send(*Publication) error
-	Recv() (*PubResponse, error)
-	grpc.ClientStream
-}
-
-type interBrokerReadyClient struct {
-	grpc.ClientStream
-}
-
-func (x *interBrokerReadyClient) Send(m *Publication) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *interBrokerReadyClient) Recv() (*PubResponse, error) {
-	m := new(PubResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 // Server API for InterBroker service
 
 type InterBrokerServer interface {
-	Echo(InterBroker_EchoServer) error
-	Ready(InterBroker_ReadyServer) error
+	Echo(context.Context, *Publication) (*EchoResponse, error)
+	Ready(context.Context, *Publication) (*ReadyResponse, error)
 }
 
 func RegisterInterBrokerServer(s *grpc.Server, srv InterBrokerServer) {
 	s.RegisterService(&_InterBroker_serviceDesc, srv)
 }
 
-func _InterBroker_Echo_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(InterBrokerServer).Echo(&interBrokerEchoServer{stream})
-}
-
-type InterBroker_EchoServer interface {
-	Send(*PubResponse) error
-	Recv() (*Publication, error)
-	grpc.ServerStream
-}
-
-type interBrokerEchoServer struct {
-	grpc.ServerStream
-}
-
-func (x *interBrokerEchoServer) Send(m *PubResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *interBrokerEchoServer) Recv() (*Publication, error) {
-	m := new(Publication)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
+func _InterBroker_Echo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(Publication)
+	if err := dec(in); err != nil {
 		return nil, err
 	}
-	return m, nil
-}
-
-func _InterBroker_Ready_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(InterBrokerServer).Ready(&interBrokerReadyServer{stream})
-}
-
-type InterBroker_ReadyServer interface {
-	Send(*PubResponse) error
-	Recv() (*Publication, error)
-	grpc.ServerStream
-}
-
-type interBrokerReadyServer struct {
-	grpc.ServerStream
-}
-
-func (x *interBrokerReadyServer) Send(m *PubResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *interBrokerReadyServer) Recv() (*Publication, error) {
-	m := new(Publication)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
+	out, err := srv.(InterBrokerServer).Echo(ctx, in)
+	if err != nil {
 		return nil, err
 	}
-	return m, nil
+	return out, nil
+}
+
+func _InterBroker_Ready_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(Publication)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(InterBrokerServer).Ready(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 var _InterBroker_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.InterBroker",
 	HandlerType: (*InterBrokerServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams: []grpc.StreamDesc{
+	Methods: []grpc.MethodDesc{
 		{
-			StreamName:    "Echo",
-			Handler:       _InterBroker_Echo_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
+			MethodName: "Echo",
+			Handler:    _InterBroker_Echo_Handler,
 		},
 		{
-			StreamName:    "Ready",
-			Handler:       _InterBroker_Ready_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
+			MethodName: "Ready",
+			Handler:    _InterBroker_Ready_Handler,
 		},
 	},
+	Streams: []grpc.StreamDesc{},
 }

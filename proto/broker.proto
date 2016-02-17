@@ -11,8 +11,8 @@ service SubBroker {
 }
 
 service InterBroker {
-	rpc Echo(stream Publication) returns (stream PubResponse) {}
-	rpc Ready(stream Publication) returns (stream PubResponse) {}
+	rpc Echo(Publication) returns (EchoResponse) {}
+	rpc Ready(Publication) returns (ReadyResponse) {}
 }
 
 message Publication {
@@ -26,8 +26,13 @@ message Publication {
 }
 
 message PubResponse{
-	string Message = 1;
+	bool alphaReached = 1;
+	string Message = 2;
 }
+
+message EchoResponse{}
+
+message ReadyResponse{}
 
 message SubRequest {
 	int64 SubscriberID = 1;

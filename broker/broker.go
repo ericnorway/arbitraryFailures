@@ -7,6 +7,7 @@ import (
 
 	"github.com/ericnorway/arbitraryFailures/common"
 	pb "github.com/ericnorway/arbitraryFailures/proto"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
 )
@@ -14,16 +15,16 @@ import (
 // Broker is a struct containing channels used in communicating
 // with read and write loops.
 type Broker struct {
-	pubChan      chan *pb.Publication
-	subs         *Subscribers // A map of subscribers
+	publishers   *Publishers // A map of publishers
+	subscribers  *Subscribers // A map of subscribers
 	forwardedPub map[int64]map[int64]bool
 }
 
 // NewBroker returns a new Broker
 func NewBroker() *Broker {
 	return &Broker{
-		pubChan:      make(chan *pb.Publication),
-		subs:         NewSubscribers(),
+		publishers:   NewPublishers(),
+		subscribers:  NewSubscribers(),
 		forwardedPub: make(map[int64]map[int64]bool),
 	}
 }
@@ -57,79 +58,64 @@ func StartBroker(endpoint string) {
 // Publish handles incoming Publish requests from publishers
 func (b *Broker) Publish(stream pb.PubBroker_PublishServer) error {
 
+	// Read initial publish message
+	req, err := stream.Recv()
+	if err == io.EOF {
+		return err
+	} else if err != nil {
+		return err
+	}
+
+	// Create publisher client
+	pr, _ := peer.FromContext(stream.Context())
+	addr := pr.Addr.String()
+	id := req.PublisherID
+	/*publisher := */b.publishers.AddPublisherInfo(id, addr)
+	
+	// Add pub req for processing
+	b.publishers.fromPublisherCh<- req
+
 	// Write loop
 	go func() {
 		for {
 			// Nothing to write yet
 		}
 	}()
-
+	
 	// Read loop.
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
+			b.publishers.RemovePublisherInfo(id)
 			return err
 		} else if err != nil {
+			b.publishers.RemovePublisherInfo(id)
 			return err
 		}
 
 		// Add pub req for processing
-		b.pubChan <- req
+		b.publishers.fromPublisherCh<- req
 	}
 	return nil
 }
 
 // Echo handles incoming RBR echo requests from other brokers
-func (b *Broker) Echo(stream pb.InterBroker_EchoServer) error {
+func (b *Broker) Echo(context.Context, *pb.Publication) (*pb.EchoResponse, error){
 
-	// Write loop
-	go func() {
-		for {
-			// Nothing to write yet
-		}
-	}()
-
-	// Read loop.
-	for {
-		_, err := stream.Recv()
-		if err == io.EOF {
-			return err
-		} else if err != nil {
-			return err
-		}
-		fmt.Printf("Echo received.")
-	}
-	return nil
+	return &pb.EchoResponse{}, nil
 }
 
 // Ready handles incoming RBR ready requests from other brokers
-func (b *Broker) Ready(stream pb.InterBroker_ReadyServer) error {
+func (b *Broker) Ready(context.Context, *pb.Publication) (*pb.ReadyResponse, error) {
 
-	// Write loop
-	go func() {
-		for {
-			// Nothing to write yet
-		}
-	}()
-
-	// Read loop.
-	for {
-		_, err := stream.Recv()
-		if err == io.EOF {
-			return err
-		} else if err != nil {
-			return err
-		}
-		fmt.Printf("Ready received.")
-	}
-	return nil
+	return &pb.ReadyResponse{}, nil
 }
 
 // Subscribe handles incoming Subscribe requests from subscribers
 func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 
 	// Read initial subscribe message
-	subscribe, err := stream.Recv()
+	req, err := stream.Recv()
 	if err == io.EOF {
 		return err
 	} else if err != nil {
@@ -139,17 +125,19 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	// Create subscriber client
 	pr, _ := peer.FromContext(stream.Context())
 	addr := pr.Addr.String()
-	id := subscribe.SubscriberID
-	sub := b.subs.AddSubscriber(id, addr, subscribe.Topics)
+	id := req.SubscriberID
+	subscriber := b.subscribers.AddSubscriberInfo(id, addr, req.Topics)
+	
+	// The request is handled in AddSubscriberInfo()
 
 	// Write loop
 	go func() {
 		for {
 			select {
-			case pub := <-sub.toSubCh:
+			case pub := <-subscriber.toSubscriberCh:
 				err := stream.Send(pub)
 				if err != nil {
-					b.subs.RemoveSubscriber(id)
+					b.subscribers.RemoveSubscriberInfo(id)
 					break
 				}
 			}
@@ -160,13 +148,13 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
-			b.subs.RemoveSubscriber(id)
+			b.subscribers.RemoveSubscriberInfo(id)
 			return err
 		} else if err != nil {
-			b.subs.RemoveSubscriber(id)
+			b.subscribers.RemoveSubscriberInfo(id)
 			return err
 		}
-		b.subs.fromSubCh<- req
+		b.subscribers.fromSubscriberCh<- req
 	}
 
 	return nil
@@ -177,12 +165,12 @@ func (b Broker) handleMessages() {
 	for {
 		select {
 		// If it's a publish request
-		case req := <-b.pubChan:
+		case req := <-b.publishers.fromPublisherCh:
 			if req.PubType == common.AB {
 				// Handle an Authenticated Broadcast publish request
 				b.handleAbPublish(req)
 			}
-		case req := <-b.subs.fromSubCh:
+		case req := <-b.subscribers.fromSubscriberCh:
 			b.handleTopicChange(req)
 		}
 	}
@@ -200,14 +188,14 @@ func (b Broker) handleAbPublish(req *pb.Publication) {
 		req.BrokerID = int64(*brokerID)
 
 		// Forward the publication to all subscribers
-		b.subs.RLock()
-		for _, sub := range b.subs.subs {
+		b.subscribers.RLock()
+		for _, subscriber := range b.subscribers.subscribers {
 			// Only if they are interested in the topic
-			if sub.topics[req.Topic] == true {
-				sub.toSubCh <- req
+			if subscriber.topics[req.Topic] == true {
+				subscriber.toSubscriberCh <- req
 			}
 		}
-		b.subs.RUnlock()
+		b.subscribers.RUnlock()
 
 		// Mark this publication as sent
 		b.forwardedPub[req.PublisherID][req.PublicationID] = true
@@ -217,5 +205,5 @@ func (b Broker) handleAbPublish(req *pb.Publication) {
 }
 
 func (b Broker) handleTopicChange(req *pb.SubRequest) {
-	b.subs.ChangeTopics(req.SubscriberID, req.Topics)
+	b.subscribers.ChangeTopics(req.SubscriberID, req.Topics)
 }

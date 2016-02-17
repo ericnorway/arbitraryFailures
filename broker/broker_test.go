@@ -15,25 +15,25 @@ func TestAbProcessing(t *testing.T) {
 
 		// Add "subscribers" (channels)
 		for j := 0; j < test.numSubscribers; j++ {
-			test.broker.subs.AddSubscriber(int64(j), strconv.Itoa(j), []int64{1, 2, 3})
+			test.broker.subscribers.AddSubscriberInfo(int64(j), strconv.Itoa(j), []int64{1, 2, 3})
 		}
 
 		for j, subtest := range test.subtests {
 			// Add publication request
-			test.broker.pubChan <- &subtest.pubReq
+			test.broker.publishers.fromPublisherCh<- &subtest.pubReq
 
 			// Check that all "subscribers" got the forwarded publication
-			test.broker.subs.RLock()
-			for _, sub := range test.broker.subs.subs {
+			test.broker.subscribers.RLock()
+			for _, subscriber := range test.broker.subscribers.subscribers {
 				select {
-				case pub := <-sub.toSubCh:
+				case pub := <-subscriber.toSubscriberCh:
 					if !Equals(*pub, subtest.want) {
 						t.Errorf("AbProcessing\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 							i+1, test.desc, j+1, &subtest.want, pub)
 					}
 				}
 			}
-			test.broker.subs.RUnlock()
+			test.broker.subscribers.RUnlock()
 		}
 	}
 }
