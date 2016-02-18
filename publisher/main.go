@@ -11,6 +11,11 @@ import (
 // main starts a publisher and publishes three publications.
 func main() {
 	fmt.Printf("Publisher started.\n")
+	
+	parsedCorrectly := ParseArgs()
+	if !parsedCorrectly {
+		return
+	}
 
 	brokerAddrs := []string{"localhost:11111", "localhost:11112", "localhost:11113", "localhost:11114"}
 
@@ -22,7 +27,7 @@ func main() {
 
 	publisher.Publish(&pb.Publication{
 		PubType:       common.AB,
-		PublisherID:   1,
+		PublisherID:   int64(*publisherID),
 		PublicationID: 1,
 		Topic:         1,
 		Content:       []byte(time.Now().String()),
@@ -31,7 +36,7 @@ func main() {
 
 	publisher.Publish(&pb.Publication{
 		PubType:       common.BRB,
-		PublisherID:   1,
+		PublisherID:   int64(*publisherID),
 		PublicationID: 2,
 		Topic:         2,
 		Content:       []byte(time.Now().String()),
@@ -40,7 +45,7 @@ func main() {
 
 	publisher.Publish(&pb.Publication{
 		PubType:       common.AB,
-		PublisherID:   1,
+		PublisherID:   int64(*publisherID),
 		PublicationID: 3,
 		Topic:         1,
 		Content:       []byte(time.Now().String()),

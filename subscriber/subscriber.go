@@ -17,6 +17,8 @@ import (
 // publications received, a map of publications learned,
 // and a map of topics.
 type Subscriber struct {
+	id int64
+
 	toBrokerChansMutex sync.RWMutex
 	toBrokerChans      map[string]chan *pb.SubRequest
 	fromBrokerChan     chan *pb.Publication
@@ -38,8 +40,9 @@ type Subscriber struct {
 }
 
 // NewSubscriber returns a new Subscriber.
-func NewSubscriber() *Subscriber {
+func NewSubscriber(id int64) *Subscriber {
 	return &Subscriber{
+		id:             id,
 		toBrokerChans:  make(map[string]chan *pb.SubRequest),
 		fromBrokerChan: make(chan *pb.Publication, 8),
 		ToUser:         make(chan *pb.Publication, 8),
@@ -101,7 +104,7 @@ func (s *Subscriber) startBrokerClient(brokerAddr string) bool {
 
 	// Send the initial subscribe request.
 	err = stream.Send(&pb.SubRequest{
-		SubscriberID: 1,
+		SubscriberID: s.id,
 		Topics:       topics,
 	})
 	if err != nil {
