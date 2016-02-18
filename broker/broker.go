@@ -34,34 +34,34 @@ type Broker struct {
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The bool contains whether or not it was sent yet.
-	forwardSent map[int64]map[int64]bool
+	forwardSent map[int64] map[int64] bool
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The bool contains whether or not it was sent yet.
-	echoSent map[int64]map[int64]bool
+	echoesSent map[int64] map[int64] bool
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The third index references the broker ID.
 	// The byte slice contains the publication.
-	echoesReceived map[int64]map[int64]map[int64][]byte
+	echoesReceived map[int64] map[int64] map[int64] []byte
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The bool contains whether or not it was sent yet.
-	readySent map[int64]map[int64]bool
+	readiesSent map[int64] map[int64] bool
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The third index references the broker ID.
 	// The byte slice contains the publication.
-	readiesReceived map[int64]map[int64]map[int64][]byte
+	readiesReceived map[int64] map[int64] map[int64] []byte
 	
 	// The first index references the subscriber ID.
 	// The second index references the topic ID.
 	// The bool contains whether or not the subscriber is subscribed to that topic.
-	topics map[int64]map[int64]bool
+	topics map[int64] map[int64] bool
 }
 
 // NewBroker returns a new Broker
@@ -74,12 +74,12 @@ func NewBroker() *Broker {
 		fromBrokerReadyCh: make(chan *pb.Publication, 32),
 		toSubscriberChs:   NewSubscriberPubChannels(),
 		fromSubscriberCh:  make(chan *pb.SubRequest, 32),
-		forwardSent:       make(map[int64]map[int64]bool),
-		echoSent:          make(map[int64]map[int64]bool),
-		echoesReceived:    make(map[int64]map[int64]map[int64][]byte),
-		readySent:         make(map[int64]map[int64]bool),
-		readiesReceived:   make(map[int64]map[int64]map[int64][]byte),
-		topics:            make(map[int64]map[int64]bool),
+		forwardSent:       make(map[int64] map[int64] bool),
+		echoesSent:          make(map[int64] map[int64] bool),
+		echoesReceived:    make(map[int64] map[int64] map[int64] []byte),
+		readiesSent:         make(map[int64] map[int64] bool),
+		readiesReceived:   make(map[int64] map[int64] map[int64] []byte),
+		topics:            make(map[int64] map[int64] bool),
 	}
 }
 
@@ -189,11 +189,10 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 		return err
 	}
 
-	// Create subscriber client
-	// pr, _ := peer.FromContext(stream.Context())
-	// addr := pr.Addr.String()
 	id := req.SubscriberID
 	ch := b.toSubscriberChs.AddSubscriberPubChannel(id)
+	
+	// Add initial subscribe for processing
 	b.fromSubscriberCh <- req
 
 	// Write loop
@@ -237,69 +236,17 @@ func (b Broker) handleMessages() {
 				b.handleAbPublish(req)
 			} else if req.PubType == common.BRB {
 				// Handle a Bracha's Reliable Broadcast publish request
-				b.handleRbrPublish(req)
+				b.handleBrbPublish(req)
+			} else if req.PubType == common.Chain {
+				// Handle a Chain publish request
 			}
 		case req := <-b.fromBrokerEchoCh:
-			fmt.Printf("TODO: Handle Echo: %v\n", req)
+			b.handleEcho(req)
 		case req := <-b.fromBrokerReadyCh:
-			fmt.Printf("TODO: Handle Ready: %v\n", req)
+			b.handleReady(req)
 		case req := <-b.fromSubscriberCh:
 			b.handleTopicChange(req)
 		}
-	}
-}
-
-// handleAbPublish handles Authenticated Broadcast publish requests.
-// It takes the request as input.
-func (b Broker) handleAbPublish(req *pb.Publication) {
-	if b.forwardSent[req.PublisherID] == nil {
-		b.forwardSent[req.PublisherID] = make(map[int64]bool)
-	}
-
-	// If this publication has not been forwarded yet
-	if b.forwardSent[req.PublisherID][req.PublicationID] == false {
-		req.BrokerID = int64(*brokerID)
-
-		// Forward the publication to all subscribers
-		b.toSubscriberChs.RLock()
-		for i, ch := range b.toSubscriberChs.chs {
-			// Only if they are interested in the topic
-			if b.topics[i][req.Topic] == true {
-				ch<- req
-			}
-		}
-		b.toSubscriberChs.RUnlock()
-
-		// Mark this publication as sent
-		b.forwardSent[req.PublisherID][req.PublicationID] = true
-	} else {
-		fmt.Printf("Already forwarded publication %v by publisher %v\n", req.PublicationID, req.PublisherID)
-	}
-}
-
-// handleAbPublish handles Bracha's Reliable Broadcast publish requests.
-// It takes the request as input.
-func (b Broker) handleRbrPublish(req *pb.Publication) {
-	fmt.Printf("%v\n", req)
-	if b.echoSent[req.PublisherID] == nil {
-		b.echoSent[req.PublisherID] = make(map[int64]bool)
-	}
-
-	// If this publication has not been echoed yet
-	if b.echoSent[req.PublisherID][req.PublicationID] == false {
-		req.BrokerID = int64(*brokerID)
-
-		// Echo the publication to all brokers
-		b.toBrokerEchoChs.RLock()
-		for _, ch := range b.toBrokerEchoChs.chs {
-			 ch<- req
-		}
-		b.toBrokerEchoChs.RUnlock()
-
-		// Mark this publication as echoed
-		b.echoSent[req.PublisherID][req.PublicationID] = true
-	} else {
-		fmt.Printf("Already echoed publication %v by publisher %v\n", req.PublicationID, req.PublisherID)
 	}
 }
 
