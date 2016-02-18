@@ -10,7 +10,7 @@ import (
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/peer"
+	// "google.golang.org/grpc/peer"
 )
 
 // Broker is a struct containing channels used in communicating
@@ -26,8 +26,8 @@ type Broker struct {
 	fromBrokerReadyCh chan *pb.Publication
 	
 	// SUBSCRIBER CHANNEL VARIABLES
+	toSubscriberChs   *SubscriberPubChannels
 	fromSubscriberCh  chan *pb.SubRequest
-	subscribers       *Subscribers // A map of subscribers' information
 
 	// MESSAGE TRACKING VARIABLES
 
@@ -57,6 +57,11 @@ type Broker struct {
 	// The third index references the broker ID.
 	// The byte slice contains the publication.
 	readiesReceived map[int64]map[int64]map[int64][]byte
+	
+	// The first index references the subscriber ID.
+	// The second index references the topic ID.
+	// The bool contains whether or not the subscriber is subscribed to that topic.
+	topics map[int64]map[int64]bool
 }
 
 // NewBroker returns a new Broker
@@ -67,13 +72,14 @@ func NewBroker() *Broker {
 		fromBrokerEchoCh:  make(chan *pb.Publication, 32),
 		toBrokerReadyChs:  NewBrokerReadyChannels(),
 		fromBrokerReadyCh: make(chan *pb.Publication, 32),
+		toSubscriberChs:   NewSubscriberPubChannels(),
 		fromSubscriberCh:  make(chan *pb.SubRequest, 32),
-		subscribers:       NewSubscribers(),
 		forwardSent:       make(map[int64]map[int64]bool),
 		echoSent:          make(map[int64]map[int64]bool),
 		echoesReceived:    make(map[int64]map[int64]map[int64][]byte),
 		readySent:         make(map[int64]map[int64]bool),
 		readiesReceived:   make(map[int64]map[int64]map[int64][]byte),
+		topics:            make(map[int64]map[int64]bool),
 	}
 }
 
@@ -184,21 +190,20 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	}
 
 	// Create subscriber client
-	pr, _ := peer.FromContext(stream.Context())
-	addr := pr.Addr.String()
+	// pr, _ := peer.FromContext(stream.Context())
+	// addr := pr.Addr.String()
 	id := req.SubscriberID
-	subscriber := b.subscribers.AddSubscriberInfo(id, addr, req.Topics)
-
-	// The request is handled in AddSubscriberInfo()
+	ch := b.toSubscriberChs.AddSubscriberPubChannel(id)
+	b.fromSubscriberCh <- req
 
 	// Write loop
 	go func() {
 		for {
 			select {
-			case pub := <-subscriber.toSubscriberCh:
+			case pub := <-ch:
 				err := stream.Send(pub)
 				if err != nil {
-					b.subscribers.RemoveSubscriberInfo(id)
+					b.toSubscriberChs.RemoveSubscriberPubChannel(id)
 					break
 				}
 			}
@@ -209,10 +214,10 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
-			b.subscribers.RemoveSubscriberInfo(id)
+			b.toSubscriberChs.RemoveSubscriberPubChannel(id)
 			return err
 		} else if err != nil {
-			b.subscribers.RemoveSubscriberInfo(id)
+			b.toSubscriberChs.RemoveSubscriberPubChannel(id)
 			return err
 		}
 		b.fromSubscriberCh <- req
@@ -256,14 +261,14 @@ func (b Broker) handleAbPublish(req *pb.Publication) {
 		req.BrokerID = int64(*brokerID)
 
 		// Forward the publication to all subscribers
-		b.subscribers.RLock()
-		for _, subscriber := range b.subscribers.subscribers {
+		b.toSubscriberChs.RLock()
+		for i, ch := range b.toSubscriberChs.chs {
 			// Only if they are interested in the topic
-			if subscriber.topics[req.Topic] == true {
-				subscriber.toSubscriberCh <- req
+			if b.topics[i][req.Topic] == true {
+				ch<- req
 			}
 		}
-		b.subscribers.RUnlock()
+		b.toSubscriberChs.RUnlock()
 
 		// Mark this publication as sent
 		b.forwardSent[req.PublisherID][req.PublicationID] = true
@@ -299,5 +304,17 @@ func (b Broker) handleRbrPublish(req *pb.Publication) {
 }
 
 func (b Broker) handleTopicChange(req *pb.SubRequest) {
-	b.subscribers.ChangeTopics(req.SubscriberID, req.Topics)
+	fmt.Printf("Changing topics for subscriber %v.\n", req.SubscriberID)
+	
+	if b.topics[req.SubscriberID] == nil {
+		b.topics[req.SubscriberID] = make(map[int64] bool)
+	}
+
+	for i := range b.topics[req.SubscriberID] {
+		b.topics[req.SubscriberID][i] = false
+	}
+
+	for _, topic := range req.Topics {
+		b.topics[req.SubscriberID][topic] = true
+	}
 }
