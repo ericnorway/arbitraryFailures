@@ -70,10 +70,10 @@ func (p *Publisher) startBrokerClient(brokerAddr string) {
 			resp, err := client.Publish(context.Background(), pub)
 			if err != nil {
 				p.removeChannel(brokerAddr)
-       		fmt.Printf("Error publishing to %v, %v\n", brokerAddr, err)
-       		return
+				fmt.Printf("Error publishing to %v, %v\n", brokerAddr, err)
+				return
 			}
-			
+
 			if resp.AlphaReached == true {
 				fmt.Printf("Alpha reached.\n")
 			}

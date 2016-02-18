@@ -9,19 +9,19 @@ import (
 
 type SubscriberPubChannels struct {
 	sync.RWMutex
-	chs map[int64] chan *pb.Publication
+	chs map[int64]chan *pb.Publication
 }
 
 func NewSubscriberPubChannels() *SubscriberPubChannels {
 	return &SubscriberPubChannels{
-		chs: make(map[int64] chan *pb.Publication),
+		chs: make(map[int64]chan *pb.Publication),
 	}
 }
 
 func (s *SubscriberPubChannels) AddSubscriberPubChannel(id int64) chan *pb.Publication {
 	fmt.Printf("Subscriber pub channel %v added.\n", id)
 	ch := make(chan *pb.Publication, 32)
-	
+
 	s.Lock()
 	defer s.Unlock()
 

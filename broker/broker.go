@@ -17,51 +17,51 @@ import (
 // with read and write loops.
 type Broker struct {
 	// PUBLISHER CHANNEL VARIABLES
-	fromPublisherCh   chan *pb.Publication
-	
+	fromPublisherCh chan *pb.Publication
+
 	// BROKER CHANNEL VARIABLES
 	toBrokerEchoChs   *BrokerEchoChannels
 	fromBrokerEchoCh  chan *pb.Publication
 	toBrokerReadyChs  *BrokerReadyChannels
 	fromBrokerReadyCh chan *pb.Publication
-	
+
 	// SUBSCRIBER CHANNEL VARIABLES
-	toSubscriberChs   *SubscriberPubChannels
-	fromSubscriberCh  chan *pb.SubRequest
+	toSubscriberChs  *SubscriberPubChannels
+	fromSubscriberCh chan *pb.SubRequest
 
 	// MESSAGE TRACKING VARIABLES
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The bool contains whether or not it was sent yet.
-	forwardSent map[int64] map[int64] bool
+	forwardSent map[int64]map[int64]bool
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The bool contains whether or not it was sent yet.
-	echoesSent map[int64] map[int64] bool
+	echoesSent map[int64]map[int64]bool
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The third index references the broker ID.
 	// The byte slice contains the publication.
-	echoesReceived map[int64] map[int64] map[int64] []byte
+	echoesReceived map[int64]map[int64]map[int64][]byte
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The bool contains whether or not it was sent yet.
-	readiesSent map[int64] map[int64] bool
+	readiesSent map[int64]map[int64]bool
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The third index references the broker ID.
 	// The byte slice contains the publication.
-	readiesReceived map[int64] map[int64] map[int64] []byte
-	
+	readiesReceived map[int64]map[int64]map[int64][]byte
+
 	// The first index references the subscriber ID.
 	// The second index references the topic ID.
 	// The bool contains whether or not the subscriber is subscribed to that topic.
-	topics map[int64] map[int64] bool
+	topics map[int64]map[int64]bool
 }
 
 // NewBroker returns a new Broker
@@ -74,12 +74,12 @@ func NewBroker() *Broker {
 		fromBrokerReadyCh: make(chan *pb.Publication, 32),
 		toSubscriberChs:   NewSubscriberPubChannels(),
 		fromSubscriberCh:  make(chan *pb.SubRequest, 32),
-		forwardSent:       make(map[int64] map[int64] bool),
-		echoesSent:          make(map[int64] map[int64] bool),
-		echoesReceived:    make(map[int64] map[int64] map[int64] []byte),
-		readiesSent:         make(map[int64] map[int64] bool),
-		readiesReceived:   make(map[int64] map[int64] map[int64] []byte),
-		topics:            make(map[int64] map[int64] bool),
+		forwardSent:       make(map[int64]map[int64]bool),
+		echoesSent:        make(map[int64]map[int64]bool),
+		echoesReceived:    make(map[int64]map[int64]map[int64][]byte),
+		readiesSent:       make(map[int64]map[int64]bool),
+		readiesReceived:   make(map[int64]map[int64]map[int64][]byte),
+		topics:            make(map[int64]map[int64]bool),
 	}
 }
 
@@ -114,13 +114,13 @@ func StartBroker(endpoint string) {
 func (b *Broker) ConnectToOtherBrokers(endpoint string) {
 
 	brokerAddrs := []string{"localhost:11111", "localhost:11112", "localhost:11113", "localhost:11114"}
-	
+
 	for i, addr := range brokerAddrs {
 		if addr != endpoint {
 			go b.ConnectToBroker(int64(i), addr)
 		}
 	}
-	
+
 	for len(b.toBrokerEchoChs.chs) < 3 {
 		fmt.Printf("Waiting for connections...\n")
 		time.Sleep(time.Second)
@@ -168,13 +168,13 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 
 // Echo handles incoming RBR echo requests from other brokers
 func (b *Broker) Echo(ctx context.Context, pub *pb.Publication) (*pb.EchoResponse, error) {
-	b.fromBrokerEchoCh<- pub
+	b.fromBrokerEchoCh <- pub
 	return &pb.EchoResponse{}, nil
 }
 
 // Ready handles incoming RBR ready requests from other brokers
 func (b *Broker) Ready(ctx context.Context, pub *pb.Publication) (*pb.ReadyResponse, error) {
-	b.fromBrokerReadyCh<- pub
+	b.fromBrokerReadyCh <- pub
 	return &pb.ReadyResponse{}, nil
 }
 
@@ -191,7 +191,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 
 	id := req.SubscriberID
 	ch := b.toSubscriberChs.AddSubscriberPubChannel(id)
-	
+
 	// Add initial subscribe for processing
 	b.fromSubscriberCh <- req
 
@@ -252,9 +252,9 @@ func (b Broker) handleMessages() {
 
 func (b Broker) handleTopicChange(req *pb.SubRequest) {
 	fmt.Printf("Changing topics for subscriber %v.\n", req.SubscriberID)
-	
+
 	if b.topics[req.SubscriberID] == nil {
-		b.topics[req.SubscriberID] = make(map[int64] bool)
+		b.topics[req.SubscriberID] = make(map[int64]bool)
 	}
 
 	for i := range b.topics[req.SubscriberID] {

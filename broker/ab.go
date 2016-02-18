@@ -1,8 +1,8 @@
 package main
 
-import(
+import (
 	"fmt"
-	
+
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
 
@@ -22,7 +22,7 @@ func (b Broker) handleAbPublish(req *pb.Publication) {
 		for i, ch := range b.toSubscriberChs.chs {
 			// Only if they are interested in the topic
 			if b.topics[i][req.Topic] == true {
-				ch<- req
+				ch <- req
 			}
 		}
 		b.toSubscriberChs.RUnlock()

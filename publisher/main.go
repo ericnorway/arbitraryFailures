@@ -11,7 +11,7 @@ import (
 // main starts a publisher and publishes three publications.
 func main() {
 	fmt.Printf("Publisher started.\n")
-	
+
 	parsedCorrectly := ParseArgs()
 	if !parsedCorrectly {
 		return

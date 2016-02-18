@@ -7,7 +7,7 @@ import (
 // main starts a subscriber.
 func main() {
 	fmt.Printf("Subscriber started.\n")
-	
+
 	parsedCorrectly := ParseArgs()
 	if !parsedCorrectly {
 		return
@@ -24,8 +24,8 @@ func main() {
 
 	for {
 		select {
-			case pub := <-subscriber.ToUser:
-				fmt.Printf("Got publication %v from publisher %v.\n", pub.PublicationID, pub.PublisherID)
+		case pub := <-subscriber.ToUser:
+			fmt.Printf("Got publication %v from publisher %v.\n", pub.PublicationID, pub.PublisherID)
 		}
 	}
 }

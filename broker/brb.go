@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	
+
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
 
@@ -21,7 +21,7 @@ func (b Broker) handleBrbPublish(req *pb.Publication) {
 		// Echo the publication to all brokers
 		b.toBrokerEchoChs.RLock()
 		for _, ch := range b.toBrokerEchoChs.chs {
-			 ch<- req
+			ch <- req
 		}
 		b.toBrokerEchoChs.RUnlock()
 
@@ -36,7 +36,7 @@ func (b Broker) handleBrbPublish(req *pb.Publication) {
 // It takes the request as input.
 func (b Broker) handleEcho(pub *pb.Publication) {
 	fmt.Printf("Handle echo Publication %v, Publisher %v, Broker %v.\n", pub.PublicationID, pub.PublisherID, pub.BrokerID)
-	
+
 	// Make the map so not trying to access nil reference
 	if b.echoesReceived[pub.PublisherID] == nil {
 		b.echoesReceived[pub.PublisherID] = make(map[int64]map[int64][]byte)
@@ -51,19 +51,19 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 		b.echoesReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = pub.Content
 		// Check if there is a quorum yet for this publisher ID and publication ID
 		foundQuorum := b.checkEchoQuorum(pub.PublisherID, pub.PublicationID, 3)
-		
+
 		if !foundQuorum {
 			return
 		}
 	}
-	
+
 	// Update the Broker ID
 	pub.BrokerID = int64(*brokerID)
-	
+
 	// Echo the publication to all brokers
 	b.toBrokerEchoChs.RLock()
 	for _, ch := range b.toBrokerReadyChs.chs {
-		ch<- pub
+		ch <- pub
 	}
 	b.toBrokerEchoChs.RUnlock()
 }

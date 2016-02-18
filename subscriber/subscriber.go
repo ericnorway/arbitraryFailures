@@ -201,9 +201,9 @@ func (s *Subscriber) processAbPublication(pub *pb.Publication) {
 		s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = pub.Content
 		// Check if there is a quorum yet for this publisher ID and publication ID
 		foundQuorum := s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
-		
+
 		if foundQuorum {
-			s.ToUser<- pub
+			s.ToUser <- pub
 		}
 	}
 }
