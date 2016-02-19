@@ -101,7 +101,7 @@ func StartBroker(endpoint string) {
 	pb.RegisterPubBrokerServer(grpcServer, broker)
 	pb.RegisterSubBrokerServer(grpcServer, broker)
 	pb.RegisterInterBrokerServer(grpcServer, broker)
-	broker.ConnectToOtherBrokers(endpoint)
+	broker.connectToOtherBrokers(endpoint)
 	go broker.handleMessages()
 
 	fmt.Printf("Preparing to serve incoming requests.\n")
@@ -111,16 +111,20 @@ func StartBroker(endpoint string) {
 	}
 }
 
-func (b *Broker) ConnectToOtherBrokers(endpoint string) {
+// connectToOtherBrokers connects this broker to the other brokers.
+// It takes as input the local broker's address.
+func (b *Broker) connectToOtherBrokers(localAddr string) {
 
 	brokerAddrs := []string{"localhost:11111", "localhost:11112", "localhost:11113", "localhost:11114"}
 
+	// Connect to all broker addresses except itself.
 	for i, addr := range brokerAddrs {
-		if addr != endpoint {
-			go b.ConnectToBroker(int64(i), addr)
+		if addr != localAddr {
+			go b.connectToBroker(int64(i), addr)
 		}
 	}
 
+	// Wait for connections to be established.
 	for len(b.toBrokerEchoChs.chs) < 3 {
 		fmt.Printf("Waiting for connections...\n")
 		time.Sleep(time.Second)
@@ -128,11 +132,14 @@ func (b *Broker) ConnectToOtherBrokers(endpoint string) {
 	fmt.Printf("...done\n")
 }
 
-func (b *Broker) ConnectToBroker(brokerID int64, brokerAddr string) {
+// connectToBroker connects to a single broker.
+// It takes as input the remote broker's ID and address.
+func (b *Broker) connectToBroker(brokerID int64, brokerAddr string) {
 	fmt.Printf("Trying to connect to %v\n", brokerAddr)
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure(), grpc.WithBlock())
 
+	// Create a gRPC connection
 	conn, err := grpc.Dial(brokerAddr, opts...)
 	if err != nil {
 		fmt.Printf("Error while connecting to server: %v\n", err)
@@ -144,6 +151,7 @@ func (b *Broker) ConnectToBroker(brokerID int64, brokerAddr string) {
 	toBrokerEchoCh := b.toBrokerEchoChs.AddToBrokerEchoChannel(brokerID)
 	toBrokerReadyCh := b.toBrokerReadyChs.AddToBrokerReadyChannel(brokerID)
 
+	// Write loop.
 	for {
 		select {
 		case pub := <-toBrokerEchoCh:
@@ -245,12 +253,14 @@ func (b Broker) handleMessages() {
 		case req := <-b.fromBrokerReadyCh:
 			b.handleReady(req)
 		case req := <-b.fromSubscriberCh:
-			b.handleTopicChange(req)
+			b.handleSubscribe(req)
 		}
 	}
 }
 
-func (b Broker) handleTopicChange(req *pb.SubRequest) {
+// handleSubscribe handles a subscription request. It updates the topics.
+// It takes as input the subscription request.
+func (b Broker) handleSubscribe(req *pb.SubRequest) {
 	fmt.Printf("Changing topics for subscriber %v.\n", req.SubscriberID)
 
 	if b.topics[req.SubscriberID] == nil {
