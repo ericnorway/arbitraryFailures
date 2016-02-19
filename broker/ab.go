@@ -15,14 +15,24 @@ func (b Broker) handleAbPublish(req *pb.Publication) {
 
 	// If this publication has not been forwarded yet
 	if b.forwardSent[req.PublisherID][req.PublicationID] == false {
-		req.BrokerID = int64(*brokerID)
+		
+		// Make forward publication
+		pub := &pb.Publication{
+			PubType: req.PubType,
+			PublisherID: req.PublisherID,
+			PublicationID: req.PublicationID,
+			Topic: req.Topic,
+			BrokerID: int64(*brokerID),
+			Content: req.Content,
+			MACs: req.MACs,
+		}
 
 		// Forward the publication to all subscribers
 		b.toSubscriberChs.RLock()
 		for i, ch := range b.toSubscriberChs.chs {
 			// Only if they are interested in the topic
-			if b.topics[i][req.Topic] == true {
-				ch <- req
+			if b.topics[i][pub.Topic] == true {
+				ch <- pub
 			}
 		}
 		b.toSubscriberChs.RUnlock()

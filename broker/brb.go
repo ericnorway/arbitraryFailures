@@ -16,15 +16,25 @@ func (b Broker) handleBrbPublish(req *pb.Publication) {
 
 	// If this publication has not been echoed yet
 	if b.echoesSent[req.PublisherID][req.PublicationID] == false {
-		req.BrokerID = int64(*brokerID)
+	
+		// Make echo publication
+		pub := &pb.Publication{
+			PubType: req.PubType,
+			PublisherID: req.PublisherID,
+			PublicationID: req.PublicationID,
+			Topic: req.Topic,
+			BrokerID: int64(*brokerID),
+			Content: req.Content,
+			MACs: req.MACs,
+		}
 
 		// "Send" the echo request to itself
-		b.handleEcho(req)
+		b.handleEcho(pub)
 
 		// Send the echo request to all other brokers
 		b.toBrokerEchoChs.RLock()
 		for _, ch := range b.toBrokerEchoChs.chs {
-			ch <- req
+			ch <- pub
 		}
 		b.toBrokerEchoChs.RUnlock()
 
@@ -38,7 +48,7 @@ func (b Broker) handleBrbPublish(req *pb.Publication) {
 
 // handleEcho handles echo requests from Bracha's Reliable Broadcast.
 // It takes the request as input.
-func (b Broker) handleEcho(req *pb.Publication) {
+func (b Broker) handleEcho(req *pb.Publication) bool {
 	// fmt.Printf("Handle echo Publication %v, Publisher %v, Broker %v.\n", req.PublicationID, req.PublisherID, req.BrokerID)
 
 	// Make the map so not trying to access nil reference
@@ -57,7 +67,7 @@ func (b Broker) handleEcho(req *pb.Publication) {
 		foundQuorum := b.checkEchoQuorum(req.PublisherID, req.PublicationID)
 
 		if !foundQuorum {
-			return
+			return false
 		}
 	}
 
@@ -68,16 +78,24 @@ func (b Broker) handleEcho(req *pb.Publication) {
 	// If this publication has not been echoed yet
 	if b.readiesSent[req.PublisherID][req.PublicationID] == false {
 
-		// Update the Broker ID
-		req.BrokerID = int64(*brokerID)
+		// Make ready publication
+		pub := &pb.Publication{
+			PubType: req.PubType,
+			PublisherID: req.PublisherID,
+			PublicationID: req.PublicationID,
+			Topic: req.Topic,
+			BrokerID: int64(*brokerID),
+			Content: req.Content,
+			MACs: req.MACs,
+		}
 
 		// "Send" the ready request to itself
-		b.handleReady(req)
+		b.handleReady(pub)
 
 		// Send the ready to all other brokers
 		b.toBrokerReadyChs.RLock()
 		for _, ch := range b.toBrokerReadyChs.chs {
-			ch <- req
+			ch <- pub
 		}
 		b.toBrokerReadyChs.RUnlock()
 
@@ -85,8 +103,8 @@ func (b Broker) handleEcho(req *pb.Publication) {
 		b.toSubscriberChs.RLock()
 		for i, ch := range b.toSubscriberChs.chs {
 			// Only if they are interested in the topic
-			if b.topics[i][req.Topic] == true {
-				ch <- req
+			if b.topics[i][pub.Topic] == true {
+				ch <- pub
 			}
 		}
 		b.toSubscriberChs.RUnlock()
@@ -94,14 +112,16 @@ func (b Broker) handleEcho(req *pb.Publication) {
 		// Mark this publication as readied
 		b.readiesSent[req.PublisherID][req.PublicationID] = true
 		// fmt.Printf("handleEcho: Sent readies for publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
+		return true
 	} else {
 		// fmt.Printf("handleEcho: Already sent readies publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
+		return false
 	}
 }
 
 // handleReady handles ready requests from Bracha's Reliable Broadcast.
 // It takes the request as input.
-func (b Broker) handleReady(req *pb.Publication) {
+func (b Broker) handleReady(req *pb.Publication) bool {
 	// fmt.Printf("Handle ready Publication %v, Publisher %v, Broker %v.\n", req.PublicationID, req.PublisherID, req.BrokerID)
 
 	// Make the map so not trying to access nil reference
@@ -120,7 +140,7 @@ func (b Broker) handleReady(req *pb.Publication) {
 		foundQuorum := b.checkReadyQuorum(req.PublisherID, req.PublicationID)
 
 		if !foundQuorum {
-			return
+			return false
 		}
 	}
 
@@ -131,16 +151,24 @@ func (b Broker) handleReady(req *pb.Publication) {
 	// If this publication has not been echoed yet
 	if b.readiesSent[req.PublisherID][req.PublicationID] == false {
 
-		// Update the Broker ID
-		req.BrokerID = int64(*brokerID)
+		// Make ready publication
+		pub := &pb.Publication{
+			PubType: req.PubType,
+			PublisherID: req.PublisherID,
+			PublicationID: req.PublicationID,
+			Topic: req.Topic,
+			BrokerID: int64(*brokerID),
+			Content: req.Content,
+			MACs: req.MACs,
+		}
 
 		// "Send" the ready request to itself
-		b.handleReady(req)
+		b.handleReady(pub)
 
 		// Send the ready to all other brokers
 		b.toBrokerReadyChs.RLock()
 		for _, ch := range b.toBrokerReadyChs.chs {
-			ch <- req
+			ch <- pub
 		}
 		b.toBrokerReadyChs.RUnlock()
 
@@ -148,8 +176,8 @@ func (b Broker) handleReady(req *pb.Publication) {
 		b.toSubscriberChs.RLock()
 		for i, ch := range b.toSubscriberChs.chs {
 			// Only if they are interested in the topic
-			if b.topics[i][req.Topic] == true {
-				ch <- req
+			if b.topics[i][pub.Topic] == true {
+				ch <- pub
 			}
 		}
 		b.toSubscriberChs.RUnlock()
@@ -157,8 +185,10 @@ func (b Broker) handleReady(req *pb.Publication) {
 		// Mark this publication as readied
 		b.readiesSent[req.PublisherID][req.PublicationID] = true
 		// fmt.Printf("handleReady: Sent readies for publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
+		return true
 	} else {
 		// fmt.Printf("handleReady: Already sent readies publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
+		return false
 	}
 }
 
