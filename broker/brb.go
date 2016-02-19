@@ -90,7 +90,7 @@ func (b Broker) handleEcho(req *pb.Publication) bool {
 		}
 
 		// "Send" the ready request to itself
-		b.handleReady(pub)
+		b.fromBrokerReadyCh <- pub
 
 		// Send the ready to all other brokers
 		b.toBrokerReadyChs.RLock()
@@ -114,7 +114,7 @@ func (b Broker) handleEcho(req *pb.Publication) bool {
 		// fmt.Printf("handleEcho: Sent readies for publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
 		return true
 	}
-		
+
 	// fmt.Printf("handleEcho: Already sent readies publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
 	return false
 }
@@ -162,8 +162,10 @@ func (b Broker) handleReady(req *pb.Publication) bool {
 			MACs:          req.MACs,
 		}
 
-		// "Send" the ready request to itself
-		b.handleReady(pub)
+		// "Send" the ready request to itself, if not already from self
+		if req.BrokerID != pub.BrokerID {
+			b.fromBrokerReadyCh <- pub
+		}
 
 		// Send the ready to all other brokers
 		b.toBrokerReadyChs.RLock()
@@ -187,7 +189,7 @@ func (b Broker) handleReady(req *pb.Publication) bool {
 		// fmt.Printf("handleReady: Sent readies for publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
 		return true
 	}
-	
+
 	// fmt.Printf("handleReady: Already sent readies publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
 	return false
 }
