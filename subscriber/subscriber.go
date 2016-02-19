@@ -178,6 +178,8 @@ func (s *Subscriber) ProcessPublications() {
 		case pub := <-s.fromBrokerChan:
 			if pub.PubType == common.AB {
 				s.processAbPublication(pub)
+			} else if pub.PubType == common.BRB {
+				s.processBrbPublication(pub)
 			}
 		default:
 		}
@@ -187,6 +189,30 @@ func (s *Subscriber) ProcessPublications() {
 // processAbPublication processes an Authenticated Broadcast publication.
 // It takes as input a publication.
 func (s *Subscriber) processAbPublication(pub *pb.Publication) {
+	// Make the map so not trying to access nil reference
+	if s.pubsReceived[pub.PublisherID] == nil {
+		s.pubsReceived[pub.PublisherID] = make(map[int64]map[int64][]byte)
+	}
+	// Make the map so not trying to access nil reference
+	if s.pubsReceived[pub.PublisherID][pub.PublicationID] == nil {
+		s.pubsReceived[pub.PublisherID][pub.PublicationID] = make(map[int64][]byte)
+	}
+	// Publication has not been received yet for this publisher ID, publication ID, broker ID
+	if s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == nil {
+		// So record it
+		s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = pub.Content
+		// Check if there is a quorum yet for this publisher ID and publication ID
+		foundQuorum := s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
+
+		if foundQuorum {
+			s.ToUser <- pub
+		}
+	}
+}
+
+// processBrbPublication processes a Bracha's Reliable Broadcast publication.
+// It takes as input a publication.
+func (s *Subscriber) processBrbPublication(pub *pb.Publication) {
 	// Make the map so not trying to access nil reference
 	if s.pubsReceived[pub.PublisherID] == nil {
 		s.pubsReceived[pub.PublisherID] = make(map[int64]map[int64][]byte)

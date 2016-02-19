@@ -16,6 +16,12 @@ import (
 // Broker is a struct containing channels used in communicating
 // with read and write loops.
 type Broker struct {
+	numberOfServers int64
+	echoQuorumSize int64
+	readyQuorumSize int64
+	faultsTolerated int64
+	brokerAddrs []string
+
 	// PUBLISHER CHANNEL VARIABLES
 	fromPublisherCh chan *pb.Publication
 
@@ -67,6 +73,11 @@ type Broker struct {
 // NewBroker returns a new Broker
 func NewBroker() *Broker {
 	return &Broker{
+		numberOfServers:   4, // default
+		echoQuorumSize:    3, // default
+		readyQuorumSize:   2, // default
+		faultsTolerated:   1, // default
+		brokerAddrs:       []string{"localhost:11111", "localhost:11112", "localhost:11113", "localhost:11114"}, //default
 		fromPublisherCh:   make(chan *pb.Publication, 32),
 		toBrokerEchoChs:   NewToBrokerEchoChannels(),
 		fromBrokerEchoCh:  make(chan *pb.Publication, 32),
@@ -115,10 +126,8 @@ func StartBroker(endpoint string) {
 // It takes as input the local broker's address.
 func (b *Broker) connectToOtherBrokers(localAddr string) {
 
-	brokerAddrs := []string{"localhost:11111", "localhost:11112", "localhost:11113", "localhost:11114"}
-
 	// Connect to all broker addresses except itself.
-	for i, addr := range brokerAddrs {
+	for i, addr := range b.brokerAddrs {
 		if addr != localAddr {
 			go b.connectToBroker(int64(i), addr)
 		}

@@ -17,6 +17,7 @@ func main() {
 
 	subscriber := NewSubscriber(int64(*subscriberID))
 	subscriber.AddTopic(1)
+	subscriber.AddTopic(2)
 
 	subscriber.StartBrokerClients(brokerAddrs)
 
