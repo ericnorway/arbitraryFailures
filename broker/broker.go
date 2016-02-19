@@ -17,10 +17,10 @@ import (
 // with read and write loops.
 type Broker struct {
 	numberOfServers int64
-	echoQuorumSize int64
+	echoQuorumSize  int64
 	readyQuorumSize int64
 	faultsTolerated int64
-	brokerAddrs []string
+	brokerAddrs     []string
 
 	// PUBLISHER CHANNEL VARIABLES
 	fromPublisherCh chan *pb.Publication
@@ -73,10 +73,10 @@ type Broker struct {
 // NewBroker returns a new Broker
 func NewBroker() *Broker {
 	return &Broker{
-		numberOfServers:   4, // default
-		echoQuorumSize:    3, // default
-		readyQuorumSize:   2, // default
-		faultsTolerated:   1, // default
+		numberOfServers:   4,                                                                                    // default
+		echoQuorumSize:    3,                                                                                    // default
+		readyQuorumSize:   2,                                                                                    // default
+		faultsTolerated:   1,                                                                                    // default
 		brokerAddrs:       []string{"localhost:11111", "localhost:11112", "localhost:11113", "localhost:11114"}, //default
 		fromPublisherCh:   make(chan *pb.Publication, 32),
 		toBrokerEchoChs:   NewToBrokerEchoChannels(),
@@ -115,7 +115,7 @@ func StartBroker(endpoint string) {
 	broker.connectToOtherBrokers(endpoint)
 	go broker.handleMessages()
 
-	fmt.Printf("Preparing to serve incoming requests.\n")
+	fmt.Printf("*** Ready to serve incoming requests. ***\n")
 	err = grpcServer.Serve(listener)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
@@ -270,7 +270,7 @@ func (b Broker) handleMessages() {
 // handleSubscribe handles a subscription request. It updates the topics.
 // It takes as input the subscription request.
 func (b Broker) handleSubscribe(req *pb.SubRequest) {
-	fmt.Printf("Changing topics for subscriber %v.\n", req.SubscriberID)
+	// fmt.Printf("Changing topics for subscriber %v.\n", req.SubscriberID)
 
 	if b.topics[req.SubscriberID] == nil {
 		b.topics[req.SubscriberID] = make(map[int64]bool)

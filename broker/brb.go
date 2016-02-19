@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
@@ -9,7 +9,7 @@ import (
 // handleBrbPublish handles Bracha's Reliable Broadcast publish requests.
 // It takes the request as input.
 func (b Broker) handleBrbPublish(req *pb.Publication) {
-	fmt.Printf("%v\n", req)
+	// fmt.Printf("%v\n", req)
 	if b.echoesSent[req.PublisherID] == nil {
 		b.echoesSent[req.PublisherID] = make(map[int64]bool)
 	}
@@ -17,7 +17,7 @@ func (b Broker) handleBrbPublish(req *pb.Publication) {
 	// If this publication has not been echoed yet
 	if b.echoesSent[req.PublisherID][req.PublicationID] == false {
 		req.BrokerID = int64(*brokerID)
-		
+
 		// "Send" the echo request to itself
 		b.handleEcho(req)
 
@@ -27,19 +27,19 @@ func (b Broker) handleBrbPublish(req *pb.Publication) {
 			ch <- req
 		}
 		b.toBrokerEchoChs.RUnlock()
-		
+
 		// Mark this publication as echoed
-		b.echoesSent[req.PublisherID][req.PublicationID] = true	
-		fmt.Printf("Sent echoes for  publication %v by publisher %v\n", req.PublicationID, req.PublisherID)
+		b.echoesSent[req.PublisherID][req.PublicationID] = true
+		// fmt.Printf("Sent echoes for  publication %v by publisher %v\n", req.PublicationID, req.PublisherID)
 	} else {
-		fmt.Printf("Already sent echoes for publication %v by publisher %v\n", req.PublicationID, req.PublisherID)
+		// fmt.Printf("Already sent echoes for publication %v by publisher %v\n", req.PublicationID, req.PublisherID)
 	}
 }
 
 // handleEcho handles echo requests from Bracha's Reliable Broadcast.
 // It takes the request as input.
 func (b Broker) handleEcho(req *pb.Publication) {
-	fmt.Printf("Handle echo Publication %v, Publisher %v, Broker %v.\n", req.PublicationID, req.PublisherID, req.BrokerID)
+	// fmt.Printf("Handle echo Publication %v, Publisher %v, Broker %v.\n", req.PublicationID, req.PublisherID, req.BrokerID)
 
 	// Make the map so not trying to access nil reference
 	if b.echoesReceived[req.PublisherID] == nil {
@@ -60,7 +60,7 @@ func (b Broker) handleEcho(req *pb.Publication) {
 			return
 		}
 	}
-	
+
 	if b.readiesSent[req.PublisherID] == nil {
 		b.readiesSent[req.PublisherID] = make(map[int64]bool)
 	}
@@ -70,7 +70,7 @@ func (b Broker) handleEcho(req *pb.Publication) {
 
 		// Update the Broker ID
 		req.BrokerID = int64(*brokerID)
-	
+
 		// "Send" the ready request to itself
 		b.handleReady(req)
 
@@ -80,7 +80,7 @@ func (b Broker) handleEcho(req *pb.Publication) {
 			ch <- req
 		}
 		b.toBrokerReadyChs.RUnlock()
-		
+
 		// Send the ready to all subscribers
 		b.toSubscriberChs.RLock()
 		for i, ch := range b.toSubscriberChs.chs {
@@ -90,20 +90,20 @@ func (b Broker) handleEcho(req *pb.Publication) {
 			}
 		}
 		b.toSubscriberChs.RUnlock()
-	
+
 		// Mark this publication as readied
 		b.readiesSent[req.PublisherID][req.PublicationID] = true
-		fmt.Printf("handleEcho: Sent readies for publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
+		// fmt.Printf("handleEcho: Sent readies for publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
 	} else {
-		fmt.Printf("handleEcho: Already sent readies publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
+		// fmt.Printf("handleEcho: Already sent readies publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
 	}
 }
 
 // handleReady handles ready requests from Bracha's Reliable Broadcast.
 // It takes the request as input.
 func (b Broker) handleReady(req *pb.Publication) {
-	fmt.Printf("Handle ready Publication %v, Publisher %v, Broker %v.\n", req.PublicationID, req.PublisherID, req.BrokerID)
-	
+	// fmt.Printf("Handle ready Publication %v, Publisher %v, Broker %v.\n", req.PublicationID, req.PublisherID, req.BrokerID)
+
 	// Make the map so not trying to access nil reference
 	if b.readiesReceived[req.PublisherID] == nil {
 		b.readiesReceived[req.PublisherID] = make(map[int64]map[int64][]byte)
@@ -123,7 +123,7 @@ func (b Broker) handleReady(req *pb.Publication) {
 			return
 		}
 	}
-	
+
 	if b.readiesSent[req.PublisherID] == nil {
 		b.readiesSent[req.PublisherID] = make(map[int64]bool)
 	}
@@ -133,7 +133,7 @@ func (b Broker) handleReady(req *pb.Publication) {
 
 		// Update the Broker ID
 		req.BrokerID = int64(*brokerID)
-	
+
 		// "Send" the ready request to itself
 		b.handleReady(req)
 
@@ -143,7 +143,7 @@ func (b Broker) handleReady(req *pb.Publication) {
 			ch <- req
 		}
 		b.toBrokerReadyChs.RUnlock()
-		
+
 		// Send the ready to all subscribers
 		b.toSubscriberChs.RLock()
 		for i, ch := range b.toSubscriberChs.chs {
@@ -153,12 +153,12 @@ func (b Broker) handleReady(req *pb.Publication) {
 			}
 		}
 		b.toSubscriberChs.RUnlock()
-	
+
 		// Mark this publication as readied
 		b.readiesSent[req.PublisherID][req.PublicationID] = true
-		fmt.Printf("handleReady: Sent readies for publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
+		// fmt.Printf("handleReady: Sent readies for publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
 	} else {
-		fmt.Printf("handleReady: Already sent readies publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
+		// fmt.Printf("handleReady: Already sent readies publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
 	}
 }
 

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 	"sync"
 
 	pb "github.com/ericnorway/arbitraryFailures/proto"
@@ -24,7 +24,7 @@ func NewToSubscriberChannels() *ToSubscriberChannels {
 // It also returns the channel. It takes as input the ID of the subscriber that will
 // receive publications.
 func (s *ToSubscriberChannels) AddToSubscriberChannel(id int64) chan *pb.Publication {
-	fmt.Printf("To subscriber channel %v added.\n", id)
+	// fmt.Printf("To subscriber channel %v added.\n", id)
 	ch := make(chan *pb.Publication, 32)
 
 	s.Lock()
@@ -38,7 +38,7 @@ func (s *ToSubscriberChannels) AddToSubscriberChannel(id int64) chan *pb.Publica
 // RemoveToSubscriberChannel removes a channel from ToSubscriberChannels.
 // It takes as input the ID of the subscribers that will no longer receive publications.
 func (s *ToSubscriberChannels) RemoveToSubscriberChannel(id int64) {
-	fmt.Printf("To subscriber channel %v removed.\n", id)
+	// fmt.Printf("To subscriber channel %v removed.\n", id)
 
 	s.Lock()
 	s.Unlock()

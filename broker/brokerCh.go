@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 	"sync"
 
 	pb "github.com/ericnorway/arbitraryFailures/proto"
@@ -37,7 +37,7 @@ func NewToBrokerReadyChannels() *ToBrokerReadyChannels {
 // It also returns the channel. It takes as input the ID of the broker that will
 // receive echoes.
 func (b *ToBrokerEchoChannels) AddToBrokerEchoChannel(id int64) chan *pb.Publication {
-	fmt.Printf("To broker echo channel %v added.\n", id)
+	// fmt.Printf("To broker echo channel %v added.\n", id)
 	ch := make(chan *pb.Publication, 32)
 
 	b.Lock()
@@ -51,7 +51,7 @@ func (b *ToBrokerEchoChannels) AddToBrokerEchoChannel(id int64) chan *pb.Publica
 // RemoveToBrokerEchoChannel removes a channel from ToBrokerEchoChannels.
 // It takes as input the ID of the broker that will no longer receive echoes.
 func (b *ToBrokerEchoChannels) RemoveToBrokerEchoChannel(id int64) {
-	fmt.Printf("To broker echo channel %v removed.\n", id)
+	// fmt.Printf("To broker echo channel %v removed.\n", id)
 
 	b.Lock()
 	b.Unlock()
@@ -63,7 +63,7 @@ func (b *ToBrokerEchoChannels) RemoveToBrokerEchoChannel(id int64) {
 // It also returns the channel. It takes as input the ID of the broker that will
 // receive readies.
 func (b *ToBrokerReadyChannels) AddToBrokerReadyChannel(id int64) chan *pb.Publication {
-	fmt.Printf("To broker ready channel %v added.\n", id)
+	// fmt.Printf("To broker ready channel %v added.\n", id)
 	ch := make(chan *pb.Publication, 32)
 
 	b.Lock()
@@ -77,7 +77,7 @@ func (b *ToBrokerReadyChannels) AddToBrokerReadyChannel(id int64) chan *pb.Publi
 // RemoveToBrokerReadyChannel removes a channel from ToBrokerReadyChannels.
 // It takes as input the ID of the broker that will no longer receive readies.
 func (b *ToBrokerReadyChannels) RemoveToBrokerReadyChannel(id int64) {
-	fmt.Printf("To broker ready channel %v removed.\n", id)
+	// fmt.Printf("To broker ready channel %v removed.\n", id)
 
 	b.Lock()
 	b.Unlock()
