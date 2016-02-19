@@ -16,16 +16,16 @@ func (b Broker) handleBrbPublish(req *pb.Publication) {
 
 	// If this publication has not been echoed yet
 	if b.echoesSent[req.PublisherID][req.PublicationID] == false {
-	
+
 		// Make echo publication
 		pub := &pb.Publication{
-			PubType: req.PubType,
-			PublisherID: req.PublisherID,
+			PubType:       req.PubType,
+			PublisherID:   req.PublisherID,
 			PublicationID: req.PublicationID,
-			Topic: req.Topic,
-			BrokerID: int64(*brokerID),
-			Content: req.Content,
-			MACs: req.MACs,
+			Topic:         req.Topic,
+			BrokerID:      int64(*brokerID),
+			Content:       req.Content,
+			MACs:          req.MACs,
 		}
 
 		// "Send" the echo request to itself
@@ -80,13 +80,13 @@ func (b Broker) handleEcho(req *pb.Publication) bool {
 
 		// Make ready publication
 		pub := &pb.Publication{
-			PubType: req.PubType,
-			PublisherID: req.PublisherID,
+			PubType:       req.PubType,
+			PublisherID:   req.PublisherID,
 			PublicationID: req.PublicationID,
-			Topic: req.Topic,
-			BrokerID: int64(*brokerID),
-			Content: req.Content,
-			MACs: req.MACs,
+			Topic:         req.Topic,
+			BrokerID:      int64(*brokerID),
+			Content:       req.Content,
+			MACs:          req.MACs,
 		}
 
 		// "Send" the ready request to itself
@@ -113,10 +113,10 @@ func (b Broker) handleEcho(req *pb.Publication) bool {
 		b.readiesSent[req.PublisherID][req.PublicationID] = true
 		// fmt.Printf("handleEcho: Sent readies for publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
 		return true
-	} else {
-		// fmt.Printf("handleEcho: Already sent readies publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
-		return false
 	}
+		
+	// fmt.Printf("handleEcho: Already sent readies publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
+	return false
 }
 
 // handleReady handles ready requests from Bracha's Reliable Broadcast.
@@ -153,13 +153,13 @@ func (b Broker) handleReady(req *pb.Publication) bool {
 
 		// Make ready publication
 		pub := &pb.Publication{
-			PubType: req.PubType,
-			PublisherID: req.PublisherID,
+			PubType:       req.PubType,
+			PublisherID:   req.PublisherID,
 			PublicationID: req.PublicationID,
-			Topic: req.Topic,
-			BrokerID: int64(*brokerID),
-			Content: req.Content,
-			MACs: req.MACs,
+			Topic:         req.Topic,
+			BrokerID:      int64(*brokerID),
+			Content:       req.Content,
+			MACs:          req.MACs,
 		}
 
 		// "Send" the ready request to itself
@@ -186,10 +186,10 @@ func (b Broker) handleReady(req *pb.Publication) bool {
 		b.readiesSent[req.PublisherID][req.PublicationID] = true
 		// fmt.Printf("handleReady: Sent readies for publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
 		return true
-	} else {
-		// fmt.Printf("handleReady: Already sent readies publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
-		return false
 	}
+	
+	// fmt.Printf("handleReady: Already sent readies publication %v by publisher %v.\n", req.PublicationID, req.PublisherID)
+	return false
 }
 
 // checkEchoQuorum checks that a quorum has been received for a specific publisher and publication.

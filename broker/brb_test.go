@@ -41,14 +41,14 @@ type handleBrbPublishTest struct {
 }
 
 var handleBrbPublishTests = []struct {
-	broker         *Broker
-	desc           string
-	numBrokers     int
-	subtests       []handleBrbPublishTest
+	broker     *Broker
+	desc       string
+	numBrokers int
+	subtests   []handleBrbPublishTest
 }{
 	{
-		broker:         NewBroker(),
-		desc:           "1 pub request, 3 other brokers",
+		broker:     NewBroker(),
+		desc:       "1 pub request, 3 other brokers",
 		numBrokers: 4,
 		subtests: []handleBrbPublishTest{
 			{
@@ -71,8 +71,8 @@ var handleBrbPublishTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker(),
-		desc:           "5 pub requests, 3 other brokers",
+		broker:     NewBroker(),
+		desc:       "5 pub requests, 3 other brokers",
 		numBrokers: 3,
 		subtests: []handleBrbPublishTest{
 			{
@@ -171,7 +171,7 @@ func TestHandleBrbEcho(t *testing.T) {
 		for j := 1; j < test.numBrokers; j++ {
 			test.broker.toBrokerReadyChs.AddToBrokerReadyChannel(int64(j))
 		}
-		
+
 		// Manually add subscriber channels
 		for j := 0; j < test.numSubscribers; j++ {
 			test.broker.toSubscriberChs.AddToSubscriberChannel(int64(j))
@@ -187,38 +187,40 @@ func TestHandleBrbEcho(t *testing.T) {
 				test.broker.handleEcho(&echo)
 			}
 
-			// Check that all other "brokers" got the readied publication
-			test.broker.toBrokerReadyChs.RLock()
-			for _, ch := range test.broker.toBrokerReadyChs.chs {
-				select {
-				case pub := <-ch:
-					if !Equals(*pub, subtest.want) {
-						t.Errorf("B HandleBrbPublish\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
-							i+1, test.desc, j+1, &subtest.want, pub)
+			for _, want := range subtest.wants {
+				// Check that all other "brokers" got the readied publication
+				test.broker.toBrokerReadyChs.RLock()
+				for _, ch := range test.broker.toBrokerReadyChs.chs {
+					select {
+					case pub := <-ch:
+						if !Equals(*pub, want) {
+							t.Errorf("B HandleBrbPublish\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
+								i+1, test.desc, j+1, &want, pub)
+						}
 					}
 				}
-			}
-			test.broker.toBrokerReadyChs.RUnlock()
-			
-			// Check that all "subscribers" got the readied publication
-			test.broker.toSubscriberChs.RLock()
-			for _, ch := range test.broker.toSubscriberChs.chs {
-				select {
-				case pub := <-ch:
-					if !Equals(*pub, subtest.want) {
-						t.Errorf("S HandleBrbPublish\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
-							i+1, test.desc, j+1, &subtest.want, pub)
+				test.broker.toBrokerReadyChs.RUnlock()
+
+				// Check that all "subscribers" got the readied publication
+				test.broker.toSubscriberChs.RLock()
+				for _, ch := range test.broker.toSubscriberChs.chs {
+					select {
+					case pub := <-ch:
+						if !Equals(*pub, want) {
+							t.Errorf("S HandleBrbPublish\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
+								i+1, test.desc, j+1, &want, pub)
+						}
 					}
 				}
+				test.broker.toSubscriberChs.RUnlock()
 			}
-			test.broker.toSubscriberChs.RUnlock()
 		}
 	}
 }
 
 type handleBrbEchoTest struct {
 	echoes []pb.Publication
-	want   pb.Publication
+	wants  []pb.Publication
 }
 
 var handleBrbEchoTests = []struct {
@@ -230,55 +232,212 @@ var handleBrbEchoTests = []struct {
 }{
 	{
 		broker:         NewBroker(),
-		desc:           "1 pub request, 3 other brokers, 1 subscriber",
-		numBrokers: 4,
+		desc:           "4 x 1 echoes (4 echoes for 1 publication), 3 other brokers, 2 subscriber",
+		numBrokers:     4,
+		numSubscribers: 2,
+		subtests: []handleBrbEchoTest{
+			{
+				echoes: []pb.Publication{
+					{
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 1,
+						BrokerID:      0,
+						Topic:         1,
+						Content:       []byte(message1),
+					},
+					{
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 1,
+						BrokerID:      1,
+						Topic:         1,
+						Content:       []byte(message1),
+					},
+					{
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 1,
+						BrokerID:      2,
+						Topic:         1,
+						Content:       []byte(message1),
+					},
+					{
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 1,
+						BrokerID:      3,
+						Topic:         1,
+						Content:       []byte(message1),
+					},
+				},
+				wants: []pb.Publication{
+					{
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 1,
+						Topic:         1,
+						BrokerID:      0,
+						Content:       []byte(message1),
+					},
+				},
+			},
+		},
+	},
+	{
+		broker:         NewBroker(),
+		desc:           "4 x 1, 2 x 1, 3 x 1 echoes, 3 other brokers, 1 subscriber",
+		numBrokers:     4,
 		numSubscribers: 1,
 		subtests: []handleBrbEchoTest{
 			{
 				echoes: []pb.Publication{
 					{
-							PubType:       common.BRB,
-							PublisherID:   1,
-							PublicationID: 1,
-							BrokerID:      0,
-							Topic:         1,
-							Content:       []byte(message1),
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 1,
+						BrokerID:      0,
+						Topic:         1,
+						Content:       []byte(message1),
 					},
 					{
-							PubType:       common.BRB,
-							PublisherID:   1,
-							PublicationID: 1,
-							BrokerID:      1,
-							Topic:         1,
-							Content:       []byte(message1),
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 1,
+						BrokerID:      1,
+						Topic:         1,
+						Content:       []byte(message1),
 					},
 					{
-							PubType:       common.BRB,
-							PublisherID:   1,
-							PublicationID: 1,
-							BrokerID:      2,
-							Topic:         1,
-							Content:       []byte(message1),
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 1,
+						BrokerID:      2,
+						Topic:         1,
+						Content:       []byte(message1),
 					},
 					{
-							PubType:       common.BRB,
-							PublisherID:   1,
-							PublicationID: 1,
-							BrokerID:      3,
-							Topic:         1,
-							Content:       []byte(message1),
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 1,
+						BrokerID:      3,
+						Topic:         1,
+						Content:       []byte(message1),
+					},
+					{
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 2,
+						BrokerID:      0,
+						Topic:         3,
+						Content:       []byte(message2),
+					},
+					{
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 2,
+						BrokerID:      1,
+						Topic:         3,
+						Content:       []byte(message2),
+					},
+					{
+						PubType:       common.BRB,
+						PublisherID:   2,
+						PublicationID: 3,
+						BrokerID:      0,
+						Topic:         2,
+						Content:       []byte(message3),
+					},
+					{
+						PubType:       common.BRB,
+						PublisherID:   2,
+						PublicationID: 3,
+						BrokerID:      1,
+						Topic:         2,
+						Content:       []byte(message3),
+					},
+					{
+						PubType:       common.BRB,
+						PublisherID:   2,
+						PublicationID: 3,
+						BrokerID:      2,
+						Topic:         2,
+						Content:       []byte(message3),
 					},
 				},
-				want: pb.Publication{
-					PubType:       common.BRB,
-					PublisherID:   1,
-					PublicationID: 1,
-					Topic:         1,
-					BrokerID:      0,
-					Content:       []byte(message1),
-				},	
-			},		
+				wants: []pb.Publication{
+					{
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 1,
+						Topic:         1,
+						BrokerID:      0,
+						Content:       []byte(message1),
+					},
+					{
+						PubType:       common.BRB,
+						PublisherID:   2,
+						PublicationID: 3,
+						Topic:         2,
+						BrokerID:      0,
+						Content:       []byte(message3),
+					},
+				},
+			},
+		},
+	},
+	{
+		broker:         NewBroker(),
+		desc:           "4 x 1 echoes (1 with wrong content), 3 other brokers, 2 subscriber",
+		numBrokers:     4,
+		numSubscribers: 2,
+		subtests: []handleBrbEchoTest{
+			{
+				echoes: []pb.Publication{
+					{
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 1,
+						BrokerID:      0,
+						Topic:         1,
+						Content:       []byte(message2),
+					},
+					{
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 1,
+						BrokerID:      1,
+						Topic:         1,
+						Content:       []byte(message4),
+					},
+					{
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 1,
+						BrokerID:      2,
+						Topic:         1,
+						Content:       []byte(message2),
+					},
+					{
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 1,
+						BrokerID:      3,
+						Topic:         1,
+						Content:       []byte(message2),
+					},
+				},
+				wants: []pb.Publication{
+					{
+						PubType:       common.BRB,
+						PublisherID:   1,
+						PublicationID: 1,
+						Topic:         1,
+						BrokerID:      0,
+						Content:       []byte(message2),
+					},
+				},
+			},
 		},
 	},
 }
-

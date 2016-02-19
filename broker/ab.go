@@ -15,16 +15,16 @@ func (b Broker) handleAbPublish(req *pb.Publication) {
 
 	// If this publication has not been forwarded yet
 	if b.forwardSent[req.PublisherID][req.PublicationID] == false {
-		
+
 		// Make forward publication
 		pub := &pb.Publication{
-			PubType: req.PubType,
-			PublisherID: req.PublisherID,
+			PubType:       req.PubType,
+			PublisherID:   req.PublisherID,
 			PublicationID: req.PublicationID,
-			Topic: req.Topic,
-			BrokerID: int64(*brokerID),
-			Content: req.Content,
-			MACs: req.MACs,
+			Topic:         req.Topic,
+			BrokerID:      int64(*brokerID),
+			Content:       req.Content,
+			MACs:          req.MACs,
 		}
 
 		// Forward the publication to all subscribers
