@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"strconv"
 	"testing"
 
 	"github.com/ericnorway/arbitraryFailures/common"
@@ -13,27 +12,31 @@ func TestAbProcessing(t *testing.T) {
 	for i, test := range abProcessingTests {
 		go test.broker.handleMessages()
 
-		// Add "subscribers" (channels)
+		// Manually add subscriber channels and topics
 		for j := 0; j < test.numSubscribers; j++ {
-			test.broker.subscribers.AddSubscriberInfo(int64(j), strconv.Itoa(j), []int64{1, 2, 3})
+			test.broker.toSubscriberChs.AddToSubscriberChannel(int64(j))
+			test.broker.topics[int64(j)] = make(map[int64]bool)
+			test.broker.topics[int64(j)][1] = true
+			test.broker.topics[int64(j)][2] = true
+			test.broker.topics[int64(j)][3] = true
 		}
 
 		for j, subtest := range test.subtests {
 			// Add publication request
-			test.broker.publishers.fromPublisherCh <- &subtest.pubReq
+			test.broker.fromPublisherCh <- &subtest.pubReq
 
 			// Check that all "subscribers" got the forwarded publication
-			test.broker.subscribers.RLock()
-			for _, subscriber := range test.broker.subscribers.subscribers {
+			test.broker.toSubscriberChs.RLock()
+			for _, ch := range test.broker.toSubscriberChs.chs {
 				select {
-				case pub := <-subscriber.toSubscriberCh:
+				case pub := <-ch:
 					if !Equals(*pub, subtest.want) {
 						t.Errorf("AbProcessing\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 							i+1, test.desc, j+1, &subtest.want, pub)
 					}
 				}
 			}
-			test.broker.subscribers.RUnlock()
+			test.broker.toSubscriberChs.RUnlock()
 		}
 	}
 }

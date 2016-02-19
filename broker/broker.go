@@ -20,13 +20,13 @@ type Broker struct {
 	fromPublisherCh chan *pb.Publication
 
 	// BROKER CHANNEL VARIABLES
-	toBrokerEchoChs   *BrokerEchoChannels
+	toBrokerEchoChs   *ToBrokerEchoChannels
 	fromBrokerEchoCh  chan *pb.Publication
-	toBrokerReadyChs  *BrokerReadyChannels
+	toBrokerReadyChs  *ToBrokerReadyChannels
 	fromBrokerReadyCh chan *pb.Publication
 
 	// SUBSCRIBER CHANNEL VARIABLES
-	toSubscriberChs  *SubscriberPubChannels
+	toSubscriberChs  *ToSubscriberChannels
 	fromSubscriberCh chan *pb.SubRequest
 
 	// MESSAGE TRACKING VARIABLES
@@ -68,11 +68,11 @@ type Broker struct {
 func NewBroker() *Broker {
 	return &Broker{
 		fromPublisherCh:   make(chan *pb.Publication, 32),
-		toBrokerEchoChs:   NewBrokerEchoChannels(),
+		toBrokerEchoChs:   NewToBrokerEchoChannels(),
 		fromBrokerEchoCh:  make(chan *pb.Publication, 32),
-		toBrokerReadyChs:  NewBrokerReadyChannels(),
+		toBrokerReadyChs:  NewToBrokerReadyChannels(),
 		fromBrokerReadyCh: make(chan *pb.Publication, 32),
-		toSubscriberChs:   NewSubscriberPubChannels(),
+		toSubscriberChs:   NewToSubscriberChannels(),
 		fromSubscriberCh:  make(chan *pb.SubRequest, 32),
 		forwardSent:       make(map[int64]map[int64]bool),
 		echoesSent:        make(map[int64]map[int64]bool),
@@ -141,8 +141,8 @@ func (b *Broker) ConnectToBroker(brokerID int64, brokerAddr string) {
 	defer conn.Close()
 
 	client := pb.NewInterBrokerClient(conn)
-	toBrokerEchoCh := b.toBrokerEchoChs.AddBrokerEchoChannel(brokerID)
-	toBrokerReadyCh := b.toBrokerReadyChs.AddBrokerReadyChannel(brokerID)
+	toBrokerEchoCh := b.toBrokerEchoChs.AddToBrokerEchoChannel(brokerID)
+	toBrokerReadyCh := b.toBrokerReadyChs.AddToBrokerReadyChannel(brokerID)
 
 	for {
 		select {
@@ -190,7 +190,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	}
 
 	id := req.SubscriberID
-	ch := b.toSubscriberChs.AddSubscriberPubChannel(id)
+	ch := b.toSubscriberChs.AddToSubscriberChannel(id)
 
 	// Add initial subscribe for processing
 	b.fromSubscriberCh <- req
@@ -202,7 +202,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 			case pub := <-ch:
 				err := stream.Send(pub)
 				if err != nil {
-					b.toSubscriberChs.RemoveSubscriberPubChannel(id)
+					b.toSubscriberChs.RemoveToSubscriberChannel(id)
 					break
 				}
 			}
@@ -213,10 +213,10 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
-			b.toSubscriberChs.RemoveSubscriberPubChannel(id)
+			b.toSubscriberChs.RemoveToSubscriberChannel(id)
 			return err
 		} else if err != nil {
-			b.toSubscriberChs.RemoveSubscriberPubChannel(id)
+			b.toSubscriberChs.RemoveToSubscriberChannel(id)
 			return err
 		}
 		b.fromSubscriberCh <- req

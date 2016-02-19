@@ -7,19 +7,19 @@ import (
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
 
-type SubscriberPubChannels struct {
+type ToSubscriberChannels struct {
 	sync.RWMutex
 	chs map[int64]chan *pb.Publication
 }
 
-func NewSubscriberPubChannels() *SubscriberPubChannels {
-	return &SubscriberPubChannels{
+func NewToSubscriberChannels() *ToSubscriberChannels {
+	return &ToSubscriberChannels{
 		chs: make(map[int64]chan *pb.Publication),
 	}
 }
 
-func (s *SubscriberPubChannels) AddSubscriberPubChannel(id int64) chan *pb.Publication {
-	fmt.Printf("Subscriber pub channel %v added.\n", id)
+func (s *ToSubscriberChannels) AddToSubscriberChannel(id int64) chan *pb.Publication {
+	fmt.Printf("To subscriber channel %v added.\n", id)
 	ch := make(chan *pb.Publication, 32)
 
 	s.Lock()
@@ -30,8 +30,8 @@ func (s *SubscriberPubChannels) AddSubscriberPubChannel(id int64) chan *pb.Publi
 	return ch
 }
 
-func (s *SubscriberPubChannels) RemoveSubscriberPubChannel(id int64) {
-	fmt.Printf("Subscriber pub channel %v removed.\n", id)
+func (s *ToSubscriberChannels) RemoveToSubscriberChannel(id int64) {
+	fmt.Printf("To subscriber channel %v removed.\n", id)
 
 	s.Lock()
 	s.Unlock()
