@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	// "fmt"
 
 	pb "github.com/ericnorway/arbitraryFailures/proto"
@@ -53,16 +54,17 @@ func (b Broker) handleEcho(req *pb.Publication) bool {
 
 	// Make the map so not trying to access nil reference
 	if b.echoesReceived[req.PublisherID] == nil {
-		b.echoesReceived[req.PublisherID] = make(map[int64]map[int64][]byte)
+		b.echoesReceived[req.PublisherID] = make(map[int64]map[int64]string)
 	}
 	// Make the map so not trying to access nil reference
 	if b.echoesReceived[req.PublisherID][req.PublicationID] == nil {
-		b.echoesReceived[req.PublisherID][req.PublicationID] = make(map[int64][]byte)
+		b.echoesReceived[req.PublisherID][req.PublicationID] = make(map[int64]string)
 	}
 	// Echo has not been received yet for this publisher ID, publication ID, broker ID
-	if b.echoesReceived[req.PublisherID][req.PublicationID][req.BrokerID] == nil {
+	if b.echoesReceived[req.PublisherID][req.PublicationID][req.BrokerID] == "" {
 		// So record it
-		b.echoesReceived[req.PublisherID][req.PublicationID][req.BrokerID] = req.Content
+		b.echoesReceived[req.PublisherID][req.PublicationID][req.BrokerID] = getInfo(req)
+
 		// Check if there is a quorum yet for this publisher ID and publication ID
 		foundQuorum := b.checkEchoQuorum(req.PublisherID, req.PublicationID)
 
@@ -126,16 +128,17 @@ func (b Broker) handleReady(req *pb.Publication) bool {
 
 	// Make the map so not trying to access nil reference
 	if b.readiesReceived[req.PublisherID] == nil {
-		b.readiesReceived[req.PublisherID] = make(map[int64]map[int64][]byte)
+		b.readiesReceived[req.PublisherID] = make(map[int64]map[int64]string)
 	}
 	// Make the map so not trying to access nil reference
 	if b.readiesReceived[req.PublisherID][req.PublicationID] == nil {
-		b.readiesReceived[req.PublisherID][req.PublicationID] = make(map[int64][]byte)
+		b.readiesReceived[req.PublisherID][req.PublicationID] = make(map[int64]string)
 	}
 	// Echo has not been received yet for this publisher ID, publication ID, broker ID
-	if b.readiesReceived[req.PublisherID][req.PublicationID][req.BrokerID] == nil {
+	if b.readiesReceived[req.PublisherID][req.PublicationID][req.BrokerID] == "" {
 		// So record it
-		b.readiesReceived[req.PublisherID][req.PublicationID][req.BrokerID] = req.Content
+		b.readiesReceived[req.PublisherID][req.PublicationID][req.BrokerID] = getInfo(req)
+
 		// Check if there is a quorum yet for this publisher ID and publication ID
 		foundQuorum := b.checkReadyQuorum(req.PublisherID, req.PublicationID)
 
@@ -194,6 +197,16 @@ func (b Broker) handleReady(req *pb.Publication) bool {
 	return false
 }
 
+// getInfo gets important info to verify from the publication (content and topic).
+// It returns a string containing the information. It takes as input the publication.
+func getInfo(pub *pb.Publication) string {
+	topicBytes := make([]byte, 8)
+	content := pub.Content
+	binary.PutVarint(topicBytes, pub.Topic)
+	content = append(content, topicBytes...)
+	return string(content)
+}
+
 // checkEchoQuorum checks that a quorum has been received for a specific publisher and publication.
 // It return true if a quorum has been found, false otherwise. It takes as input
 // the publisher ID and publication ID.
@@ -203,10 +216,9 @@ func (b *Broker) checkEchoQuorum(publisherID int64, publicationID int64) bool {
 	// publication value with this publisher ID and publication ID.
 	countMap := make(map[string]int64)
 
-	for _, publication := range b.echoesReceived[publisherID][publicationID] {
-		pub := string(publication)
-		countMap[pub] = countMap[pub] + 1
-		if countMap[pub] >= b.echoQuorumSize {
+	for _, echoContent := range b.echoesReceived[publisherID][publicationID] {
+		countMap[echoContent] = countMap[echoContent] + 1
+		if countMap[echoContent] >= b.echoQuorumSize {
 			return true
 		}
 	}
@@ -223,10 +235,9 @@ func (b *Broker) checkReadyQuorum(publisherID int64, publicationID int64) bool {
 	// publication value with this publisher ID and publication ID.
 	countMap := make(map[string]int64)
 
-	for _, publication := range b.readiesReceived[publisherID][publicationID] {
-		pub := string(publication)
-		countMap[pub] = countMap[pub] + 1
-		if countMap[pub] >= b.readyQuorumSize {
+	for _, readyContent := range b.readiesReceived[publisherID][publicationID] {
+		countMap[readyContent] = countMap[readyContent] + 1
+		if countMap[readyContent] >= b.readyQuorumSize {
 			return true
 		}
 	}

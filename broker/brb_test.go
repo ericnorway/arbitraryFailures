@@ -515,6 +515,69 @@ var handleBrbEchoTests = []struct {
 			},
 		},
 	},
+	{
+		broker:         NewBroker(),
+		desc:           "4 x 1 echoes (4 echoes for 1 publication, 1 with wrong topic), 3 other brokers, 2 subscriber",
+		numBrokers:     4,
+		numSubscribers: 2,
+		subtests: []handleBrbEchoTest{
+			{
+				echo: pb.Publication{
+					PubType:       common.BRB,
+					PublisherID:   1,
+					PublicationID: 1,
+					BrokerID:      0,
+					Topic:         1,
+					Content:       []byte(message1),
+				},
+				output: false,
+				want:   pb.Publication{},
+			},
+			{
+				echo: pb.Publication{
+					PubType:       common.BRB,
+					PublisherID:   1,
+					PublicationID: 1,
+					BrokerID:      1,
+					Topic:         7,
+					Content:       []byte(message1),
+				},
+				output: false,
+				want:   pb.Publication{},
+			},
+			{
+				echo: pb.Publication{
+					PubType:       common.BRB,
+					PublisherID:   1,
+					PublicationID: 1,
+					BrokerID:      2,
+					Topic:         1,
+					Content:       []byte(message1),
+				},
+				output: false,
+				want:   pb.Publication{},
+			},
+			{
+				echo: pb.Publication{
+					PubType:       common.BRB,
+					PublisherID:   1,
+					PublicationID: 1,
+					BrokerID:      3,
+					Topic:         1,
+					Content:       []byte(message1),
+				},
+				output: true,
+				want: pb.Publication{
+					PubType:       common.BRB,
+					PublisherID:   1,
+					PublicationID: 1,
+					BrokerID:      0,
+					Topic:         1,
+					Content:       []byte(message1),
+				},
+			},
+		},
+	},
 }
 
 func TestHandleBrbReady(t *testing.T) {
@@ -687,7 +750,7 @@ var handleBrbReadyTests = []struct {
 	},
 	{
 		broker:         NewBroker(),
-		desc:           "4 x 1 readies (4 readies for 1 publication (not readied yet)), 3 other brokers, 2 subscriber",
+		desc:           "4 x 1 readies (4 readies for 1 publication (already readied)), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
 		alreadyReadied: []pb.Publication{
@@ -736,6 +799,70 @@ var handleBrbReadyTests = []struct {
 				},
 				output: false,
 				want:   pb.Publication{},
+			},
+			{
+				ready: pb.Publication{
+					PubType:       common.BRB,
+					PublisherID:   1,
+					PublicationID: 1,
+					BrokerID:      3,
+					Topic:         1,
+					Content:       []byte(message1),
+				},
+				output: false,
+				want:   pb.Publication{},
+			},
+		},
+	},
+	{
+		broker:         NewBroker(),
+		desc:           "4 x 1 readies (4 readies for 1 publication (not readied yet, 1 ready has a different topic)), 3 other brokers, 2 subscriber",
+		numBrokers:     4,
+		numSubscribers: 2,
+		alreadyReadied: []pb.Publication{},
+		subtests: []handleBrbReadyTest{
+			{
+				ready: pb.Publication{
+					PubType:       common.BRB,
+					PublisherID:   1,
+					PublicationID: 1,
+					BrokerID:      0,
+					Topic:         1,
+					Content:       []byte(message1),
+				},
+				output: false,
+				want:   pb.Publication{},
+			},
+			{
+				ready: pb.Publication{
+					PubType:       common.BRB,
+					PublisherID:   1,
+					PublicationID: 1,
+					BrokerID:      1,
+					Topic:         2,
+					Content:       []byte(message1),
+				},
+				output: false,
+				want:   pb.Publication{},
+			},
+			{
+				ready: pb.Publication{
+					PubType:       common.BRB,
+					PublisherID:   1,
+					PublicationID: 1,
+					BrokerID:      2,
+					Topic:         1,
+					Content:       []byte(message1),
+				},
+				output: true,
+				want: pb.Publication{
+					PubType:       common.BRB,
+					PublisherID:   1,
+					PublicationID: 1,
+					BrokerID:      0,
+					Topic:         1,
+					Content:       []byte(message1),
+				},
 			},
 			{
 				ready: pb.Publication{

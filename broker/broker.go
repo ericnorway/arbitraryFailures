@@ -50,8 +50,8 @@ type Broker struct {
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The third index references the broker ID.
-	// The byte slice contains the publication.
-	echoesReceived map[int64]map[int64]map[int64][]byte
+	// The byte slice contains the content and topic of the publication.
+	echoesReceived map[int64]map[int64]map[int64]string
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
@@ -61,8 +61,8 @@ type Broker struct {
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The third index references the broker ID.
-	// The byte slice contains the publication.
-	readiesReceived map[int64]map[int64]map[int64][]byte
+	// The byte slice contains the content and topic of the publication.
+	readiesReceived map[int64]map[int64]map[int64]string
 
 	// The first index references the subscriber ID.
 	// The second index references the topic ID.
@@ -77,7 +77,7 @@ func NewBroker() *Broker {
 		echoQuorumSize:    3,                                                                                    // default
 		readyQuorumSize:   2,                                                                                    // default
 		faultsTolerated:   1,                                                                                    // default
-		brokerAddrs:       []string{"localhost:11111", "localhost:11112", "localhost:11113", "localhost:11114"}, //default
+		brokerAddrs:       []string{"localhost:11111", "localhost:11112", "localhost:11113", "localhost:11114"}, // default
 		fromPublisherCh:   make(chan *pb.Publication, 32),
 		toBrokerEchoChs:   NewToBrokerEchoChannels(),
 		fromBrokerEchoCh:  make(chan *pb.Publication, 32),
@@ -87,9 +87,9 @@ func NewBroker() *Broker {
 		fromSubscriberCh:  make(chan *pb.SubRequest, 32),
 		forwardSent:       make(map[int64]map[int64]bool),
 		echoesSent:        make(map[int64]map[int64]bool),
-		echoesReceived:    make(map[int64]map[int64]map[int64][]byte),
+		echoesReceived:    make(map[int64]map[int64]map[int64]string),
 		readiesSent:       make(map[int64]map[int64]bool),
-		readiesReceived:   make(map[int64]map[int64]map[int64][]byte),
+		readiesReceived:   make(map[int64]map[int64]map[int64]string),
 		topics:            make(map[int64]map[int64]bool),
 	}
 }
