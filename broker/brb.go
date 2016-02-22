@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/binary"
 	// "fmt"
 
@@ -200,11 +201,14 @@ func (b Broker) handleReady(req *pb.Publication) bool {
 // getInfo gets important info to verify from the publication (content and topic).
 // It returns a string containing the information. It takes as input the publication.
 func getInfo(pub *pb.Publication) string {
+	var buf bytes.Buffer
 	topicBytes := make([]byte, 8)
-	content := pub.Content
+	
+	buf.Write(pub.Content)
 	binary.PutVarint(topicBytes, pub.Topic)
-	content = append(content, topicBytes...)
-	return string(content)
+	buf.Write(topicBytes)
+	
+	return buf.String()
 }
 
 // checkEchoQuorum checks that a quorum has been received for a specific publisher and publication.
