@@ -12,7 +12,7 @@ func TestHandleAbPublish(t *testing.T) {
 
 		// Manually add subscriber channels and topics
 		for j := 0; j < test.numSubscribers; j++ {
-			test.broker.toSubscriberChs.AddToSubscriberChannel(int64(j))
+			test.broker.addToSubChannel(int64(j))
 			test.broker.topics[int64(j)] = make(map[int64]bool)
 			test.broker.topics[int64(j)][1] = true
 			test.broker.topics[int64(j)][2] = true
@@ -24,17 +24,17 @@ func TestHandleAbPublish(t *testing.T) {
 			test.broker.handleAbPublish(&subtest.pubReq)
 
 			// Check that all "subscribers" got the forwarded publication
-			test.broker.toSubscriberChs.RLock()
-			for _, ch := range test.broker.toSubscriberChs.chs {
+			test.broker.subscribersMutex.RLock()
+			for _, subscriber := range test.broker.subscribers {
 				select {
-				case pub := <-ch:
+				case pub := <-subscriber.toCh:
 					if !Equals(*pub, subtest.want) {
 						t.Errorf("HandleAbPublish\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 							i+1, test.desc, j+1, &subtest.want, pub)
 					}
 				}
 			}
-			test.broker.toSubscriberChs.RUnlock()
+			test.broker.subscribersMutex.RUnlock()
 		}
 	}
 }
@@ -51,7 +51,7 @@ var handleAbPublishTests = []struct {
 	subtests       []handleAbPublishTest
 }{
 	{
-		broker:         NewBroker(),
+		broker:         NewBroker("localhost"),
 		desc:           "1 pub request, 1 subscriber",
 		numSubscribers: 1,
 		subtests: []handleAbPublishTest{
@@ -75,7 +75,7 @@ var handleAbPublishTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker(),
+		broker:         NewBroker("localhost"),
 		desc:           "1 pub request, 3 subscribers",
 		numSubscribers: 3,
 		subtests: []handleAbPublishTest{
@@ -99,7 +99,7 @@ var handleAbPublishTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker(),
+		broker:         NewBroker("localhost"),
 		desc:           "5 pub requests, 3 subscribers",
 		numSubscribers: 3,
 		subtests: []handleAbPublishTest{

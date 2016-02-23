@@ -58,7 +58,7 @@ var quorumTests = []struct {
 	subtests   []quorumTest
 }{
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"1 publisher, 1 publication, 1 broker",
 		[]quorumTest{
 			{
@@ -76,7 +76,7 @@ var quorumTests = []struct {
 		},
 	},
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"1 publisher, 1 publication, 1 broker, received twice",
 		[]quorumTest{
 			{
@@ -106,7 +106,7 @@ var quorumTests = []struct {
 		},
 	},
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"1 publisher, 1 publication, 2 brokers",
 		[]quorumTest{
 			{
@@ -136,7 +136,7 @@ var quorumTests = []struct {
 		},
 	},
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"1 publisher, 1 publication, 3 brokers",
 		[]quorumTest{
 			{
@@ -178,7 +178,7 @@ var quorumTests = []struct {
 		},
 	},
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"1 publisher, 1 publication, 4 brokers, quorum 3",
 		[]quorumTest{
 			{
@@ -232,7 +232,7 @@ var quorumTests = []struct {
 		},
 	},
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"1 publisher, 1 publication, 5 brokers, quorum 4",
 		[]quorumTest{
 			{
@@ -298,7 +298,7 @@ var quorumTests = []struct {
 		},
 	},
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"1 publisher, 1 publication (first and second the same), 3 brokers",
 		[]quorumTest{
 			{
@@ -340,7 +340,7 @@ var quorumTests = []struct {
 		},
 	},
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"1 publisher, 1 publication (first and last the same), 3 brokers",
 		[]quorumTest{
 			{
@@ -382,7 +382,7 @@ var quorumTests = []struct {
 		},
 	},
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"1 publisher, 1 publication (second and last the same), 3 brokers",
 		[]quorumTest{
 			{
@@ -424,7 +424,7 @@ var quorumTests = []struct {
 		},
 	},
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"1 publisher, 1 publication (all different), 3 brokers",
 		[]quorumTest{
 			{
@@ -466,7 +466,7 @@ var quorumTests = []struct {
 		},
 	},
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"1 publisher, 2 publications, 3 brokers",
 		[]quorumTest{
 			{
@@ -544,7 +544,7 @@ var quorumTests = []struct {
 		},
 	},
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"3 publishers, several publications, 3 brokers",
 		[]quorumTest{
 			{
@@ -835,7 +835,7 @@ var processTests = []struct {
 	subtests   []processTest
 }{
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"1 publisher, 1 publication, 1 broker",
 		[]processTest{
 			{
@@ -851,7 +851,7 @@ var processTests = []struct {
 		},
 	},
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"1 publisher, 1 publication, 1 broker, received twice",
 		[]processTest{
 			{
@@ -877,7 +877,7 @@ var processTests = []struct {
 		},
 	},
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"1 publisher, 1 publication, 2 brokers",
 		[]processTest{
 			{
@@ -903,7 +903,7 @@ var processTests = []struct {
 		},
 	},
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"1 publisher, 1 publication, 3 brokers",
 		[]processTest{
 			{
@@ -939,7 +939,7 @@ var processTests = []struct {
 		},
 	},
 	{
-		NewSubscriber(),
+		NewSubscriber(1),
 		"1 publisher, 1 publication (first and second the same), 3 brokers",
 		[]processTest{
 			{

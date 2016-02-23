@@ -12,7 +12,7 @@ func TestHandleBrbPublish(t *testing.T) {
 
 		// Manually add other broker channels
 		for j := 1; j < test.numBrokers; j++ {
-			test.broker.toBrokerEchoChs.AddToBrokerEchoChannel(int64(j))
+			test.broker.addBrokerChannels(int64(j))
 		}
 
 		for j, subtest := range test.subtests {
@@ -20,17 +20,17 @@ func TestHandleBrbPublish(t *testing.T) {
 			test.broker.handleBrbPublish(&subtest.pubReq)
 
 			// Check that all other "brokers" got the echoed publication
-			test.broker.toBrokerEchoChs.RLock()
-			for _, ch := range test.broker.toBrokerEchoChs.chs {
+			test.broker.remoteBrokersMutex.RLock()
+			for _, remoteBroker := range test.broker.remoteBrokers {
 				select {
-				case pub := <-ch:
+				case pub := <-remoteBroker.toEchoCh:
 					if !Equals(*pub, subtest.want) {
 						t.Errorf("HandleBrbPublish\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 							i+1, test.desc, j+1, &subtest.want, pub)
 					}
 				}
 			}
-			test.broker.toBrokerEchoChs.RUnlock()
+			test.broker.remoteBrokersMutex.RUnlock()
 		}
 	}
 }
@@ -47,7 +47,7 @@ var handleBrbPublishTests = []struct {
 	subtests   []handleBrbPublishTest
 }{
 	{
-		broker:     NewBroker(),
+		broker:     NewBroker("localhost"),
 		desc:       "1 pub request, 3 other brokers",
 		numBrokers: 4,
 		subtests: []handleBrbPublishTest{
@@ -71,7 +71,7 @@ var handleBrbPublishTests = []struct {
 		},
 	},
 	{
-		broker:     NewBroker(),
+		broker:     NewBroker("localhost"),
 		desc:       "5 pub requests, 3 other brokers",
 		numBrokers: 3,
 		subtests: []handleBrbPublishTest{
@@ -169,12 +169,12 @@ func TestHandleBrbEcho(t *testing.T) {
 
 		// Manually add other broker channels
 		for j := 1; j < test.numBrokers; j++ {
-			test.broker.toBrokerReadyChs.AddToBrokerReadyChannel(int64(j))
+			test.broker.addBrokerChannels(int64(j))
 		}
 
 		// Manually add subscriber channels
 		for j := 0; j < test.numSubscribers; j++ {
-			test.broker.toSubscriberChs.AddToSubscriberChannel(int64(j))
+			test.broker.addToSubChannel(int64(j))
 			test.broker.topics[int64(j)] = make(map[int64]bool)
 			test.broker.topics[int64(j)][1] = true
 			test.broker.topics[int64(j)][2] = true
@@ -187,60 +187,60 @@ func TestHandleBrbEcho(t *testing.T) {
 
 			if subtest.output == true {
 				// Check that all other "brokers" got the readied publication
-				test.broker.toBrokerReadyChs.RLock()
-				for _, ch := range test.broker.toBrokerReadyChs.chs {
-					if len(ch) != 1 {
+				test.broker.remoteBrokersMutex.RLock()
+				for _, remoteBroker := range test.broker.remoteBrokers {
+					if len(remoteBroker.toReadyCh) != 1 {
 						t.Errorf("HandleBrbEcho\ntest nr:%d\ndescription: %s\naction nr: %d\nBroker channel should have 1.\nThere are %v publications.\n",
-							i+1, test.desc, j+1, len(ch))
+							i+1, test.desc, j+1, len(remoteBroker.toReadyCh))
 						continue
 					}
 					select {
-					case pub := <-ch:
+					case pub := <-remoteBroker.toReadyCh:
 						if !Equals(*pub, subtest.want) {
 							t.Errorf("HandleBrbEcho\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 								i+1, test.desc, j+1, &subtest.want, pub)
 						}
 					}
 				}
-				test.broker.toBrokerReadyChs.RUnlock()
+				test.broker.remoteBrokersMutex.RUnlock()
 
 				// Check that all "subscribers" got the readied publication
-				test.broker.toSubscriberChs.RLock()
-				for _, ch := range test.broker.toSubscriberChs.chs {
-					if len(ch) != 1 {
+				test.broker.subscribersMutex.RLock()
+				for _, subscriber := range test.broker.subscribers {
+					if len(subscriber.toCh) != 1 {
 						t.Errorf("HandleBrbEcho\ntest nr:%d\ndescription: %s\naction nr: %d\nSub channel should have 1.\nThere are %v publications.\n",
-							i+1, test.desc, j+1, len(ch))
+							i+1, test.desc, j+1, len(subscriber.toCh))
 						continue
 					}
 					select {
-					case pub := <-ch:
+					case pub := <-subscriber.toCh:
 						if !Equals(*pub, subtest.want) {
 							t.Errorf("HandleBrbEcho\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 								i+1, test.desc, j+1, &subtest.want, pub)
 						}
 					}
 				}
-				test.broker.toSubscriberChs.RUnlock()
+				test.broker.subscribersMutex.RUnlock()
 			} else {
 				// Check that all other "brokers" have empty channels
-				test.broker.toBrokerReadyChs.RLock()
-				for _, ch := range test.broker.toBrokerReadyChs.chs {
-					if len(ch) > 0 {
+				test.broker.remoteBrokersMutex.RLock()
+				for _, remoteBroker := range test.broker.remoteBrokers {
+					if len(remoteBroker.toReadyCh) > 0 {
 						t.Errorf("HandleBrbEcho\ntest nr:%d\ndescription: %s\naction nr: %d\nBroker channel should be empty.\nThere is %v publication(s).\n",
-							i+1, test.desc, j+1, len(ch))
+							i+1, test.desc, j+1, len(remoteBroker.toReadyCh))
 					}
 				}
-				test.broker.toBrokerReadyChs.RUnlock()
+				test.broker.remoteBrokersMutex.RUnlock()
 
 				// Check that all "subscribers" have empty channels
-				test.broker.toSubscriberChs.RLock()
-				for _, ch := range test.broker.toSubscriberChs.chs {
-					if len(ch) > 0 {
+				test.broker.subscribersMutex.RLock()
+				for _, subscriber := range test.broker.subscribers {
+					if len(subscriber.toCh) > 0 {
 						t.Errorf("HandleBrbEcho\ntest nr:%d\ndescription: %s\naction nr: %d\nSub channel should be empty.\nThere is %v publication(s).\n",
-							i+1, test.desc, j+1, len(ch))
+							i+1, test.desc, j+1, len(subscriber.toCh))
 					}
 				}
-				test.broker.toSubscriberChs.RUnlock()
+				test.broker.subscribersMutex.RUnlock()
 			}
 		}
 	}
@@ -260,7 +260,7 @@ var handleBrbEchoTests = []struct {
 	subtests       []handleBrbEchoTest
 }{
 	{
-		broker:         NewBroker(),
+		broker:         NewBroker("localhost"),
 		desc:           "4 x 1 echoes (4 echoes for 1 publication), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
@@ -323,7 +323,7 @@ var handleBrbEchoTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker(),
+		broker:         NewBroker("localhost"),
 		desc:           "4 x 1, 2 x 1, 3 x 1 echoes, 3 other brokers, 1 subscriber",
 		numBrokers:     4,
 		numSubscribers: 1,
@@ -453,7 +453,7 @@ var handleBrbEchoTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker(),
+		broker:         NewBroker("localhost"),
 		desc:           "4 x 1 echoes (1 with wrong content), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
@@ -516,7 +516,7 @@ var handleBrbEchoTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker(),
+		broker:         NewBroker("localhost"),
 		desc:           "4 x 1 echoes (4 echoes for 1 publication, 1 with wrong topic), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
@@ -585,12 +585,12 @@ func TestHandleBrbReady(t *testing.T) {
 
 		// Manually add other broker channels
 		for j := 1; j < test.numBrokers; j++ {
-			test.broker.toBrokerReadyChs.AddToBrokerReadyChannel(int64(j))
+			test.broker.addBrokerChannels(int64(j))
 		}
 
 		// Manually add subscriber channels
 		for j := 0; j < test.numSubscribers; j++ {
-			test.broker.toSubscriberChs.AddToSubscriberChannel(int64(j))
+			test.broker.addToSubChannel(int64(j))
 			test.broker.topics[int64(j)] = make(map[int64]bool)
 			test.broker.topics[int64(j)][1] = true
 			test.broker.topics[int64(j)][2] = true
@@ -611,60 +611,60 @@ func TestHandleBrbReady(t *testing.T) {
 
 			if subtest.output == true {
 				// Check that all other "brokers" got the readied publication
-				test.broker.toBrokerReadyChs.RLock()
-				for _, ch := range test.broker.toBrokerReadyChs.chs {
-					if len(ch) != 1 {
+				test.broker.remoteBrokersMutex.RLock()
+				for _, remoteBroker := range test.broker.remoteBrokers {
+					if len(remoteBroker.toReadyCh) != 1 {
 						t.Errorf("HandleBrbReady\ntest nr:%d\ndescription: %s\naction nr: %d\nBroker channel should have 1.\nThere are %v publications.\n",
-							i+1, test.desc, j+1, len(ch))
+							i+1, test.desc, j+1, len(remoteBroker.toReadyCh))
 						continue
 					}
 					select {
-					case pub := <-ch:
+					case pub := <-remoteBroker.toReadyCh:
 						if !Equals(*pub, subtest.want) {
 							t.Errorf("HandleBrbReady\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 								i+1, test.desc, j+1, &subtest.want, pub)
 						}
 					}
 				}
-				test.broker.toBrokerReadyChs.RUnlock()
+				test.broker.remoteBrokersMutex.RUnlock()
 
 				// Check that all "subscribers" got the readied publication
-				test.broker.toSubscriberChs.RLock()
-				for _, ch := range test.broker.toSubscriberChs.chs {
-					if len(ch) != 1 {
+				test.broker.subscribersMutex.RLock()
+				for _, subscriber := range test.broker.subscribers {
+					if len(subscriber.toCh) != 1 {
 						t.Errorf("HandleBrbReady\ntest nr:%d\ndescription: %s\naction nr: %d\nSub channel should have 1.\nThere are %v publications.\n",
-							i+1, test.desc, j+1, len(ch))
+							i+1, test.desc, j+1, len(subscriber.toCh))
 						continue
 					}
 					select {
-					case pub := <-ch:
+					case pub := <-subscriber.toCh:
 						if !Equals(*pub, subtest.want) {
 							t.Errorf("HandleBrbReady\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 								i+1, test.desc, j+1, &subtest.want, pub)
 						}
 					}
 				}
-				test.broker.toSubscriberChs.RUnlock()
+				test.broker.subscribersMutex.RUnlock()
 			} else {
 				// Check that all other "brokers" have empty channels
-				test.broker.toBrokerReadyChs.RLock()
-				for _, ch := range test.broker.toBrokerReadyChs.chs {
-					if len(ch) > 0 {
+				test.broker.remoteBrokersMutex.RLock()
+				for _, remoteBroker := range test.broker.remoteBrokers {
+					if len(remoteBroker.toReadyCh) > 0 {
 						t.Errorf("HandleBrbReady\ntest nr:%d\ndescription: %s\naction nr: %d\nBroker channel should be empty.\nThere is %v publication(s).\n",
-							i+1, test.desc, j+1, len(ch))
+							i+1, test.desc, j+1, len(remoteBroker.toReadyCh))
 					}
 				}
-				test.broker.toBrokerReadyChs.RUnlock()
+				test.broker.remoteBrokersMutex.RUnlock()
 
 				// Check that all "subscribers" have empty channels
-				test.broker.toSubscriberChs.RLock()
-				for _, ch := range test.broker.toSubscriberChs.chs {
-					if len(ch) > 0 {
+				test.broker.subscribersMutex.RLock()
+				for _, subscriber := range test.broker.subscribers {
+					if len(subscriber.toCh) > 0 {
 						t.Errorf("HandleBrbReady\ntest nr:%d\ndescription: %s\naction nr: %d\nSub channel should be empty.\nThere is %v publication(s).\n",
-							i+1, test.desc, j+1, len(ch))
+							i+1, test.desc, j+1, len(subscriber.toCh))
 					}
 				}
-				test.broker.toSubscriberChs.RUnlock()
+				test.broker.subscribersMutex.RUnlock()
 			}
 		}
 	}
@@ -685,7 +685,7 @@ var handleBrbReadyTests = []struct {
 	subtests       []handleBrbReadyTest
 }{
 	{
-		broker:         NewBroker(),
+		broker:         NewBroker("localhost"),
 		desc:           "4 x 1 readies (4 readies for 1 publication (not readied yet)), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
@@ -749,7 +749,7 @@ var handleBrbReadyTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker(),
+		broker:         NewBroker("localhost"),
 		desc:           "4 x 1 readies (4 readies for 1 publication (already readied)), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
@@ -815,7 +815,7 @@ var handleBrbReadyTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker(),
+		broker:         NewBroker("localhost"),
 		desc:           "4 x 1 readies (4 readies for 1 publication (not readied yet, 1 ready has a different topic)), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
