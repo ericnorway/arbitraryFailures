@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ericnorway/arbitraryFailures/common"
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 
 	"golang.org/x/net/context"
@@ -15,13 +16,21 @@ import (
 type Publisher struct {
 	toBrokerChansMutex sync.RWMutex
 	// There is one to channel for each broker.
-	toBrokerChans map[string]chan *pb.Publication
+	toBrokerChans map[int64]chan *pb.Publication
+	
+	brokerMutex sync.RWMutex
+	brokers map[int64] BrokerInfo
+}
+
+type BrokerInfo struct {
+	id int64
+	key []byte
 }
 
 // NewPublisher returns a new Publisher.
 func NewPublisher() *Publisher {
 	return &Publisher{
-		toBrokerChans: make(map[string]chan *pb.Publication),
+		toBrokerChans: make(map[int64]chan *pb.Publication),
 	}
 }
 
@@ -31,7 +40,12 @@ func (p *Publisher) Publish(pubReq *pb.Publication) {
 	defer p.toBrokerChansMutex.RUnlock()
 
 	for _, ch := range p.toBrokerChans {
-		ch <- pubReq
+		tempPub := &pb.Publication{}
+		*tempPub = *pubReq
+		tempPub.MACs = make([][]byte,1)
+		tempMAC := common.CreatePublicationMAC(tempPub, []byte("12345"), common.Algorithm)
+		tempPub.MACs[0] = tempMAC
+		ch<- tempPub
 	}
 }
 
@@ -39,7 +53,7 @@ func (p *Publisher) Publish(pubReq *pb.Publication) {
 // It takes as input a slice of broker addresses.
 func (p *Publisher) StartBrokerClients(brokerAddrs []string) {
 	for i := range brokerAddrs {
-		go p.startBrokerClient(brokerAddrs[i])
+		go p.startBrokerClient(int64(i), brokerAddrs[i])
 	}
 
 	for len(p.toBrokerChans) < 3 {
@@ -50,7 +64,7 @@ func (p *Publisher) StartBrokerClients(brokerAddrs []string) {
 }
 
 // startBrokerClient starts an individual broker client.
-func (p *Publisher) startBrokerClient(brokerAddr string) {
+func (p *Publisher) startBrokerClient(id int64, brokerAddr string) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure(), grpc.WithBlock())
 
@@ -62,15 +76,15 @@ func (p *Publisher) startBrokerClient(brokerAddr string) {
 	defer conn.Close()
 
 	client := pb.NewPubBrokerClient(conn)
-	ch := p.addChannel(brokerAddr)
+	ch := p.addChannel(id)
 
 	for {
 		select {
 		case pub := <-ch:
 			resp, err := client.Publish(context.Background(), pub)
 			if err != nil {
-				p.removeChannel(brokerAddr)
-				fmt.Printf("Error publishing to %v, %v\n", brokerAddr, err)
+				p.removeChannel(id)
+				fmt.Printf("Error publishing to %v, %v\n", id, err)
 				return
 			}
 
@@ -82,26 +96,26 @@ func (p *Publisher) startBrokerClient(brokerAddr string) {
 }
 
 // addChannel adds a channel to the map of to broker channels.
-// It returns the new channel. It takes as input the address
+// It returns the new channel. It takes as input the id
 // of the broker.
-func (p *Publisher) addChannel(addr string) chan *pb.Publication {
-	fmt.Printf("Broker channel to %v added.\n", addr)
+func (p *Publisher) addChannel(id int64) chan *pb.Publication {
+	fmt.Printf("Broker channel to %v added.\n", id)
 
 	p.toBrokerChansMutex.Lock()
 	defer p.toBrokerChansMutex.Unlock()
 
 	ch := make(chan *pb.Publication, 32)
-	p.toBrokerChans[addr] = ch
+	p.toBrokerChans[id] = ch
 	return ch
 }
 
 // removeChannel removes a channel from the map of to broker channels.
-// It takes as input the address of the broker.
-func (p *Publisher) removeChannel(addr string) {
-	fmt.Printf("Broker channel to %v removed.\n", addr)
+// It takes as input the id of the broker.
+func (p *Publisher) removeChannel(id int64) {
+	fmt.Printf("Broker channel to %v removed.\n", id)
 
 	p.toBrokerChansMutex.Lock()
 	p.toBrokerChansMutex.Unlock()
 
-	delete(p.toBrokerChans, addr)
+	delete(p.toBrokerChans, id)
 }

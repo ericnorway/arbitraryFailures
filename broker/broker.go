@@ -68,6 +68,8 @@ type Broker struct {
 	// The second index references the topic ID.
 	// The bool contains whether or not the subscriber is subscribed to that topic.
 	topics map[int64]map[int64]bool
+	
+	publisherKeys [][]byte
 }
 
 // NewBroker returns a new Broker
@@ -177,7 +179,9 @@ func (b *Broker) connectToBroker(brokerID int64, brokerAddr string) {
 
 // Publish handles incoming Publish requests from publishers
 func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubResponse, error) {
-
+	if pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], []byte("12345"), common.Algorithm) == false {
+		return &pb.PubResponse{AlphaReached: false}, nil
+	}
 	b.fromPublisherCh <- pub
 
 	return &pb.PubResponse{AlphaReached: false}, nil

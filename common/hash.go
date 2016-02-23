@@ -14,6 +14,8 @@ import (
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
 
+var Algorithm crypto.Hash = crypto.MD5
+
 // ConvertPublicationToBytes converts a publication into a byte slice.
 // It returns a byte slice. It takes as input the publication.
 func ConvertPublicationToBytes(pub *pb.Publication) []byte {
