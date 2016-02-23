@@ -111,7 +111,7 @@ func (b Broker) handleEcho(req *pb.Publication) {
 		b.subscribersMutex.RLock()
 		for i, subscriber := range b.subscribers {
 			// Only if they are interested in the topic
-			if subscriber.toCh != nil && b.topics[i][pub.Topic] == true {
+			if subscriber.toCh != nil && b.subscribers[i].topics[pub.Topic] == true {
 				subscriber.toCh <- pub
 			}
 		}
@@ -188,7 +188,7 @@ func (b Broker) handleReady(req *pb.Publication) {
 		b.subscribersMutex.RLock()
 		for i, subscriber := range b.subscribers {
 			// Only if they are interested in the topic
-			if subscriber.toCh != nil && b.topics[i][pub.Topic] == true {
+			if subscriber.toCh != nil && b.subscribers[i].topics[pub.Topic] == true {
 				subscriber.toCh <- pub
 			}
 		}

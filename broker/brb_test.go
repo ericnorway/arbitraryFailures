@@ -174,11 +174,11 @@ func TestHandleBrbEcho(t *testing.T) {
 
 		// Manually add subscriber channels
 		for j := 0; j < test.numSubscribers; j++ {
+			test.broker.AddSubscriber(int64(j), []byte("12345"))
 			test.broker.addToSubChannel(int64(j))
-			test.broker.topics[int64(j)] = make(map[int64]bool)
-			test.broker.topics[int64(j)][1] = true
-			test.broker.topics[int64(j)][2] = true
-			test.broker.topics[int64(j)][3] = true
+			test.broker.subscribers[int64(j)].topics[1] = true
+			test.broker.subscribers[int64(j)].topics[2] = true
+			test.broker.subscribers[int64(j)].topics[3] = true
 		}
 
 		for j, subtest := range test.subtests {
@@ -590,11 +590,11 @@ func TestHandleBrbReady(t *testing.T) {
 
 		// Manually add subscriber channels
 		for j := 0; j < test.numSubscribers; j++ {
+			test.broker.AddSubscriber(int64(j), []byte("12345"))
 			test.broker.addToSubChannel(int64(j))
-			test.broker.topics[int64(j)] = make(map[int64]bool)
-			test.broker.topics[int64(j)][1] = true
-			test.broker.topics[int64(j)][2] = true
-			test.broker.topics[int64(j)][3] = true
+			test.broker.subscribers[int64(j)].topics[1] = true
+			test.broker.subscribers[int64(j)].topics[2] = true
+			test.broker.subscribers[int64(j)].topics[3] = true
 		}
 
 		// Manually add the publications already readied

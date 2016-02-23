@@ -69,13 +69,6 @@ type Broker struct {
 	// The third index references the broker ID.
 	// The byte slice contains the content and topic of the publication.
 	readiesReceived map[int64]map[int64]map[int64]string
-
-	// The first index references the subscriber ID.
-	// The second index references the topic ID.
-	// The bool contains whether or not the subscriber is subscribed to that topic.
-	topics map[int64]map[int64]bool
-
-	publisherKeys [][]byte
 }
 
 // NewBroker returns a new Broker
@@ -99,7 +92,6 @@ func NewBroker(addr string) *Broker {
 		echoesReceived:          make(map[int64]map[int64]map[int64]string),
 		readiesSent:             make(map[int64]map[int64]bool),
 		readiesReceived:         make(map[int64]map[int64]map[int64]string),
-		topics:                  make(map[int64]map[int64]bool),
 	}
 }
 
@@ -279,17 +271,5 @@ func (b Broker) handleMessages() {
 // handleSubscribe handles a subscription request. It updates the topics.
 // It takes as input the subscription request.
 func (b Broker) handleSubscribe(req *pb.SubRequest) {
-	// fmt.Printf("Changing topics for subscriber %v.\n", req.SubscriberID)
-
-	if b.topics[req.SubscriberID] == nil {
-		b.topics[req.SubscriberID] = make(map[int64]bool)
-	}
-
-	for i := range b.topics[req.SubscriberID] {
-		b.topics[req.SubscriberID][i] = false
-	}
-
-	for _, topic := range req.Topics {
-		b.topics[req.SubscriberID][topic] = true
-	}
+	b.changeTopics(req)
 }

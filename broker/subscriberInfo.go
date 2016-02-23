@@ -8,9 +8,10 @@ import (
 
 // subscriberInfo contains important information about a subscriber
 type subscriberInfo struct {
-	id   int64
-	key  []byte
-	toCh chan *pb.Publication
+	id     int64
+	key    []byte
+	toCh   chan *pb.Publication
+	topics map[int64]bool
 }
 
 // AddSubscriber adds a subscriber to the map of subscribers.
@@ -22,9 +23,10 @@ func (b *Broker) AddSubscriber(id int64, key []byte) {
 	defer b.subscribersMutex.Unlock()
 
 	b.subscribers[id] = subscriberInfo{
-		id:   id,
-		key:  key,
-		toCh: nil,
+		id:     id,
+		key:    key,
+		toCh:   nil,
+		topics: make(map[int64]bool),
 	}
 }
 
@@ -70,4 +72,17 @@ func (b *Broker) removeToSubChannel(id int64) {
 	tempSubscriber := b.subscribers[id]
 	tempSubscriber.toCh = nil
 	b.subscribers[id] = tempSubscriber
+}
+
+// changeTopics updates a subscriber's topics.
+// It takes as input the subscription request.
+func (b Broker) changeTopics(req *pb.SubRequest) {
+
+	for i := range b.subscribers[req.SubscriberID].topics {
+		b.subscribers[req.SubscriberID].topics[i] = false
+	}
+
+	for _, topic := range req.Topics {
+		b.subscribers[req.SubscriberID].topics[topic] = true
+	}
 }
