@@ -6,10 +6,11 @@ import (
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
 
-type BrokerInfo struct {
-	id int64
+// brokerInfo contains important information about a broker
+type brokerInfo struct {
+	id   int64
 	addr string
-	key []byte
+	key  []byte
 	toCh chan *pb.Publication
 }
 
@@ -21,10 +22,10 @@ func (p *Publisher) AddBroker(id int64, addr string, key []byte) {
 	p.brokersMutex.Lock()
 	defer p.brokersMutex.Unlock()
 
-	p.brokers[id] = BrokerInfo{
-		id: id,
+	p.brokers[id] = brokerInfo{
+		id:   id,
 		addr: addr,
-		key: key,
+		key:  key,
 		toCh: nil,
 	}
 }
@@ -36,7 +37,7 @@ func (p *Publisher) RemoveBroker(id int64) {
 
 	p.brokersMutex.Lock()
 	defer p.brokersMutex.Unlock()
-	
+
 	delete(p.brokers, id)
 }
 
@@ -44,18 +45,18 @@ func (p *Publisher) RemoveBroker(id int64) {
 // It returns the new channel. It takes as input the id
 // of the broker.
 func (p *Publisher) addChannel(id int64) chan *pb.Publication {
-	fmt.Printf("Broker channel to %v added.\n", id)
+	fmt.Printf("Channel to broker %v added.\n", id)
 
 	p.brokersMutex.Lock()
 	defer p.brokersMutex.Unlock()
 
 	ch := make(chan *pb.Publication, 32)
-	
+
 	// Update channel
 	tempBroker := p.brokers[id]
 	tempBroker.toCh = ch
 	p.brokers[id] = tempBroker
-	
+
 	p.brokerConnections++
 	return ch
 }
@@ -63,15 +64,15 @@ func (p *Publisher) addChannel(id int64) chan *pb.Publication {
 // removeChannel removes a channel from a broker in the broker info map.
 // It takes as input the id of the broker.
 func (p *Publisher) removeChannel(id int64) {
-	fmt.Printf("Broker channel to %v removed.\n", id)
+	fmt.Printf("Channel to broker %v removed.\n", id)
 
 	p.brokersMutex.Lock()
 	defer p.brokersMutex.Unlock()
-	
+
 	// Update channel
 	tempBroker := p.brokers[id]
 	tempBroker.toCh = nil
 	p.brokers[id] = tempBroker
-	
+
 	p.brokerConnections--
 }

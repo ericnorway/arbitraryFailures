@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
@@ -9,6 +9,8 @@ import (
 // handleAbPublish handles Authenticated Broadcast publish requests.
 // It takes the request as input.
 func (b Broker) handleAbPublish(req *pb.Publication) {
+	// fmt.Printf("Handle AB Publish Publication %v, Publisher %v, Broker %v.\n", req.PublicationID, req.PublisherID, req.BrokerID)
+
 	if b.forwardSent[req.PublisherID] == nil {
 		b.forwardSent[req.PublisherID] = make(map[int64]bool)
 	}
@@ -28,18 +30,18 @@ func (b Broker) handleAbPublish(req *pb.Publication) {
 		}
 
 		// Forward the publication to all subscribers
-		b.toSubscriberChs.RLock()
-		for i, ch := range b.toSubscriberChs.chs {
+		b.subscribersMutex.RLock()
+		for i, subscriber := range b.subscribers {
 			// Only if they are interested in the topic
-			if b.topics[i][pub.Topic] == true {
-				ch <- pub
+			if subscriber.toCh != nil && b.topics[i][pub.Topic] == true {
+				subscriber.toCh <- pub
 			}
 		}
-		b.toSubscriberChs.RUnlock()
+		b.subscribersMutex.RUnlock()
 
 		// Mark this publication as sent
 		b.forwardSent[req.PublisherID][req.PublicationID] = true
 	} else {
-		fmt.Printf("Already forwarded publication %v by publisher %v\n", req.PublicationID, req.PublisherID)
+		// fmt.Printf("Already forwarded publication %v by publisher %v\n", req.PublicationID, req.PublisherID)
 	}
 }

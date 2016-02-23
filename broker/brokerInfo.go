@@ -1,86 +1,83 @@
 package main
 
 import (
-	// "fmt"
-	"sync"
+	"fmt"
 
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
 
-// ToBrokerEchoChannels is a struct containing channels for sending echoes.
-type ToBrokerEchoChannels struct {
-	sync.RWMutex
-	chs map[int64]chan *pb.Publication
+// brokerInfo contains important information about a broker
+type brokerInfo struct {
+	id        int64
+	addr      string
+	key       []byte
+	toEchoCh  chan *pb.Publication
+	toReadyCh chan *pb.Publication
 }
 
-// ToBrokerReadyChannels is a struct containing channels for sending readies.
-type ToBrokerReadyChannels struct {
-	sync.RWMutex
-	chs map[int64]chan *pb.Publication
-}
+// AddBroker adds a broker to the map of brokers.
+// It takes as input the broker's id, address, and shared private key.
+func (b *Broker) AddBroker(id int64, addr string, key []byte) {
+	fmt.Printf("Info for broker %v added.\n", id)
 
-// NewToBrokerEchoChannels returns a new ToBrokerEchoChannels.
-func NewToBrokerEchoChannels() *ToBrokerEchoChannels {
-	return &ToBrokerEchoChannels{
-		chs: make(map[int64]chan *pb.Publication),
+	b.remoteBrokersMutex.Lock()
+	defer b.remoteBrokersMutex.Unlock()
+
+	b.remoteBrokers[id] = brokerInfo{
+		id:        id,
+		addr:      addr,
+		key:       key,
+		toEchoCh:  nil,
+		toReadyCh: nil,
 	}
 }
 
-// NewToBrokerReadyChannels returns a new ToBrokerReadyChannels.
-func NewToBrokerReadyChannels() *ToBrokerReadyChannels {
-	return &ToBrokerReadyChannels{
-		chs: make(map[int64]chan *pb.Publication),
-	}
+// RemoveBroker removes a broker from the map of brokers.
+// It takes as input the id of the broker.
+func (b *Broker) RemoveBroker(id int64) {
+	fmt.Printf("Info for broker %v removed.\n", id)
+
+	b.remoteBrokersMutex.Lock()
+	defer b.remoteBrokersMutex.Unlock()
+
+	delete(b.remoteBrokers, id)
 }
 
-// AddToBrokerEchoChannel adds a channel to ToBrokerEchoChannels.
-// It also returns the channel. It takes as input the ID of the broker that will
-// receive echoes.
-func (b *ToBrokerEchoChannels) AddToBrokerEchoChannel(id int64) chan *pb.Publication {
-	// fmt.Printf("To broker echo channel %v added.\n", id)
-	ch := make(chan *pb.Publication, 32)
+// addBrokerChannels adds channels (echo and ready) to a broker in the broker info map.
+// It returns the new channels. It takes as input the id
+// of the broker.
+func (b *Broker) addBrokerChannels(id int64) (chan *pb.Publication, chan *pb.Publication) {
+	fmt.Printf("Channels to broker %v added.\n", id)
 
-	b.Lock()
-	defer b.Unlock()
+	b.remoteBrokersMutex.Lock()
+	defer b.remoteBrokersMutex.Unlock()
 
-	b.chs[id] = ch
+	echoCh := make(chan *pb.Publication, 32)
+	readyCh := make(chan *pb.Publication, 32)
 
-	return ch
+	// Update channels
+	tempBroker := b.remoteBrokers[id]
+	tempBroker.toEchoCh = echoCh
+	tempBroker.toReadyCh = readyCh
+	b.remoteBrokers[id] = tempBroker
+
+	b.remoteBrokerConnections++
+	return echoCh, readyCh
 }
 
-// RemoveToBrokerEchoChannel removes a channel from ToBrokerEchoChannels.
-// It takes as input the ID of the broker that will no longer receive echoes.
-func (b *ToBrokerEchoChannels) RemoveToBrokerEchoChannel(id int64) {
-	// fmt.Printf("To broker echo channel %v removed.\n", id)
+// removeBrokerChannels removes the channels from a broker in the broker info map.
+// It takes as input the id of the broker.
+func (b *Broker) removeBrokerChannels(id int64) {
+	fmt.Printf("Channels to broker %v removed.\n", id)
 
-	b.Lock()
-	b.Unlock()
+	b.remoteBrokersMutex.Lock()
+	defer b.remoteBrokersMutex.Unlock()
 
-	delete(b.chs, id)
-}
+	// Update channels
+	tempBroker := b.remoteBrokers[id]
+	tempBroker.toEchoCh = nil
+	tempBroker.toReadyCh = nil
+	b.remoteBrokers[id] = tempBroker
 
-// AddToBrokerReadyChannel adds a channel to ToBrokerReadyChannels.
-// It also returns the channel. It takes as input the ID of the broker that will
-// receive readies.
-func (b *ToBrokerReadyChannels) AddToBrokerReadyChannel(id int64) chan *pb.Publication {
-	// fmt.Printf("To broker ready channel %v added.\n", id)
-	ch := make(chan *pb.Publication, 32)
-
-	b.Lock()
-	defer b.Unlock()
-
-	b.chs[id] = ch
-
-	return ch
-}
-
-// RemoveToBrokerReadyChannel removes a channel from ToBrokerReadyChannels.
-// It takes as input the ID of the broker that will no longer receive readies.
-func (b *ToBrokerReadyChannels) RemoveToBrokerReadyChannel(id int64) {
-	// fmt.Printf("To broker ready channel %v removed.\n", id)
-
-	b.Lock()
-	b.Unlock()
-
-	delete(b.chs, id)
+	b.remoteBrokerConnections--
 }

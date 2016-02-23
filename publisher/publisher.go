@@ -14,15 +14,15 @@ import (
 
 // Publisher is a struct containing a map of channels.
 type Publisher struct {
-	brokersMutex sync.RWMutex
-	brokers map[int64] BrokerInfo
+	brokersMutex      sync.RWMutex
+	brokers           map[int64]brokerInfo
 	brokerConnections int64
 }
 
 // NewPublisher returns a new Publisher.
 func NewPublisher() *Publisher {
 	return &Publisher{
-		brokers: make(map[int64]BrokerInfo),
+		brokers:           make(map[int64]brokerInfo),
 		brokerConnections: 0,
 	}
 }
@@ -35,12 +35,12 @@ func (p *Publisher) Publish(pubReq *pb.Publication) {
 
 	for _, broker := range p.brokers {
 		if broker.toCh != nil {
-		tempPub := &pb.Publication{}
-		*tempPub = *pubReq
-		tempPub.MACs = make([][]byte,1)
-		tempMAC := common.CreatePublicationMAC(tempPub, broker.key, common.Algorithm)
-		tempPub.MACs[0] = tempMAC
-		broker.toCh<- tempPub
+			tempPub := &pb.Publication{}
+			*tempPub = *pubReq
+			tempPub.MACs = make([][]byte, 1)
+			tempMAC := common.CreatePublicationMAC(tempPub, broker.key, common.Algorithm)
+			tempPub.MACs[0] = tempMAC
+			broker.toCh <- tempPub
 		}
 	}
 }
@@ -60,7 +60,7 @@ func (p *Publisher) StartBrokerClients() {
 
 // startBrokerClient starts an individual broker client.
 // It takes as input the broker information.
-func (p *Publisher) startBrokerClient(broker BrokerInfo) {
+func (p *Publisher) startBrokerClient(broker brokerInfo) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure(), grpc.WithBlock())
 

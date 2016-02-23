@@ -19,15 +19,13 @@ import (
 type Subscriber struct {
 	id int64
 
-	//toBrokerChansMutex sync.RWMutex
-	//toBrokerChans      map[string]chan *pb.SubRequest
-	brokersMutex sync.RWMutex
-	brokers map[int64] BrokerInfo
+	brokersMutex      sync.RWMutex
+	brokers           map[int64]brokerInfo
 	brokerConnections int64
-	
-	fromBrokerChan     chan *pb.Publication
-	ToUser             chan *pb.Publication
-	FromUser           chan *pb.SubRequest
+
+	fromBrokerChan chan *pb.Publication
+	ToUser         chan *pb.Publication
+	FromUser       chan *pb.SubRequest
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
@@ -46,16 +44,15 @@ type Subscriber struct {
 // NewSubscriber returns a new Subscriber.
 func NewSubscriber(id int64) *Subscriber {
 	return &Subscriber{
-		id:             id,
-		brokers: make(map[int64]BrokerInfo),
+		id:                id,
+		brokers:           make(map[int64]brokerInfo),
 		brokerConnections: 0,
-		//toBrokerChans:  make(map[string]chan *pb.SubRequest),
-		fromBrokerChan: make(chan *pb.Publication, 8),
-		ToUser:         make(chan *pb.Publication, 8),
-		FromUser:       make(chan *pb.SubRequest, 8),
-		pubsReceived:   make(map[int64]map[int64]map[int64][]byte),
-		pubsLearned:    make(map[int64]map[int64][]byte),
-		topics:         make(map[int64]bool),
+		fromBrokerChan:    make(chan *pb.Publication, 8),
+		ToUser:            make(chan *pb.Publication, 8),
+		FromUser:          make(chan *pb.SubRequest, 8),
+		pubsReceived:      make(map[int64]map[int64]map[int64][]byte),
+		pubsLearned:       make(map[int64]map[int64][]byte),
+		topics:            make(map[int64]bool),
 	}
 }
 
@@ -84,7 +81,7 @@ func (s *Subscriber) StartBrokerClients() {
 
 // startBrokerClient starts an individual broker clients. It takes as input
 // broker information.
-func (s *Subscriber) startBrokerClient(broker BrokerInfo) bool {
+func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
 

@@ -18,7 +18,7 @@ func main() {
 	}
 
 	publisher := NewPublisher()
-	
+
 	publisher.AddBroker(1, "localhost:11111", []byte("12345"))
 	publisher.AddBroker(2, "localhost:11112", []byte("12345"))
 	publisher.AddBroker(3, "localhost:11113", []byte("12345"))

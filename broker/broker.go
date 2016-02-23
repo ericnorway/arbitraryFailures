@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/ericnorway/arbitraryFailures/common"
@@ -16,23 +17,28 @@ import (
 // Broker is a struct containing channels used in communicating
 // with read and write loops.
 type Broker struct {
+	addr string
+
 	numberOfServers int64
 	echoQuorumSize  int64
 	readyQuorumSize int64
 	faultsTolerated int64
-	brokerAddrs     []string
 
-	// PUBLISHER CHANNEL VARIABLES
+	// PUBLISHER VARIABLES
+	publishersMutex sync.RWMutex
+	publishers      map[int64]publisherInfo
 	fromPublisherCh chan *pb.Publication
 
 	// BROKER CHANNEL VARIABLES
-	toBrokerEchoChs   *ToBrokerEchoChannels
-	fromBrokerEchoCh  chan *pb.Publication
-	toBrokerReadyChs  *ToBrokerReadyChannels
-	fromBrokerReadyCh chan *pb.Publication
+	remoteBrokersMutex      sync.RWMutex
+	remoteBrokers           map[int64]brokerInfo
+	remoteBrokerConnections int64
+	fromBrokerEchoCh        chan *pb.Publication
+	fromBrokerReadyCh       chan *pb.Publication
 
 	// SUBSCRIBER CHANNEL VARIABLES
-	toSubscriberChs  *ToSubscriberChannels
+	subscribersMutex sync.RWMutex
+	subscribers      map[int64]subscriberInfo
 	fromSubscriberCh chan *pb.SubRequest
 
 	// MESSAGE TRACKING VARIABLES
@@ -68,54 +74,52 @@ type Broker struct {
 	// The second index references the topic ID.
 	// The bool contains whether or not the subscriber is subscribed to that topic.
 	topics map[int64]map[int64]bool
-	
+
 	publisherKeys [][]byte
 }
 
 // NewBroker returns a new Broker
-func NewBroker() *Broker {
+func NewBroker(addr string) *Broker {
 	return &Broker{
-		numberOfServers:   4,                                                                                    // default
-		echoQuorumSize:    3,                                                                                    // default
-		readyQuorumSize:   2,                                                                                    // default
-		faultsTolerated:   1,                                                                                    // default
-		brokerAddrs:       []string{"localhost:11111", "localhost:11112", "localhost:11113", "localhost:11114"}, // default
-		fromPublisherCh:   make(chan *pb.Publication, 32),
-		toBrokerEchoChs:   NewToBrokerEchoChannels(),
-		fromBrokerEchoCh:  make(chan *pb.Publication, 32),
-		toBrokerReadyChs:  NewToBrokerReadyChannels(),
-		fromBrokerReadyCh: make(chan *pb.Publication, 32),
-		toSubscriberChs:   NewToSubscriberChannels(),
-		fromSubscriberCh:  make(chan *pb.SubRequest, 32),
-		forwardSent:       make(map[int64]map[int64]bool),
-		echoesSent:        make(map[int64]map[int64]bool),
-		echoesReceived:    make(map[int64]map[int64]map[int64]string),
-		readiesSent:       make(map[int64]map[int64]bool),
-		readiesReceived:   make(map[int64]map[int64]map[int64]string),
-		topics:            make(map[int64]map[int64]bool),
+		addr:                    addr,
+		numberOfServers:         4, // default
+		echoQuorumSize:          3, // default
+		readyQuorumSize:         2, // default
+		faultsTolerated:         1, // default
+		publishers:              make(map[int64]publisherInfo),
+		fromPublisherCh:         make(chan *pb.Publication, 32),
+		remoteBrokers:           make(map[int64]brokerInfo),
+		remoteBrokerConnections: 0,
+		fromBrokerEchoCh:        make(chan *pb.Publication, 32),
+		fromBrokerReadyCh:       make(chan *pb.Publication, 32),
+		subscribers:             make(map[int64]subscriberInfo),
+		fromSubscriberCh:        make(chan *pb.SubRequest, 32),
+		forwardSent:             make(map[int64]map[int64]bool),
+		echoesSent:              make(map[int64]map[int64]bool),
+		echoesReceived:          make(map[int64]map[int64]map[int64]string),
+		readiesSent:             make(map[int64]map[int64]bool),
+		readiesReceived:         make(map[int64]map[int64]map[int64]string),
+		topics:                  make(map[int64]map[int64]bool),
 	}
 }
 
-// StartBroker creates and starts a new Broker.
-// The Broker will listen on the endpoint provided.
-func StartBroker(endpoint string) {
+// StartBroker starts a new Broker.
+func (b *Broker) StartBroker() {
 	fmt.Printf("Broker started.\n")
 
-	listener, err := net.Listen("tcp", endpoint)
+	listener, err := net.Listen("tcp", b.addr)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	} else {
-		fmt.Printf("Listener started on %v\n", endpoint)
+		fmt.Printf("Listener started on %v\n", b.addr)
 	}
 
-	broker := NewBroker()
-
 	grpcServer := grpc.NewServer()
-	pb.RegisterPubBrokerServer(grpcServer, broker)
-	pb.RegisterSubBrokerServer(grpcServer, broker)
-	pb.RegisterInterBrokerServer(grpcServer, broker)
-	broker.connectToOtherBrokers(endpoint)
-	go broker.handleMessages()
+	pb.RegisterPubBrokerServer(grpcServer, b)
+	pb.RegisterSubBrokerServer(grpcServer, b)
+	pb.RegisterInterBrokerServer(grpcServer, b)
+	b.connectToOtherBrokers(b.addr)
+	go b.handleMessages()
 
 	fmt.Printf("*** Ready to serve incoming requests. ***\n")
 	err = grpcServer.Serve(listener)
@@ -129,14 +133,12 @@ func StartBroker(endpoint string) {
 func (b *Broker) connectToOtherBrokers(localAddr string) {
 
 	// Connect to all broker addresses except itself.
-	for i, addr := range b.brokerAddrs {
-		if addr != localAddr {
-			go b.connectToBroker(int64(i), addr)
-		}
+	for _, broker := range b.remoteBrokers {
+		go b.connectToBroker(broker.id, broker.addr)
 	}
 
 	// Wait for connections to be established.
-	for len(b.toBrokerEchoChs.chs) < 3 {
+	for b.remoteBrokerConnections < 3 {
 		fmt.Printf("Waiting for connections...\n")
 		time.Sleep(time.Second)
 	}
@@ -159,8 +161,7 @@ func (b *Broker) connectToBroker(brokerID int64, brokerAddr string) {
 	defer conn.Close()
 
 	client := pb.NewInterBrokerClient(conn)
-	toBrokerEchoCh := b.toBrokerEchoChs.AddToBrokerEchoChannel(brokerID)
-	toBrokerReadyCh := b.toBrokerReadyChs.AddToBrokerReadyChannel(brokerID)
+	toBrokerEchoCh, toBrokerReadyCh := b.addBrokerChannels(brokerID)
 
 	// Write loop.
 	for {
@@ -179,6 +180,10 @@ func (b *Broker) connectToBroker(brokerID int64, brokerAddr string) {
 
 // Publish handles incoming Publish requests from publishers
 func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubResponse, error) {
+	//if b.publishers[pub.PublisherID] == PublisherInfo{} {
+	//	return &pb.PubResponse{AlphaReached: false}, nil
+	//}
+
 	if pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], []byte("12345"), common.Algorithm) == false {
 		return &pb.PubResponse{AlphaReached: false}, nil
 	}
@@ -211,7 +216,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	}
 
 	id := req.SubscriberID
-	ch := b.toSubscriberChs.AddToSubscriberChannel(id)
+	ch := b.addToSubChannel(id)
 
 	// Add initial subscribe for processing
 	b.fromSubscriberCh <- req
@@ -223,7 +228,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 			case pub := <-ch:
 				err := stream.Send(pub)
 				if err != nil {
-					b.toSubscriberChs.RemoveToSubscriberChannel(id)
+					b.removeToSubChannel(id)
 					break
 				}
 			}
@@ -234,10 +239,10 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
-			b.toSubscriberChs.RemoveToSubscriberChannel(id)
+			b.removeToSubChannel(id)
 			return err
 		} else if err != nil {
-			b.toSubscriberChs.RemoveToSubscriberChannel(id)
+			b.removeToSubChannel(id)
 			return err
 		}
 		b.fromSubscriberCh <- req

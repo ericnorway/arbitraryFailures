@@ -16,7 +16,7 @@ func main() {
 	subscriber := NewSubscriber(int64(*subscriberID))
 	subscriber.AddTopic(1)
 	subscriber.AddTopic(2)
-	
+
 	subscriber.AddBroker(1, "localhost:11111", []byte("12345"))
 	subscriber.AddBroker(2, "localhost:11112", []byte("12345"))
 	subscriber.AddBroker(3, "localhost:11113", []byte("12345"))
