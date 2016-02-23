@@ -17,11 +17,14 @@ func main() {
 		return
 	}
 
-	brokerAddrs := []string{"localhost:11111", "localhost:11112", "localhost:11113", "localhost:11114"}
-
 	publisher := NewPublisher()
+	
+	publisher.AddBroker(1, "localhost:11111", []byte("12345"))
+	publisher.AddBroker(2, "localhost:11112", []byte("12345"))
+	publisher.AddBroker(3, "localhost:11113", []byte("12345"))
+	publisher.AddBroker(4, "localhost:11114", []byte("12345"))
 
-	publisher.StartBrokerClients(brokerAddrs)
+	publisher.StartBrokerClients()
 
 	time.Sleep(time.Second)
 

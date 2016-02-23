@@ -19,8 +19,12 @@ import (
 type Subscriber struct {
 	id int64
 
-	toBrokerChansMutex sync.RWMutex
-	toBrokerChans      map[string]chan *pb.SubRequest
+	//toBrokerChansMutex sync.RWMutex
+	//toBrokerChans      map[string]chan *pb.SubRequest
+	brokersMutex sync.RWMutex
+	brokers map[int64] BrokerInfo
+	brokerConnections int64
+	
 	fromBrokerChan     chan *pb.Publication
 	ToUser             chan *pb.Publication
 	FromUser           chan *pb.SubRequest
@@ -43,7 +47,9 @@ type Subscriber struct {
 func NewSubscriber(id int64) *Subscriber {
 	return &Subscriber{
 		id:             id,
-		toBrokerChans:  make(map[string]chan *pb.SubRequest),
+		brokers: make(map[int64]BrokerInfo),
+		brokerConnections: 0,
+		//toBrokerChans:  make(map[string]chan *pb.SubRequest),
 		fromBrokerChan: make(chan *pb.Publication, 8),
 		ToUser:         make(chan *pb.Publication, 8),
 		FromUser:       make(chan *pb.SubRequest, 8),
@@ -63,14 +69,13 @@ func (s *Subscriber) RemoveTopic(topic int64) {
 	delete(s.topics, topic)
 }
 
-// StartBrokerClients starts the broker clients. It takes as input
-// a slice of broker addresses.
-func (s *Subscriber) StartBrokerClients(brokerAddrs []string) {
-	for i := range brokerAddrs {
-		go s.startBrokerClient(brokerAddrs[i])
+// StartBrokerClients starts the broker clients.
+func (s *Subscriber) StartBrokerClients() {
+	for _, broker := range s.brokers {
+		go s.startBrokerClient(broker)
 	}
 
-	for len(s.toBrokerChans) < 3 {
+	for s.brokerConnections < 3 {
 		fmt.Printf("Waiting for connections...\n")
 		time.Sleep(time.Second)
 	}
@@ -78,12 +83,12 @@ func (s *Subscriber) StartBrokerClients(brokerAddrs []string) {
 }
 
 // startBrokerClient starts an individual broker clients. It takes as input
-// a broker address.
-func (s *Subscriber) startBrokerClient(brokerAddr string) bool {
+// broker information.
+func (s *Subscriber) startBrokerClient(broker BrokerInfo) bool {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
 
-	conn, err := grpc.Dial(brokerAddr, opts...)
+	conn, err := grpc.Dial(broker.addr, opts...)
 	if err != nil {
 		fmt.Printf("Error while connecting to server: %v\n", err)
 		return false
@@ -110,18 +115,18 @@ func (s *Subscriber) startBrokerClient(brokerAddr string) bool {
 	if err != nil {
 		return false
 	}
-	s.addChannel(brokerAddr)
+	s.addChannel(broker.id)
 
 	// Read loop
 	go func() {
 		for {
 			pub, err := stream.Recv()
 			if err == io.EOF {
-				s.removeChannel(brokerAddr)
+				s.removeChannel(broker.id)
 				break
 			}
 			if err != nil {
-				s.removeChannel(brokerAddr)
+				s.removeChannel(broker.id)
 				break
 			}
 
@@ -143,31 +148,6 @@ func (s *Subscriber) startBrokerClient(brokerAddr string) bool {
 	}()
 
 	return true
-}
-
-// addChannel adds a channel to the map of to broker channels.
-// It returns the new channel. It takes as input the address
-// of the broker.
-func (s *Subscriber) addChannel(addr string) chan *pb.SubRequest {
-	fmt.Printf("Broker channel to %v added.\n", addr)
-
-	s.toBrokerChansMutex.Lock()
-	defer s.toBrokerChansMutex.Unlock()
-
-	ch := make(chan *pb.SubRequest, 32)
-	s.toBrokerChans[addr] = ch
-	return ch
-}
-
-// removeChannel removes a channel from the map of to broker channels.
-// It takes as input the address of the broker.
-func (s *Subscriber) removeChannel(addr string) {
-	fmt.Printf("Broker channel to %v removed.\n", addr)
-
-	s.toBrokerChansMutex.Lock()
-	s.toBrokerChansMutex.Unlock()
-
-	delete(s.toBrokerChans, addr)
 }
 
 // ProcessPublications processes incoming publications from the brokers.

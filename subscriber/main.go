@@ -13,13 +13,16 @@ func main() {
 		return
 	}
 
-	brokerAddrs := []string{"localhost:11111", "localhost:11112", "localhost:11113", "localhost:11114"}
-
 	subscriber := NewSubscriber(int64(*subscriberID))
 	subscriber.AddTopic(1)
 	subscriber.AddTopic(2)
+	
+	subscriber.AddBroker(1, "localhost:11111", []byte("12345"))
+	subscriber.AddBroker(2, "localhost:11112", []byte("12345"))
+	subscriber.AddBroker(3, "localhost:11113", []byte("12345"))
+	subscriber.AddBroker(4, "localhost:11114", []byte("12345"))
 
-	subscriber.StartBrokerClients(brokerAddrs)
+	subscriber.StartBrokerClients()
 
 	go subscriber.ProcessPublications()
 
