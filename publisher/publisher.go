@@ -31,18 +31,13 @@ func NewPublisher(localID int64) *Publisher {
 
 // Publish publishes a publication to all the brokers.
 // It takes as input a publication.
-func (p *Publisher) Publish(pubReq *pb.Publication) {
+func (p *Publisher) Publish(pub *pb.Publication) {
 	p.brokersMutex.RLock()
 	defer p.brokersMutex.RUnlock()
 
 	for _, broker := range p.brokers {
 		if broker.toCh != nil {
-			tempPub := &pb.Publication{}
-			*tempPub = *pubReq
-			tempPub.MACs = make([][]byte, 1)
-			tempMAC := common.CreatePublicationMAC(tempPub, broker.key, common.Algorithm)
-			tempPub.MACs[0] = tempMAC
-			broker.toCh <- tempPub
+			broker.toCh <- *pub
 		}
 	}
 }
@@ -79,8 +74,12 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 	for {
 		select {
 		case pub := <-ch:
+			pub.MACs = make([][]byte, 1)
+			mac := common.CreatePublicationMAC(&pub, p.brokers[broker.id].key, common.Algorithm)
+			pub.MACs[0] = mac
+		
 			// Handle publish request and response
-			resp, err := client.Publish(context.Background(), pub)
+			resp, err := client.Publish(context.Background(), &pub)
 			if err != nil {
 				p.removeChannel(broker.id)
 				fmt.Printf("Error publishing to %v, %v\n", broker.id, err)

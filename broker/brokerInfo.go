@@ -11,8 +11,8 @@ type brokerInfo struct {
 	id        int64
 	addr      string
 	key       []byte
-	toEchoCh  chan *pb.Publication
-	toReadyCh chan *pb.Publication
+	toEchoCh  chan pb.Publication
+	toReadyCh chan pb.Publication
 }
 
 // AddBroker adds a broker to the map of brokers.
@@ -46,14 +46,14 @@ func (b *Broker) RemoveBroker(id int64) {
 // addBrokerChannels adds channels (echo and ready) to a broker in the broker info map.
 // It returns the new channels. It takes as input the id
 // of the broker.
-func (b *Broker) addBrokerChannels(id int64) (chan *pb.Publication, chan *pb.Publication) {
+func (b *Broker) addBrokerChannels(id int64) (chan pb.Publication, chan pb.Publication) {
 	fmt.Printf("Channels to broker %v added.\n", id)
 
 	b.remoteBrokersMutex.Lock()
 	defer b.remoteBrokersMutex.Unlock()
 
-	echoCh := make(chan *pb.Publication, 32)
-	readyCh := make(chan *pb.Publication, 32)
+	echoCh := make(chan pb.Publication, 32)
+	readyCh := make(chan pb.Publication, 32)
 
 	// Update channels
 	tempBroker := b.remoteBrokers[id]

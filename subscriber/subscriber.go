@@ -66,19 +66,6 @@ func (s *Subscriber) RemoveTopic(topic int64) {
 	delete(s.topics, topic)
 }
 
-// StartBrokerClients starts the broker clients.
-func (s *Subscriber) StartBrokerClients() {
-	for _, broker := range s.brokers {
-		go s.startBrokerClient(broker)
-	}
-
-	for s.brokerConnections < 3 {
-		fmt.Printf("Waiting for connections...\n")
-		time.Sleep(time.Second)
-	}
-	fmt.Printf("...done\n")
-}
-
 // startBrokerClient starts an individual broker clients. It takes as input
 // broker information.
 func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
@@ -106,13 +93,13 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 
 	// Send the initial subscribe request.
 	err = stream.Send(&pb.SubRequest{
-		SubscriberID: s.id,
+		SubscriberID: s.localID,
 		Topics:       topics,
 	})
 	if err != nil {
 		return false
 	}
-	s.addChannel(broker.id)
+	ch := s.addChannel(broker.id)
 
 	// Read loop
 	go func() {
@@ -135,8 +122,9 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 	go func() {
 		for {
 			select {
-			case subReq := <-s.FromUser:
-				err = stream.Send(subReq)
+			case subReq := <-ch:
+				// TODO: Add MAC
+				err = stream.Send(&subReq)
 				if err != nil {
 					return
 				}
@@ -147,8 +135,17 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 	return true
 }
 
-// ProcessPublications processes incoming publications from the brokers.
-func (s *Subscriber) ProcessPublications() {
+// Start processes incoming publications from the brokers.
+func (s *Subscriber) Start() {
+	for _, broker := range s.brokers {
+		go s.startBrokerClient(broker)
+	}
+
+	for s.brokerConnections < 3 {
+		fmt.Printf("Waiting for connections...\n")
+		time.Sleep(time.Second)
+	}
+	fmt.Printf("...done\n")
 
 	for {
 		select {
@@ -158,6 +155,12 @@ func (s *Subscriber) ProcessPublications() {
 			} else if pub.PubType == common.BRB {
 				s.processBrbPublication(pub)
 			}
+		case sub := <-s.FromUser:
+			s.brokersMutex.RLock()
+			for _, broker := range s.brokers {
+				broker.toCh <- *sub
+			}
+			s.brokersMutex.RUnlock()
 		default:
 		}
 	}

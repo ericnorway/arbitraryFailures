@@ -160,11 +160,11 @@ func (b *Broker) connectToBroker(brokerID int64, brokerAddr string) {
 	for {
 		select {
 		case pub := <-toBrokerEchoCh:
-			_, err := client.Echo(context.Background(), pub)
+			_, err := client.Echo(context.Background(), &pub)
 			if err != nil {
 			}
 		case pub := <-toBrokerReadyCh:
-			_, err := client.Ready(context.Background(), pub)
+			_, err := client.Ready(context.Background(), &pub)
 			if err != nil {
 			}
 		}
@@ -219,7 +219,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 		for {
 			select {
 			case pub := <-ch:
-				err := stream.Send(pub)
+				err := stream.Send(&pub)
 				if err != nil {
 					b.removeToSubChannel(id)
 					break

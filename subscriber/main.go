@@ -32,9 +32,7 @@ func main() {
 		subscriber.AddBroker(id, brokerAddresses[id], []byte(key))
 	}
 
-	subscriber.StartBrokerClients()
-
-	go subscriber.ProcessPublications()
+	go subscriber.Start()
 
 	for {
 		select {

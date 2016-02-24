@@ -10,7 +10,7 @@ import (
 type subscriberInfo struct {
 	id     int64
 	key    []byte
-	toCh   chan *pb.Publication
+	toCh   chan pb.Publication
 	topics map[int64]bool
 }
 
@@ -44,13 +44,13 @@ func (b *Broker) RemoveSubscriber(id int64) {
 // addToSubChannel adds a channel to a subscriber in the subscriber info map.
 // It returns the new channel. It takes as input the id
 // of the subscriber.
-func (b *Broker) addToSubChannel(id int64) chan *pb.Publication {
+func (b *Broker) addToSubChannel(id int64) chan pb.Publication {
 	fmt.Printf("Channel to subscriber %v added.\n", id)
 
 	b.subscribersMutex.Lock()
 	defer b.subscribersMutex.Unlock()
 
-	ch := make(chan *pb.Publication, 32)
+	ch := make(chan pb.Publication, 32)
 
 	// Update channel
 	tempSubscriber := b.subscribers[id]
