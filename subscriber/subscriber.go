@@ -17,7 +17,7 @@ import (
 // publications received, a map of publications learned,
 // and a map of topics.
 type Subscriber struct {
-	id int64
+	localID int64
 
 	brokersMutex      sync.RWMutex
 	brokers           map[int64]brokerInfo
@@ -42,9 +42,9 @@ type Subscriber struct {
 }
 
 // NewSubscriber returns a new Subscriber.
-func NewSubscriber(id int64) *Subscriber {
+func NewSubscriber(localID int64) *Subscriber {
 	return &Subscriber{
-		id:                id,
+		localID:           localID,
 		brokers:           make(map[int64]brokerInfo),
 		brokerConnections: 0,
 		fromBrokerChan:    make(chan *pb.Publication, 8),

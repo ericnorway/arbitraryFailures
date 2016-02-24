@@ -13,14 +13,24 @@ func main() {
 		return
 	}
 
-	subscriber := NewSubscriber(int64(*subscriberID))
-	subscriber.AddTopic(1)
-	subscriber.AddTopic(2)
+	err := ReadConfigFile(*configFile)
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		return
+	}
 
-	subscriber.AddBroker(1, "localhost:11111", []byte("12345"))
-	subscriber.AddBroker(2, "localhost:11112", []byte("12345"))
-	subscriber.AddBroker(3, "localhost:11113", []byte("12345"))
-	subscriber.AddBroker(4, "localhost:11114", []byte("12345"))
+	subscriber := NewSubscriber(localID)
+
+	// Add topics this subscriber is interested in.
+	for _, topic := range topics {
+		subscriber.AddTopic(topic)
+	}
+
+	// Add broker information
+	for i, key := range brokerKeys {
+		id := int64(i)
+		subscriber.AddBroker(id, brokerAddresses[id], []byte(key))
+	}
 
 	subscriber.StartBrokerClients()
 
