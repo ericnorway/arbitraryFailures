@@ -155,6 +155,11 @@ func (s *Subscriber) Start() {
 	}
 	fmt.Printf("...done\n")
 
+	s.processMessages()
+}
+
+// processMessages processes messages from brokers and from the user.
+func (s *Subscriber) processMessages() {
 	for {
 		select {
 		case pub := <-s.fromBrokerChan:

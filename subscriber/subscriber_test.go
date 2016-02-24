@@ -805,11 +805,11 @@ var quorumTests = []struct {
 
 func TestProcessPublications(t *testing.T) {
 	for i, test := range processTests {
-		go test.subscriber.ProcessPublications()
+		go test.subscriber.processMessages()
 
 		for j, subtest := range test.subtests {
 			test.subscriber.fromBrokerChan <- &subtest.pub
-			// Give ProcessPublications() time to process the publication.
+			// Give processMessages() time to process the publication.
 			time.Sleep(1 * time.Millisecond)
 
 			// Check that the learned value is correct.
