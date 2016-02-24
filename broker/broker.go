@@ -160,10 +160,16 @@ func (b *Broker) connectToBroker(brokerID int64, brokerAddr string) {
 	for {
 		select {
 		case pub := <-toBrokerEchoCh:
+			pub.MACs = make([][]byte, 1)
+			pub.MACs[0] = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key, common.Algorithm)
+
 			_, err := client.Echo(context.Background(), &pub)
 			if err != nil {
 			}
 		case pub := <-toBrokerReadyCh:
+			pub.MACs = make([][]byte, 1)
+			pub.MACs[0] = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key, common.Algorithm)
+
 			_, err := client.Ready(context.Background(), &pub)
 			if err != nil {
 			}
@@ -173,11 +179,10 @@ func (b *Broker) connectToBroker(brokerID int64, brokerAddr string) {
 
 // Publish handles incoming Publish requests from publishers
 func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubResponse, error) {
-	//if b.publishers[pub.PublisherID] == PublisherInfo{} {
-	//	return &pb.PubResponse{AlphaReached: false}, nil
-	//}
+	publisher, exists := b.publishers[pub.PublisherID]
 
-	if pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], b.publishers[pub.PublisherID].key, common.Algorithm) == false {
+	// Check MAC
+	if !exists || pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], publisher.key, common.Algorithm) == false {
 		return &pb.PubResponse{AlphaReached: false}, nil
 	}
 	b.fromPublisherCh <- pub
@@ -187,12 +192,26 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 
 // Echo handles incoming RBR echo requests from other brokers
 func (b *Broker) Echo(ctx context.Context, pub *pb.Publication) (*pb.EchoResponse, error) {
+	remoteBroker, exists := b.remoteBrokers[pub.BrokerID]
+
+	// Check MAC
+	if !exists || pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], remoteBroker.key, common.Algorithm) == false {
+		return &pb.EchoResponse{}, nil
+	}
 	b.fromBrokerEchoCh <- pub
+
 	return &pb.EchoResponse{}, nil
 }
 
 // Ready handles incoming RBR ready requests from other brokers
 func (b *Broker) Ready(ctx context.Context, pub *pb.Publication) (*pb.ReadyResponse, error) {
+	remoteBroker, exists := b.remoteBrokers[pub.BrokerID]
+
+	// Check MAC
+	if !exists || pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], remoteBroker.key, common.Algorithm) == false {
+		return &pb.ReadyResponse{}, nil
+	}
+
 	b.fromBrokerReadyCh <- pub
 	return &pb.ReadyResponse{}, nil
 }
@@ -219,6 +238,9 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 		for {
 			select {
 			case pub := <-ch:
+				pub.MACs = make([][]byte, 1)
+				pub.MACs[0] = common.CreatePublicationMAC(&pub, b.subscribers[id].key, common.Algorithm)
+
 				err := stream.Send(&pub)
 				if err != nil {
 					b.removeToSubChannel(id)

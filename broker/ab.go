@@ -17,7 +17,7 @@ func (b Broker) handleAbPublish(pub *pb.Publication) {
 
 	// If this publication has not been forwarded yet
 	if b.forwardSent[pub.PublisherID][pub.PublicationID] == false {
-		
+
 		// Make echo publication
 		tempPub := &pb.Publication{
 			PubType:       pub.PubType,
@@ -33,7 +33,7 @@ func (b Broker) handleAbPublish(pub *pb.Publication) {
 		b.subscribersMutex.RLock()
 		for i, subscriber := range b.subscribers {
 			// Only if they are interested in the topic
-			if subscriber.toCh != nil && b.subscribers[i].topics[pub.Topic] == true {	
+			if subscriber.toCh != nil && b.subscribers[i].topics[pub.Topic] == true {
 				subscriber.toCh <- *tempPub
 			}
 		}

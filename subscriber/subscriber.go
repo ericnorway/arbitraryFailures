@@ -105,6 +105,13 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 	go func() {
 		for {
 			pub, err := stream.Recv()
+
+			tempBroker, exists := s.brokers[pub.BrokerID]
+
+			if !exists || pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], tempBroker.key, common.Algorithm) == false {
+				break
+			}
+
 			if err == io.EOF {
 				s.removeChannel(broker.id)
 				break
@@ -124,6 +131,7 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 			select {
 			case subReq := <-ch:
 				// TODO: Add MAC
+
 				err = stream.Send(&subReq)
 				if err != nil {
 					return
