@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	//"fmt"
 	"testing"
 
 	"github.com/ericnorway/arbitraryFailures/common"
@@ -29,7 +29,7 @@ func TestHandleAbPublish(t *testing.T) {
 			for _, subscriber := range test.broker.subscribers {
 				select {
 				case pub := <-subscriber.toCh:
-					if !Equals(*pub, subtest.want) {
+					if !Equals(pub, subtest.want) {
 						t.Errorf("HandleAbPublish\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 							i+1, test.desc, j+1, &subtest.want, pub)
 					}
@@ -52,7 +52,7 @@ var handleAbPublishTests = []struct {
 	subtests       []handleAbPublishTest
 }{
 	{
-		broker:         NewBroker("localhost"),
+		broker:         NewBroker(0, "localhost"),
 		desc:           "1 pub request, 1 subscriber",
 		numSubscribers: 1,
 		subtests: []handleAbPublishTest{
@@ -76,7 +76,7 @@ var handleAbPublishTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker("localhost"),
+		broker:         NewBroker(0, "localhost"),
 		desc:           "1 pub request, 3 subscribers",
 		numSubscribers: 3,
 		subtests: []handleAbPublishTest{
@@ -100,7 +100,7 @@ var handleAbPublishTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker("localhost"),
+		broker:         NewBroker(0, "localhost"),
 		desc:           "5 pub requests, 3 subscribers",
 		numSubscribers: 3,
 		subtests: []handleAbPublishTest{

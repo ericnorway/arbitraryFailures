@@ -24,7 +24,7 @@ func TestHandleBrbPublish(t *testing.T) {
 			for _, remoteBroker := range test.broker.remoteBrokers {
 				select {
 				case pub := <-remoteBroker.toEchoCh:
-					if !Equals(*pub, subtest.want) {
+					if !Equals(pub, subtest.want) {
 						t.Errorf("HandleBrbPublish\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 							i+1, test.desc, j+1, &subtest.want, pub)
 					}
@@ -47,7 +47,7 @@ var handleBrbPublishTests = []struct {
 	subtests   []handleBrbPublishTest
 }{
 	{
-		broker:     NewBroker("localhost"),
+		broker:     NewBroker(0, "localhost"),
 		desc:       "1 pub request, 3 other brokers",
 		numBrokers: 4,
 		subtests: []handleBrbPublishTest{
@@ -71,7 +71,7 @@ var handleBrbPublishTests = []struct {
 		},
 	},
 	{
-		broker:     NewBroker("localhost"),
+		broker:     NewBroker(0, "localhost"),
 		desc:       "5 pub requests, 3 other brokers",
 		numBrokers: 3,
 		subtests: []handleBrbPublishTest{
@@ -196,7 +196,7 @@ func TestHandleBrbEcho(t *testing.T) {
 					}
 					select {
 					case pub := <-remoteBroker.toReadyCh:
-						if !Equals(*pub, subtest.want) {
+						if !Equals(pub, subtest.want) {
 							t.Errorf("HandleBrbEcho\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 								i+1, test.desc, j+1, &subtest.want, pub)
 						}
@@ -214,7 +214,7 @@ func TestHandleBrbEcho(t *testing.T) {
 					}
 					select {
 					case pub := <-subscriber.toCh:
-						if !Equals(*pub, subtest.want) {
+						if !Equals(pub, subtest.want) {
 							t.Errorf("HandleBrbEcho\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 								i+1, test.desc, j+1, &subtest.want, pub)
 						}
@@ -260,7 +260,7 @@ var handleBrbEchoTests = []struct {
 	subtests       []handleBrbEchoTest
 }{
 	{
-		broker:         NewBroker("localhost"),
+		broker:         NewBroker(0, "localhost"),
 		desc:           "4 x 1 echoes (4 echoes for 1 publication), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
@@ -323,7 +323,7 @@ var handleBrbEchoTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker("localhost"),
+		broker:         NewBroker(0, "localhost"),
 		desc:           "4 x 1, 2 x 1, 3 x 1 echoes, 3 other brokers, 1 subscriber",
 		numBrokers:     4,
 		numSubscribers: 1,
@@ -453,7 +453,7 @@ var handleBrbEchoTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker("localhost"),
+		broker:         NewBroker(0, "localhost"),
 		desc:           "4 x 1 echoes (1 with wrong content), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
@@ -516,7 +516,7 @@ var handleBrbEchoTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker("localhost"),
+		broker:         NewBroker(0, "localhost"),
 		desc:           "4 x 1 echoes (4 echoes for 1 publication, 1 with wrong topic), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
@@ -620,7 +620,7 @@ func TestHandleBrbReady(t *testing.T) {
 					}
 					select {
 					case pub := <-remoteBroker.toReadyCh:
-						if !Equals(*pub, subtest.want) {
+						if !Equals(pub, subtest.want) {
 							t.Errorf("HandleBrbReady\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 								i+1, test.desc, j+1, &subtest.want, pub)
 						}
@@ -638,7 +638,7 @@ func TestHandleBrbReady(t *testing.T) {
 					}
 					select {
 					case pub := <-subscriber.toCh:
-						if !Equals(*pub, subtest.want) {
+						if !Equals(pub, subtest.want) {
 							t.Errorf("HandleBrbReady\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 								i+1, test.desc, j+1, &subtest.want, pub)
 						}
@@ -685,7 +685,7 @@ var handleBrbReadyTests = []struct {
 	subtests       []handleBrbReadyTest
 }{
 	{
-		broker:         NewBroker("localhost"),
+		broker:         NewBroker(0, "localhost"),
 		desc:           "4 x 1 readies (4 readies for 1 publication (not readied yet)), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
@@ -749,7 +749,7 @@ var handleBrbReadyTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker("localhost"),
+		broker:         NewBroker(0, "localhost"),
 		desc:           "4 x 1 readies (4 readies for 1 publication (already readied)), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
@@ -815,7 +815,7 @@ var handleBrbReadyTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker("localhost"),
+		broker:         NewBroker(0, "localhost"),
 		desc:           "4 x 1 readies (4 readies for 1 publication (not readied yet, 1 ready has a different topic)), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
