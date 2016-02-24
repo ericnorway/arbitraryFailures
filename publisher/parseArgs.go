@@ -11,10 +11,10 @@ var (
 		false,
 		"Show usage help",
 	)
-	publisherID = flag.Int(
-		"id",
-		0,
-		"The ID for this publisher.",
+	configFile = flag.String(
+		"config",
+		"",
+		"The config to use for this broker.",
 	)
 )
 
@@ -32,8 +32,8 @@ func ParseArgs() bool {
 		return false
 	}
 
-	if *publisherID == 0 {
-		fmt.Printf("Need to specify an ID.\n")
+	if *configFile == "" {
+		fmt.Printf("Need to specify a config file.\n")
 		return false
 	}
 

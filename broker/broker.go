@@ -17,7 +17,8 @@ import (
 // Broker is a struct containing channels used in communicating
 // with read and write loops.
 type Broker struct {
-	addr string
+	localID   int64
+	localAddr string
 
 	numberOfServers int64
 	echoQuorumSize  int64
@@ -72,9 +73,10 @@ type Broker struct {
 }
 
 // NewBroker returns a new Broker
-func NewBroker(addr string) *Broker {
+func NewBroker(localID int64, localAddr string) *Broker {
 	return &Broker{
-		addr:                    addr,
+		localID:                 localID,
+		localAddr:               localAddr,
 		numberOfServers:         4, // default
 		echoQuorumSize:          3, // default
 		readyQuorumSize:         2, // default
@@ -99,18 +101,18 @@ func NewBroker(addr string) *Broker {
 func (b *Broker) StartBroker() {
 	fmt.Printf("Broker started.\n")
 
-	listener, err := net.Listen("tcp", b.addr)
+	listener, err := net.Listen("tcp", b.localAddr)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	} else {
-		fmt.Printf("Listener started on %v\n", b.addr)
+		fmt.Printf("Listener started on %v\n", b.localAddr)
 	}
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterPubBrokerServer(grpcServer, b)
 	pb.RegisterSubBrokerServer(grpcServer, b)
 	pb.RegisterInterBrokerServer(grpcServer, b)
-	b.connectToOtherBrokers(b.addr)
+	b.connectToOtherBrokers()
 	go b.handleMessages()
 
 	fmt.Printf("*** Ready to serve incoming requests. ***\n")
@@ -121,8 +123,7 @@ func (b *Broker) StartBroker() {
 }
 
 // connectToOtherBrokers connects this broker to the other brokers.
-// It takes as input the local broker's address.
-func (b *Broker) connectToOtherBrokers(localAddr string) {
+func (b *Broker) connectToOtherBrokers() {
 
 	// Connect to all broker addresses except itself.
 	for _, broker := range b.remoteBrokers {
@@ -176,7 +177,7 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 	//	return &pb.PubResponse{AlphaReached: false}, nil
 	//}
 
-	if pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], []byte("12345"), common.Algorithm) == false {
+	if pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], b.publishers[pub.PublisherID].key, common.Algorithm) == false {
 		return &pb.PubResponse{AlphaReached: false}, nil
 	}
 	b.fromPublisherCh <- pub

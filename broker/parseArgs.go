@@ -11,15 +11,10 @@ var (
 		false,
 		"Show usage help",
 	)
-	endpoint = flag.String(
-		"endpoint",
+	configFile = flag.String(
+		"config",
 		"",
-		"The endpoint to listen on.",
-	)
-	brokerID = flag.Int(
-		"id",
-		0,
-		"The ID for this broker.",
+		"The config to use for this broker.",
 	)
 )
 
@@ -37,13 +32,8 @@ func ParseArgs() bool {
 		return false
 	}
 
-	if *endpoint == "" {
-		fmt.Printf("Need to specify an endpoint.\n")
-		return false
-	}
-
-	if *brokerID == 0 {
-		fmt.Printf("Need to specify an ID.\n")
+	if *configFile == "" {
+		fmt.Printf("Need to specify a config file.\n")
 		return false
 	}
 

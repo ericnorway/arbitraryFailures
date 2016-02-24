@@ -14,14 +14,16 @@ import (
 
 // Publisher is a struct containing a map of channels.
 type Publisher struct {
+	localID           int64
 	brokersMutex      sync.RWMutex
 	brokers           map[int64]brokerInfo
 	brokerConnections int64
 }
 
 // NewPublisher returns a new Publisher.
-func NewPublisher() *Publisher {
+func NewPublisher(localID int64) *Publisher {
 	return &Publisher{
+		localID:           localID,
 		brokers:           make(map[int64]brokerInfo),
 		brokerConnections: 0,
 	}

@@ -26,7 +26,7 @@ func (b Broker) handleBrbPublish(req *pb.Publication) {
 			PublisherID:   req.PublisherID,
 			PublicationID: req.PublicationID,
 			Topic:         req.Topic,
-			BrokerID:      int64(*brokerID),
+			BrokerID:      b.localID,
 			Content:       req.Content,
 			MACs:          req.MACs,
 		}
@@ -90,7 +90,7 @@ func (b Broker) handleEcho(req *pb.Publication) {
 			PublisherID:   req.PublisherID,
 			PublicationID: req.PublicationID,
 			Topic:         req.Topic,
-			BrokerID:      int64(*brokerID),
+			BrokerID:      b.localID,
 			Content:       req.Content,
 			MACs:          req.MACs,
 		}
@@ -165,7 +165,7 @@ func (b Broker) handleReady(req *pb.Publication) {
 			PublisherID:   req.PublisherID,
 			PublicationID: req.PublicationID,
 			Topic:         req.Topic,
-			BrokerID:      int64(*brokerID),
+			BrokerID:      b.localID,
 			Content:       req.Content,
 			MACs:          req.MACs,
 		}

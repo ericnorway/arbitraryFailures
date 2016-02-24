@@ -24,7 +24,7 @@ func (b Broker) handleAbPublish(req *pb.Publication) {
 			PublisherID:   req.PublisherID,
 			PublicationID: req.PublicationID,
 			Topic:         req.Topic,
-			BrokerID:      int64(*brokerID),
+			BrokerID:      b.localID,
 			Content:       req.Content,
 			MACs:          req.MACs,
 		}

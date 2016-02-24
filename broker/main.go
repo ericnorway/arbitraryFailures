@@ -1,5 +1,9 @@
 package main
 
+import (
+	"fmt"
+)
+
 // main parses the command line arguments and starts the Broker
 func main() {
 	parsedCorrectly := ParseArgs()
@@ -7,30 +11,35 @@ func main() {
 		return
 	}
 
-	broker := NewBroker(*endpoint)
-
-	broker.AddPublisher(1, []byte("12345"))
-	broker.AddPublisher(2, []byte("12345"))
-	broker.AddPublisher(3, []byte("12345"))
-	broker.AddPublisher(4, []byte("12345"))
-
-	if *endpoint != "localhost:11111" {
-		broker.AddBroker(1, "localhost:11111", []byte("12345"))
-	}
-	if *endpoint != "localhost:11112" {
-		broker.AddBroker(2, "localhost:11112", []byte("12345"))
-	}
-	if *endpoint != "localhost:11113" {
-		broker.AddBroker(3, "localhost:11113", []byte("12345"))
-	}
-	if *endpoint != "localhost:11114" {
-		broker.AddBroker(4, "localhost:11114", []byte("12345"))
+	err := ReadConfigFile(*configFile)
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		return
 	}
 
-	broker.AddSubscriber(1, []byte("12345"))
-	broker.AddSubscriber(2, []byte("12345"))
-	broker.AddSubscriber(3, []byte("12345"))
-	broker.AddSubscriber(4, []byte("12345"))
+	// Create new broker
+	broker := NewBroker(localID, brokerAddresses[localID])
 
+	// Add publisher information
+	for i, key := range publisherKeys {
+		id := int64(i)
+		broker.AddPublisher(id, []byte(key))
+	}
+
+	// Add broker information
+	for i, key := range brokerKeys {
+		id := int64(i)
+		if id != localID {
+			broker.AddBroker(id, brokerAddresses[id], []byte(key))
+		}
+	}
+
+	// Add subscriber information
+	for i, key := range subscriberKeys {
+		id := int64(i)
+		broker.AddSubscriber(id, []byte(key))
+	}
+
+	// Start the broker
 	broker.StartBroker()
 }

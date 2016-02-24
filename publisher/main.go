@@ -17,12 +17,19 @@ func main() {
 		return
 	}
 
-	publisher := NewPublisher()
+	err := ReadConfigFile(*configFile)
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		return
+	}
 
-	publisher.AddBroker(1, "localhost:11111", []byte("12345"))
-	publisher.AddBroker(2, "localhost:11112", []byte("12345"))
-	publisher.AddBroker(3, "localhost:11113", []byte("12345"))
-	publisher.AddBroker(4, "localhost:11114", []byte("12345"))
+	publisher := NewPublisher(localID)
+
+	// Add broker information
+	for i, key := range brokerKeys {
+		id := int64(i)
+		publisher.AddBroker(id, brokerAddresses[id], []byte(key))
+	}
 
 	publisher.StartBrokerClients()
 
@@ -30,7 +37,7 @@ func main() {
 
 	publisher.Publish(&pb.Publication{
 		PubType:       common.AB,
-		PublisherID:   int64(*publisherID),
+		PublisherID:   localID,
 		PublicationID: 1,
 		Topic:         1,
 		Content:       []byte(time.Now().String()),
@@ -39,7 +46,7 @@ func main() {
 
 	publisher.Publish(&pb.Publication{
 		PubType:       common.BRB,
-		PublisherID:   int64(*publisherID),
+		PublisherID:   localID,
 		PublicationID: 2,
 		Topic:         2,
 		Content:       []byte(time.Now().String()),
@@ -48,7 +55,7 @@ func main() {
 
 	publisher.Publish(&pb.Publication{
 		PubType:       common.AB,
-		PublisherID:   int64(*publisherID),
+		PublisherID:   localID,
 		PublicationID: 3,
 		Topic:         1,
 		Content:       []byte(time.Now().String()),
