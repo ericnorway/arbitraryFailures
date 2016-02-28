@@ -11,10 +11,15 @@ var (
 		false,
 		"Show usage help",
 	)
+	clientType = flag.String(
+		"type",
+		"",
+		"The type of client: publisher or subscriber",
+	)
 	configFile = flag.String(
 		"config",
 		"",
-		"The config to use for this broker.",
+		"The configuration file to use.",
 	)
 )
 
@@ -29,6 +34,11 @@ func ParseArgs() bool {
 	flag.Parse()
 	if *help {
 		flag.Usage()
+		return false
+	}
+	
+	if *clientType != "subscriber" && *clientType != "publisher" {
+		fmt.Printf("Need to specify a client type: publisher or subscriber.\n")
 		return false
 	}
 
