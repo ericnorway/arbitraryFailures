@@ -37,7 +37,9 @@ func (p *Publisher) Publish(pub *pb.Publication) {
 
 	for _, broker := range p.brokers {
 		if broker.toCh != nil {
-			broker.toCh <- *pub
+			select {
+			case broker.toCh <- *pub:
+			}
 		}
 	}
 }
@@ -80,9 +82,8 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 			// Handle publish request and response
 			resp, err := client.Publish(context.Background(), &pub)
 			if err != nil {
-				p.removeChannel(broker.id)
 				fmt.Printf("Error publishing to %v, %v\n", broker.id, err)
-				return
+				continue
 			}
 
 			if resp.AlphaReached == true {

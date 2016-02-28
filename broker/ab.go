@@ -34,7 +34,9 @@ func (b Broker) handleAbPublish(pub *pb.Publication) {
 		for i, subscriber := range b.subscribers {
 			// Only if they are interested in the topic
 			if subscriber.toCh != nil && b.subscribers[i].topics[pub.Topic] == true {
-				subscriber.toCh <- *tempPub
+				select {
+				case subscriber.toCh <- *tempPub:
+				}
 			}
 		}
 		b.subscribersMutex.RUnlock()

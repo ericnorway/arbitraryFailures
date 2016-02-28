@@ -128,14 +128,18 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 				break
 			}
 
-			s.fromBrokerChan <- pub
+			select {
+			case s.fromBrokerChan <- pub:
+			}
 		}
 	}()
 
+	select {
 	// Send the initial subscribe request.
-	ch <- pb.SubRequest{
+	case ch <- pb.SubRequest{
 		SubscriberID: s.localID,
 		Topics:       topics,
+	}:
 	}
 
 	return true
@@ -169,7 +173,9 @@ func (s *Subscriber) processMessages() {
 		case sub := <-s.FromUser:
 			s.brokersMutex.RLock()
 			for _, broker := range s.brokers {
-				broker.toCh <- *sub
+				select {
+				case broker.toCh <- *sub:
+				}
 			}
 			s.brokersMutex.RUnlock()
 		default:
@@ -196,7 +202,9 @@ func (s *Subscriber) processAbPublication(pub *pb.Publication) {
 		foundQuorum := s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
 
 		if foundQuorum {
-			s.ToUser <- pub
+			select {
+			case s.ToUser <- pub:
+			}
 		}
 	}
 }
@@ -220,7 +228,9 @@ func (s *Subscriber) processBrbPublication(pub *pb.Publication) {
 		foundQuorum := s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
 
 		if foundQuorum {
-			s.ToUser <- pub
+			select {
+			case s.ToUser <- pub:
+			}
 		}
 	}
 }

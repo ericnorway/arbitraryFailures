@@ -32,7 +32,9 @@ func (b Broker) handleBrbPublish(pub *pb.Publication) {
 		}
 
 		// "Send" the echo request to itself
-		b.fromBrokerEchoCh <- tempPub
+		select {
+		case b.fromBrokerEchoCh <- tempPub:
+		}
 
 		// Send the echo request to all other brokers
 		b.remoteBrokersMutex.RLock()
@@ -96,13 +98,17 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 		}
 
 		// "Send" the ready request to itself
-		b.fromBrokerReadyCh <- tempPub
+		select {
+		case b.fromBrokerReadyCh <- tempPub:
+		}
 
 		// Send the ready to all other brokers
 		b.remoteBrokersMutex.RLock()
 		for _, remoteBroker := range b.remoteBrokers {
 			if remoteBroker.toReadyCh != nil {
-				remoteBroker.toReadyCh <- *tempPub
+				select {
+				case remoteBroker.toReadyCh <- *tempPub:
+				}
 			}
 		}
 		b.remoteBrokersMutex.RUnlock()
@@ -112,7 +118,9 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 		for i, subscriber := range b.subscribers {
 			// Only if they are interested in the topic
 			if subscriber.toCh != nil && b.subscribers[i].topics[pub.Topic] == true {
-				subscriber.toCh <- *tempPub
+				select {
+				case subscriber.toCh <- *tempPub:
+				}
 			}
 		}
 		b.subscribersMutex.RUnlock()
@@ -163,14 +171,18 @@ func (b Broker) handleReady(pub *pb.Publication) {
 
 		// "Send" the ready request to itself, if not already from self
 		if pub.BrokerID != pub.BrokerID {
-			b.fromBrokerReadyCh <- pub
+			select {
+			case b.fromBrokerReadyCh <- pub:
+			}
 		}
 
 		// Send the ready to all other brokers
 		b.remoteBrokersMutex.RLock()
 		for _, remoteBroker := range b.remoteBrokers {
 			if remoteBroker.toReadyCh != nil {
-				remoteBroker.toReadyCh <- *pub
+				select {
+				case remoteBroker.toReadyCh <- *pub:
+				}
 			}
 		}
 		b.remoteBrokersMutex.RUnlock()
@@ -180,7 +192,9 @@ func (b Broker) handleReady(pub *pb.Publication) {
 		for i, subscriber := range b.subscribers {
 			// Only if they are interested in the topic
 			if subscriber.toCh != nil && b.subscribers[i].topics[pub.Topic] == true {
-				subscriber.toCh <- *pub
+				select {
+				case subscriber.toCh <- *pub:
+				}
 			}
 		}
 		b.subscribersMutex.RUnlock()

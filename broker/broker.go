@@ -185,7 +185,10 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 	if !exists || pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], publisher.key, common.Algorithm) == false {
 		return &pb.PubResponse{AlphaReached: false}, nil
 	}
-	b.fromPublisherCh <- pub
+
+	select {
+	case b.fromPublisherCh <- pub:
+	}
 
 	return &pb.PubResponse{AlphaReached: false}, nil
 }
@@ -198,7 +201,10 @@ func (b *Broker) Echo(ctx context.Context, pub *pb.Publication) (*pb.EchoRespons
 	if !exists || pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], remoteBroker.key, common.Algorithm) == false {
 		return &pb.EchoResponse{}, nil
 	}
-	b.fromBrokerEchoCh <- pub
+
+	select {
+	case b.fromBrokerEchoCh <- pub:
+	}
 
 	return &pb.EchoResponse{}, nil
 }
@@ -212,7 +218,10 @@ func (b *Broker) Ready(ctx context.Context, pub *pb.Publication) (*pb.ReadyRespo
 		return &pb.ReadyResponse{}, nil
 	}
 
-	b.fromBrokerReadyCh <- pub
+	select {
+	case b.fromBrokerReadyCh <- pub:
+	}
+
 	return &pb.ReadyResponse{}, nil
 }
 
@@ -260,7 +269,10 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 			b.removeToSubChannel(id)
 			return err
 		}
-		b.fromSubscriberCh <- req
+
+		select {
+		case b.fromSubscriberCh <- req:
+		}
 	}
 
 	return nil
