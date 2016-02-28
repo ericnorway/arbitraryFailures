@@ -91,15 +91,22 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 		topics = append(topics, i)
 	}
 
-	// Send the initial subscribe request.
-	err = stream.Send(&pb.SubRequest{
-		SubscriberID: s.localID,
-		Topics:       topics,
-	})
-	if err != nil {
-		return false
-	}
 	ch := s.addChannel(broker.id)
+
+	// Write loop
+	go func() {
+		for {
+			select {
+			case subReq := <-ch:
+				// TODO: Add MAC
+
+				err = stream.Send(&subReq)
+				if err != nil {
+					return
+				}
+			}
+		}
+	}()
 
 	// Read loop
 	go func() {
@@ -125,20 +132,11 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 		}
 	}()
 
-	// Write loop
-	go func() {
-		for {
-			select {
-			case subReq := <-ch:
-				// TODO: Add MAC
-
-				err = stream.Send(&subReq)
-				if err != nil {
-					return
-				}
-			}
-		}
-	}()
+	// Send the initial subscribe request.
+	ch <- pb.SubRequest{
+		SubscriberID: s.localID,
+		Topics:       topics,
+	}
 
 	return true
 }
