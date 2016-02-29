@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"sync"
 	"time"
 
@@ -101,11 +102,14 @@ func NewBroker(localID int64, localAddr string) *Broker {
 func (b *Broker) StartBroker() {
 	fmt.Printf("Broker started.\n")
 
-	listener, err := net.Listen("tcp", b.localAddr)
+	pos := strings.Index(b.localAddr, ":")
+	port := b.localAddr[pos:]
+
+	listener, err := net.Listen("tcp", port)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	} else {
-		fmt.Printf("Listener started on %v\n", b.localAddr)
+		fmt.Printf("Listener started on %v\n", port)
 	}
 
 	grpcServer := grpc.NewServer()
@@ -249,6 +253,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 			case pub := <-ch:
 				pub.MACs = make([][]byte, 1)
 				pub.MACs[0] = common.CreatePublicationMAC(&pub, b.subscribers[id].key, common.Algorithm)
+				// fmt.Printf("Send AB Publish Publication %v, Publisher %v, Broker %v to Subscriber %v.\n", pub.PublicationID, pub.PublisherID, pub.BrokerID, id)
 
 				err := stream.Send(&pub)
 				if err != nil {
