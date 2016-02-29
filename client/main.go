@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"sort"
+	"strconv"
 	"time"
 
 	pb "github.com/ericnorway/arbitraryFailures/proto"
@@ -36,8 +36,8 @@ func main() {
 // mainSub starts a subscriber.
 func mainSub() {
 	fmt.Printf("Subscriber started.\n")
-	pubs := make(map[int64]int64)
-	var keys Keys
+	pubTimes := make(map[int64]map[int64]int64)
+	allPubIDs := make(map[int64][]int64)
 	osCh := make(chan os.Signal, 1)
 	signal.Notify(osCh, os.Interrupt)
 
@@ -60,9 +60,13 @@ func mainSub() {
 		for {
 			select {
 			case pub := <-s.ToUser:
+				if pubTimes[pub.PublisherID] == nil {
+					pubTimes[pub.PublisherID] = make(map[int64]int64)
+				}
+
 				timeNano := time.Now().UnixNano()
-				pubs[pub.PublicationID] = timeNano
-				keys = append(keys, pub.PublicationID)
+				pubTimes[pub.PublisherID][pub.PublicationID] = timeNano
+				allPubIDs[pub.PublisherID] = append(allPubIDs[pub.PublisherID], pub.PublicationID)
 			}
 		}
 	}()
@@ -70,25 +74,26 @@ func mainSub() {
 	// Wait for ctrl-c
 	<-osCh
 
-	file, err := os.Create("recvTimes.txt")
+	file, err := os.Create("recvTimes" + strconv.FormatInt(localID, 10) + ".txt")
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return
 	}
 	defer file.Close()
 
-	sort.Sort(keys)
-	// Record the times sent in a file.
-	for _, key := range keys {
-		file.Write([]byte(fmt.Sprintf("%v:%v\n", key, pubs[key])))
+	for publisherID, pubIDs := range allPubIDs {
+		// Record the times sent in a file.
+		for _, pubID := range pubIDs {
+			file.Write([]byte(fmt.Sprintf("%v:%v:%v:%v\n", publisherID, pubID, localID, pubTimes[publisherID][pubID])))
+		}
 	}
 }
 
 // mainPub starts a publisher and publishes three publications.
 func mainPub() {
 	fmt.Printf("Publisher started.\n")
-	pubs := make(map[int64]int64)
-	var keys Keys
+	pubTimes := make(map[int64]int64)
+	var pubIDs []int64
 
 	p := publisher.NewPublisher(localID)
 
@@ -113,51 +118,35 @@ func mainPub() {
 		pub := &pb.Publication{
 			PubType:       publicationType,
 			PublisherID:   localID,
-			PublicationID: time.Now().Unix() + i,
+			PublicationID: i,
 			Topic:         1,
 			Content:       sum,
 		}
 
 		// Record the time sent in a map.
 		timeNano := time.Now().UnixNano()
-		pubs[pub.PublicationID] = timeNano
-		keys = append(keys, pub.PublicationID)
+		pubTimes[pub.PublicationID] = timeNano
+		pubIDs = append(pubIDs, pub.PublicationID)
 
 		// Send the publication.
 		p.Publish(pub)
+
+		fmt.Printf(".")
+		time.Sleep(5 * time.Millisecond)
 	}
 
 	// Make sure that the last few messages have time to be sent.
 	time.Sleep(time.Second)
 
-	file, err := os.Create("sendTimes.txt")
+	file, err := os.Create("sendTimes" + strconv.FormatInt(localID, 10) + ".txt")
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return
 	}
 	defer file.Close()
 
-	sort.Sort(keys)
 	// Record the times sent in a file.
-	for _, key := range keys {
-		file.Write([]byte(fmt.Sprintf("%v:%v\n", key, pubs[key])))
+	for _, pubID := range pubIDs {
+		file.Write([]byte(fmt.Sprintf("%v:%v:%v\n", localID, pubID, pubTimes[pubID])))
 	}
-}
-
-type Keys []int64
-
-// Len is the number of elements in the collection.
-func (k Keys) Len() int {
-	return len(k)
-}
-
-// Less reports whether the element with
-// index i should sort before the element with index j.
-func (k Keys) Less(i, j int) bool {
-	return k[i] < k[j]
-}
-
-// Swap swaps the elements with indexes i and j.
-func (k Keys) Swap(i, j int) {
-	k[i], k[j] = k[j], k[i]
 }
