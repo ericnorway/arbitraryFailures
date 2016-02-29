@@ -112,11 +112,12 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 	go func() {
 		for {
 			pub, err := stream.Recv()
+			// fmt.Printf("Received publication %v from publisher %v and broker %v.\n", pub.PublicationID, pub.PublisherID, pub.BrokerID)
 
 			tempBroker, exists := s.brokers[pub.BrokerID]
 
 			if !exists || pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], tempBroker.key, common.Algorithm) == false {
-				break
+				continue
 			}
 
 			if err == io.EOF {
