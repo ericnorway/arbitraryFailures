@@ -9,7 +9,7 @@ import (
 // handleAbPublish handles Authenticated Broadcast publish requests.
 // It takes the request as input.
 func (b Broker) handleAbPublish(pub *pb.Publication) {
-	// fmt.Printf("Handle AB Publish Publication %v, Publisher %v, Broker %v.\n", req.PublicationID, req.PublisherID, req.BrokerID)
+	// fmt.Printf("Handle AB Publish Publication %v, Publisher %v, Broker %v.\n", pub.PublicationID, pub.PublisherID, pub.BrokerID)
 
 	if b.forwardSent[pub.PublisherID] == nil {
 		b.forwardSent[pub.PublisherID] = make(map[int64]bool)
