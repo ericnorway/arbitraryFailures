@@ -103,7 +103,7 @@ func mainPub() {
 		p.AddBroker(id, brokerAddresses[id], []byte(key))
 	}
 
-	p.StartBrokerClients()
+	p.Start()
 
 	mac := hmac.New(sha512.New, []byte(""))
 	time.Sleep(time.Second)

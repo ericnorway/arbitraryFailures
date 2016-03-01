@@ -14,24 +14,39 @@ import (
 
 // Publisher is a struct containing a map of channels.
 type Publisher struct {
-	localID           int64
+	localID      int64
+	currentPubID int64
+
 	brokersMutex      sync.RWMutex
 	brokers           map[int64]brokerInfo
 	brokerConnections int64
+
+	historyRequestCh chan int64
+	addToHistoryCh   chan pb.Publication
 }
 
 // NewPublisher returns a new Publisher.
 func NewPublisher(localID int64) *Publisher {
 	return &Publisher{
 		localID:           localID,
+		currentPubID:      0,
 		brokers:           make(map[int64]brokerInfo),
 		brokerConnections: 0,
+		historyRequestCh:  make(chan int64, 8),
+		addToHistoryCh:    make(chan pb.Publication, 8),
 	}
 }
 
 // Publish publishes a publication to all the brokers.
 // It takes as input a publication.
 func (p *Publisher) Publish(pub *pb.Publication) {
+	pub.PublicationID = p.currentPubID
+	p.currentPubID++
+
+	select {
+	case p.addToHistoryCh <- *pub:
+	}
+
 	p.brokersMutex.RLock()
 	defer p.brokersMutex.RUnlock()
 
@@ -44,8 +59,10 @@ func (p *Publisher) Publish(pub *pb.Publication) {
 	}
 }
 
-// StartBrokerClients starts a broker client for each broker.
-func (p *Publisher) StartBrokerClients() {
+// Start starts the publisher.
+func (p *Publisher) Start() {
+	go p.alphaHandler()
+
 	for _, broker := range p.brokers {
 		go p.startBrokerClient(broker)
 	}
@@ -88,6 +105,48 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 
 			if resp.AlphaReached == true {
 				fmt.Printf("Alpha reached.\n")
+				select {
+				case p.historyRequestCh <- broker.id:
+				}
+			}
+		}
+	}
+}
+
+// alphaHandler keeps a hisotry of the publications and sends alpha values when
+// a quorum of alpha requests is reached.
+func (p *Publisher) alphaHandler() {
+	var history []pb.Publication
+	historyRequests := make(map[int64]bool)
+	pubsSinceLastAlpha := 0
+	historyID := int64(-1)
+
+	for {
+		select {
+		case pub := <-p.addToHistoryCh:
+			history = append(history, pub)
+			pubsSinceLastAlpha++
+		case id := <-p.historyRequestCh:
+			historyRequests[id] = true
+			if len(historyRequests) > len(p.brokers)/2 {
+				// Create the publication.
+				pub := &pb.Publication{
+					PubType:       common.BRB,
+					PublisherID:   p.localID,
+					PublicationID: historyID,
+					Topic:         0,
+					Content:       nil,
+				}
+
+				// Add content
+
+				// Send the publication.
+				p.Publish(pub)
+
+				historyID--
+
+				// Reset this
+				pubsSinceLastAlpha = 0
 			}
 		}
 	}

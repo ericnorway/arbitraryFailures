@@ -179,7 +179,6 @@ func (s *Subscriber) processMessages() {
 				}
 			}
 			s.brokersMutex.RUnlock()
-		default:
 		}
 	}
 }
