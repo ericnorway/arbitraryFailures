@@ -21,6 +21,7 @@ type Broker struct {
 	localID   int64
 	localAddr string
 
+	alpha           int
 	numberOfServers int64
 	echoQuorumSize  int64
 	readyQuorumSize int64
@@ -73,11 +74,14 @@ type Broker struct {
 	readiesReceived map[int64]map[int64]map[int64]string
 }
 
-// NewBroker returns a new Broker
-func NewBroker(localID int64, localAddr string) *Broker {
+// NewBroker returns a new Broker.
+// It takes as input the local broker ID, the local address and port,
+// and the alpha value.
+func NewBroker(localID int64, localAddr string, alpha int) *Broker {
 	return &Broker{
 		localID:                 localID,
 		localAddr:               localAddr,
+		alpha:                   alpha,
 		numberOfServers:         4, // default
 		echoQuorumSize:          3, // default
 		readyQuorumSize:         2, // default
@@ -194,7 +198,15 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 	case b.fromPublisherCh <- pub:
 	}
 
-	return &pb.PubResponse{AlphaReached: false}, nil
+	alphaReached := false
+
+	// If using alpha values
+	if b.alpha > 0 && pub.PubType != common.BRB {
+		// Check if alpha has been reached for this publisher.
+		alphaReached = b.IncrementPubCount(pub.PublisherID)
+	}
+
+	return &pb.PubResponse{AlphaReached: alphaReached}, nil
 }
 
 // Echo handles incoming RBR echo requests from other brokers

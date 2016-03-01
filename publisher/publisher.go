@@ -40,9 +40,6 @@ func NewPublisher(localID int64) *Publisher {
 // Publish publishes a publication to all the brokers.
 // It takes as input a publication.
 func (p *Publisher) Publish(pub *pb.Publication) {
-	pub.PublicationID = p.currentPubID
-	p.currentPubID++
-
 	select {
 	case p.addToHistoryCh <- *pub:
 	}
@@ -104,7 +101,6 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 			}
 
 			if resp.AlphaReached == true {
-				fmt.Printf("Alpha reached.\n")
 				select {
 				case p.historyRequestCh <- broker.id:
 				}
@@ -134,19 +130,30 @@ func (p *Publisher) alphaHandler() {
 					PubType:       common.BRB,
 					PublisherID:   p.localID,
 					PublicationID: historyID,
-					Topic:         0,
-					Content:       nil,
+					Topic:         1,
+					Content:       []byte(" "),
 				}
 
-				// Add content
+				// TODO: Add content
 
 				// Send the publication.
 				p.Publish(pub)
 
 				historyID--
 
-				// Reset this
+				// Reset these
+				historyRequests = make(map[int64]bool)
 				pubsSinceLastAlpha = 0
+
+				p.brokersMutex.RLock()
+				for _, broker := range p.brokers {
+					if broker.toCh != nil {
+						select {
+						case broker.toCh <- *pub:
+						}
+					}
+				}
+				p.brokersMutex.RUnlock()
 			}
 		}
 	}

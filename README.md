@@ -3,7 +3,7 @@
 To start a broker replica node:
 Run the server app with the following flags:
 -config should be the name of the config file for that node.
--alpha should be the number of Chain or AB pubs to accept before requesting a BRB pub.
+-alpha should be number of AB or Chain pubs to accept before requesting a BRB pub (with history).
  0 means that you don't want to combine the algorithms.
 
 Here is an example config file for a broker replica node:

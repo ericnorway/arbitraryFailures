@@ -16,6 +16,11 @@ var (
 		"",
 		"The config to use for this broker.",
 	)
+	alpha = flag.Int(
+		"alpha",
+		0,
+		"The number of AB or Chain pubs to accept before requesting a BRB pub (with history).",
+	)
 )
 
 func usage() {

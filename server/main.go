@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	
+
 	//"github.com/ericnorway/arbitraryFailures/common"
 	//pb "github.com/ericnorway/arbitraryFailures/proto"
 	"github.com/ericnorway/arbitraryFailures/broker"
@@ -22,7 +22,7 @@ func main() {
 	}
 
 	// Create new broker
-	b := broker.NewBroker(localID, brokerAddresses[localID])
+	b := broker.NewBroker(localID, brokerAddresses[localID], *alpha)
 
 	// Add publisher information
 	for i, key := range publisherKeys {
