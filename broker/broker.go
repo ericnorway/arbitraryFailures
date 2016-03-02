@@ -38,6 +38,7 @@ type Broker struct {
 	remoteBrokerConnections uint64
 	fromBrokerEchoCh        chan *pb.Publication
 	fromBrokerReadyCh       chan *pb.Publication
+	fromBrokerChainCh       chan *pb.Publication
 
 	// SUBSCRIBER CHANNEL VARIABLES
 	subscribersMutex sync.RWMutex
@@ -92,6 +93,7 @@ func NewBroker(localID uint64, localAddr string, alpha uint64) *Broker {
 		remoteBrokerConnections: 0,
 		fromBrokerEchoCh:        make(chan *pb.Publication, 32),
 		fromBrokerReadyCh:       make(chan *pb.Publication, 32),
+		fromBrokerChainCh:       make(chan *pb.Publication, 32),
 		subscribers:             make(map[uint64]subscriberInfo),
 		fromSubscriberCh:        make(chan *pb.SubRequest, 32),
 		forwardSent:             make(map[uint64]map[int64]bool),
@@ -209,7 +211,7 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 	return &pb.PubResponse{AlphaReached: alphaReached}, nil
 }
 
-// Echo handles incoming RBR echo requests from other brokers
+// Echo handles incoming BRB echo requests from other brokers
 func (b *Broker) Echo(ctx context.Context, pub *pb.Publication) (*pb.EchoResponse, error) {
 	remoteBroker, exists := b.remoteBrokers[pub.BrokerID]
 
@@ -225,7 +227,7 @@ func (b *Broker) Echo(ctx context.Context, pub *pb.Publication) (*pb.EchoRespons
 	return &pb.EchoResponse{}, nil
 }
 
-// Ready handles incoming RBR ready requests from other brokers
+// Ready handles incoming BRB ready requests from other brokers
 func (b *Broker) Ready(ctx context.Context, pub *pb.Publication) (*pb.ReadyResponse, error) {
 	remoteBroker, exists := b.remoteBrokers[pub.BrokerID]
 
@@ -239,6 +241,22 @@ func (b *Broker) Ready(ctx context.Context, pub *pb.Publication) (*pb.ReadyRespo
 	}
 
 	return &pb.ReadyResponse{}, nil
+}
+
+// Chain handles incoming Chain requests from other brokers
+func (b *Broker) Chain(ctx context.Context, pub *pb.Publication) (*pb.ChainResponse, error) {
+	remoteBroker, exists := b.remoteBrokers[pub.BrokerID]
+
+	// Check MAC
+	if !exists || pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], remoteBroker.key, common.Algorithm) == false {
+		return &pb.ChainResponse{}, nil
+	}
+
+	//select {
+	//case b.fromBrokerChainCh <- pub:
+	//}
+
+	return &pb.ChainResponse{}, nil
 }
 
 // Subscribe handles incoming Subscribe requests from subscribers

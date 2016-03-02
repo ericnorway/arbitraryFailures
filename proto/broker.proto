@@ -13,6 +13,7 @@ service SubBroker {
 service InterBroker {
 	rpc Echo(Publication) returns (EchoResponse) {}
 	rpc Ready(Publication) returns (ReadyResponse) {}
+	rpc Chain(Publication) returns (ChainResponse) {}
 }
 
 message Publication {
@@ -32,6 +33,8 @@ message PubResponse{
 message EchoResponse{}
 
 message ReadyResponse{}
+
+message ChainResponse{}
 
 message SubRequest {
 	uint64 SubscriberID = 1;

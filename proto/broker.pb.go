@@ -13,6 +13,7 @@ It has these top-level messages:
 	PubResponse
 	EchoResponse
 	ReadyResponse
+	ChainResponse
 	SubRequest
 */
 package proto
@@ -67,6 +68,13 @@ func (m *ReadyResponse) Reset()         { *m = ReadyResponse{} }
 func (m *ReadyResponse) String() string { return proto1.CompactTextString(m) }
 func (*ReadyResponse) ProtoMessage()    {}
 
+type ChainResponse struct {
+}
+
+func (m *ChainResponse) Reset()         { *m = ChainResponse{} }
+func (m *ChainResponse) String() string { return proto1.CompactTextString(m) }
+func (*ChainResponse) ProtoMessage()    {}
+
 type SubRequest struct {
 	SubscriberID uint64   `protobuf:"varint,1,opt,name=SubscriberID" json:"SubscriberID,omitempty"`
 	Topics       []uint64 `protobuf:"varint,2,rep,name=Topics" json:"Topics,omitempty"`
@@ -81,6 +89,7 @@ func init() {
 	proto1.RegisterType((*PubResponse)(nil), "proto.PubResponse")
 	proto1.RegisterType((*EchoResponse)(nil), "proto.EchoResponse")
 	proto1.RegisterType((*ReadyResponse)(nil), "proto.ReadyResponse")
+	proto1.RegisterType((*ChainResponse)(nil), "proto.ChainResponse")
 	proto1.RegisterType((*SubRequest)(nil), "proto.SubRequest")
 }
 
@@ -245,6 +254,7 @@ var _SubBroker_serviceDesc = grpc.ServiceDesc{
 type InterBrokerClient interface {
 	Echo(ctx context.Context, in *Publication, opts ...grpc.CallOption) (*EchoResponse, error)
 	Ready(ctx context.Context, in *Publication, opts ...grpc.CallOption) (*ReadyResponse, error)
+	Chain(ctx context.Context, in *Publication, opts ...grpc.CallOption) (*ChainResponse, error)
 }
 
 type interBrokerClient struct {
@@ -273,11 +283,21 @@ func (c *interBrokerClient) Ready(ctx context.Context, in *Publication, opts ...
 	return out, nil
 }
 
+func (c *interBrokerClient) Chain(ctx context.Context, in *Publication, opts ...grpc.CallOption) (*ChainResponse, error) {
+	out := new(ChainResponse)
+	err := grpc.Invoke(ctx, "/proto.InterBroker/Chain", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for InterBroker service
 
 type InterBrokerServer interface {
 	Echo(context.Context, *Publication) (*EchoResponse, error)
 	Ready(context.Context, *Publication) (*ReadyResponse, error)
+	Chain(context.Context, *Publication) (*ChainResponse, error)
 }
 
 func RegisterInterBrokerServer(s *grpc.Server, srv InterBrokerServer) {
@@ -308,6 +328,18 @@ func _InterBroker_Ready_Handler(srv interface{}, ctx context.Context, dec func(i
 	return out, nil
 }
 
+func _InterBroker_Chain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(Publication)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(InterBrokerServer).Chain(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 var _InterBroker_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.InterBroker",
 	HandlerType: (*InterBrokerServer)(nil),
@@ -319,6 +351,10 @@ var _InterBroker_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Ready",
 			Handler:    _InterBroker_Ready_Handler,
+		},
+		{
+			MethodName: "Chain",
+			Handler:    _InterBroker_Chain_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},
