@@ -18,16 +18,8 @@ func (b Broker) handleAbPublish(pub *pb.Publication) {
 	// If this publication has not been forwarded yet
 	if b.forwardSent[pub.PublisherID][pub.PublicationID] == false {
 
-		// Make echo publication
-		tempPub := pb.Publication{
-			PubType:       pub.PubType,
-			PublisherID:   pub.PublisherID,
-			PublicationID: pub.PublicationID,
-			Topic:         pub.Topic,
-			BrokerID:      b.localID,
-			Content:       pub.Content,
-			MACs:          pub.MACs,
-		}
+		// Update broker ID
+		pub.BrokerID = b.localID
 
 		// Forward the publication to all subscribers
 		b.subscribersMutex.RLock()
@@ -35,7 +27,7 @@ func (b Broker) handleAbPublish(pub *pb.Publication) {
 			// Only if they are interested in the topic
 			if subscriber.toCh != nil && b.subscribers[i].topics[pub.Topic] == true {
 				select {
-				case subscriber.toCh <- tempPub:
+				case subscriber.toCh <- *pub:
 				}
 			}
 		}

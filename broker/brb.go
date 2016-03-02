@@ -20,27 +20,19 @@ func (b Broker) handleBrbPublish(pub *pb.Publication) {
 	// If this publication has not been echoed yet
 	if b.echoesSent[pub.PublisherID][pub.PublicationID] == false {
 
-		// Make echo publication
-		tempPub := pb.Publication{
-			PubType:       pub.PubType,
-			PublisherID:   pub.PublisherID,
-			PublicationID: pub.PublicationID,
-			Topic:         pub.Topic,
-			BrokerID:      b.localID,
-			Content:       pub.Content,
-			MACs:          pub.MACs,
-		}
+		// Update broker ID
+		pub.BrokerID = b.localID
 
 		// "Send" the echo request to itself
 		select {
-		case b.fromBrokerEchoCh <- &tempPub:
+		case b.fromBrokerEchoCh <- pub:
 		}
 
 		// Send the echo request to all other brokers
 		b.remoteBrokersMutex.RLock()
 		for _, remoteBroker := range b.remoteBrokers {
 			if remoteBroker.toEchoCh != nil {
-				remoteBroker.toEchoCh <- tempPub
+				remoteBroker.toEchoCh <- *pub
 			}
 		}
 		b.remoteBrokersMutex.RUnlock()
@@ -83,23 +75,15 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 		b.readiesSent[pub.PublisherID] = make(map[int64]bool)
 	}
 
-	// If this publication has not been echoed yet
+	// If this publication has not been readied yet
 	if b.readiesSent[pub.PublisherID][pub.PublicationID] == false {
 
-		// Make ready publication
-		tempPub := pb.Publication{
-			PubType:       pub.PubType,
-			PublisherID:   pub.PublisherID,
-			PublicationID: pub.PublicationID,
-			Topic:         pub.Topic,
-			BrokerID:      b.localID,
-			Content:       pub.Content,
-			MACs:          pub.MACs,
-		}
+		// Update broker ID
+		pub.BrokerID = b.localID
 
 		// "Send" the ready request to itself
 		select {
-		case b.fromBrokerReadyCh <- &tempPub:
+		case b.fromBrokerReadyCh <- pub:
 		}
 
 		// Send the ready to all other brokers
@@ -107,7 +91,7 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 		for _, remoteBroker := range b.remoteBrokers {
 			if remoteBroker.toReadyCh != nil {
 				select {
-				case remoteBroker.toReadyCh <- tempPub:
+				case remoteBroker.toReadyCh <- *pub:
 				}
 			}
 		}
@@ -119,7 +103,7 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 			// Only if they are interested in the topic
 			if subscriber.toCh != nil && b.subscribers[i].topics[pub.Topic] == true {
 				select {
-				case subscriber.toCh <- tempPub:
+				case subscriber.toCh <- *pub:
 				}
 			}
 		}
@@ -167,21 +151,13 @@ func (b Broker) handleReady(pub *pb.Publication) {
 	// If this publication has not been echoed yet
 	if b.readiesSent[pub.PublisherID][pub.PublicationID] == false {
 
-		// Make ready publication
-		tempPub := pb.Publication{
-			PubType:       pub.PubType,
-			PublisherID:   pub.PublisherID,
-			PublicationID: pub.PublicationID,
-			Topic:         pub.Topic,
-			BrokerID:      b.localID,
-			Content:       pub.Content,
-			MACs:          pub.MACs,
-		}
+		// Update broker ID
+		pub.BrokerID = b.localID
 
 		// "Send" the ready request to itself, if not already from self
 		if pub.BrokerID != pub.BrokerID {
 			select {
-			case b.fromBrokerReadyCh <- &tempPub:
+			case b.fromBrokerReadyCh <- pub:
 			}
 		}
 
@@ -190,7 +166,7 @@ func (b Broker) handleReady(pub *pb.Publication) {
 		for _, remoteBroker := range b.remoteBrokers {
 			if remoteBroker.toReadyCh != nil {
 				select {
-				case remoteBroker.toReadyCh <- tempPub:
+				case remoteBroker.toReadyCh <- *pub:
 				}
 			}
 		}
@@ -202,7 +178,7 @@ func (b Broker) handleReady(pub *pb.Publication) {
 			// Only if they are interested in the topic
 			if subscriber.toCh != nil && b.subscribers[i].topics[pub.Topic] == true {
 				select {
-				case subscriber.toCh <- tempPub:
+				case subscriber.toCh <- *pub:
 				}
 			}
 		}
