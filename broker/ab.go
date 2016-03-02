@@ -19,7 +19,7 @@ func (b Broker) handleAbPublish(pub *pb.Publication) {
 	if b.forwardSent[pub.PublisherID][pub.PublicationID] == false {
 
 		// Make echo publication
-		tempPub := &pb.Publication{
+		tempPub := pb.Publication{
 			PubType:       pub.PubType,
 			PublisherID:   pub.PublisherID,
 			PublicationID: pub.PublicationID,
@@ -35,7 +35,7 @@ func (b Broker) handleAbPublish(pub *pb.Publication) {
 			// Only if they are interested in the topic
 			if subscriber.toCh != nil && b.subscribers[i].topics[pub.Topic] == true {
 				select {
-				case subscriber.toCh <- *tempPub:
+				case subscriber.toCh <- tempPub:
 				}
 			}
 		}
