@@ -6,14 +6,14 @@ import (
 
 // publisherInfo contains important information about a publisher
 type publisherInfo struct {
-	id       int64
+	id       uint64
 	key      []byte
-	pubCount int
+	pubCount uint64
 }
 
 // AddPublisher adds a Publisher to the map of Publishers.
 // It takes as input the Publisher's id and shared private key.
-func (b *Broker) AddPublisher(id int64, key []byte) {
+func (b *Broker) AddPublisher(id uint64, key []byte) {
 	fmt.Printf("Info for publisher %v added.\n", id)
 
 	b.publishersMutex.Lock()
@@ -28,7 +28,7 @@ func (b *Broker) AddPublisher(id int64, key []byte) {
 
 // RemovePublisher removes a Publisher from the map of Publishers.
 // It takes as input the id of the Publisher.
-func (b *Broker) RemovePublisher(id int64) {
+func (b *Broker) RemovePublisher(id uint64) {
 	fmt.Printf("Info for publisher %v removed.\n", id)
 
 	b.publishersMutex.Lock()
@@ -37,7 +37,7 @@ func (b *Broker) RemovePublisher(id int64) {
 	delete(b.publishers, id)
 }
 
-func (b *Broker) IncrementPubCount(id int64) bool {
+func (b *Broker) IncrementPubCount(id uint64) bool {
 	b.publishersMutex.Lock()
 	defer b.publishersMutex.Unlock()
 

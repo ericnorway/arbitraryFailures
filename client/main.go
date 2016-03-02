@@ -36,8 +36,8 @@ func main() {
 // mainSub starts a subscriber.
 func mainSub() {
 	fmt.Printf("Subscriber started.\n")
-	pubTimes := make(map[int64]map[int64]int64)
-	allPubIDs := make(map[int64][]int64)
+	pubTimes := make(map[uint64]map[int64]int64)
+	allPubIDs := make(map[uint64][]int64)
 	osCh := make(chan os.Signal, 1)
 	signal.Notify(osCh, os.Interrupt)
 
@@ -50,7 +50,7 @@ func mainSub() {
 
 	// Add broker information
 	for i, key := range brokerKeys {
-		id := int64(i)
+		id := uint64(i)
 		s.AddBroker(id, brokerAddresses[id], []byte(key))
 	}
 
@@ -74,7 +74,7 @@ func mainSub() {
 	// Wait for ctrl-c
 	<-osCh
 
-	file, err := os.Create("recvTimes" + strconv.FormatInt(localID, 10) + ".txt")
+	file, err := os.Create("recvTimes" + strconv.FormatUint(localID, 10) + ".txt")
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return
@@ -99,7 +99,7 @@ func mainPub() {
 
 	// Add broker information
 	for i, key := range brokerKeys {
-		id := int64(i)
+		id := uint64(i)
 		p.AddBroker(id, brokerAddresses[id], []byte(key))
 	}
 
@@ -108,8 +108,7 @@ func mainPub() {
 	mac := hmac.New(sha512.New, []byte(""))
 	time.Sleep(time.Second)
 
-	var i int64
-	for i = 0; i < publicationCount; i++ {
+	for i := int64(0); i < *pubCount; i++ {
 		// Create a new random message.
 		mac.Write([]byte(time.Now().String()))
 		sum := mac.Sum(nil)
@@ -138,7 +137,7 @@ func mainPub() {
 	// Make sure that the last few messages have time to be sent.
 	time.Sleep(time.Second)
 
-	file, err := os.Create("sendTimes" + strconv.FormatInt(localID, 10) + ".txt")
+	file, err := os.Create("sendTimes" + strconv.FormatUint(localID, 10) + ".txt")
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return

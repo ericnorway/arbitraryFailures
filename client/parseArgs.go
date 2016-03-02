@@ -23,7 +23,7 @@ var (
 		"",
 		"The configuration file to use.",
 	)
-	pubCount = flag.Int(
+	pubCount = flag.Int64(
 		"pubCount",
 		10,
 		"The number of publications to send (publisher only).",
@@ -33,8 +33,7 @@ var (
 		"AB",
 		"The algorithm to use: AB, BRB, Chain (publisher only).",
 	)
-	publicationType  int32
-	publicationCount int64
+	publicationType  uint32
 )
 
 func usage() {
@@ -73,11 +72,6 @@ func ParseArgs() bool {
 		default:
 			publicationType = common.AB
 		}
-
-		if *pubCount < 0 {
-			*pubCount = 10
-		}
-		publicationCount = int64(*pubCount)
 	}
 
 	return true

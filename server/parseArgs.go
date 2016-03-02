@@ -16,7 +16,7 @@ var (
 		"",
 		"The config to use for this broker.",
 	)
-	alpha = flag.Int(
+	alpha = flag.Uint(
 		"alpha",
 		0,
 		"The number of AB or Chain pubs to accept before requesting a BRB pub (with history).",

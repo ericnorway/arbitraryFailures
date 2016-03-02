@@ -52,11 +52,11 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 
 	// Make the map so not trying to access nil reference
 	if b.echoesReceived[pub.PublisherID] == nil {
-		b.echoesReceived[pub.PublisherID] = make(map[int64]map[int64]string)
+		b.echoesReceived[pub.PublisherID] = make(map[int64]map[uint64]string)
 	}
 	// Make the map so not trying to access nil reference
 	if b.echoesReceived[pub.PublisherID][pub.PublicationID] == nil {
-		b.echoesReceived[pub.PublisherID][pub.PublicationID] = make(map[int64]string)
+		b.echoesReceived[pub.PublisherID][pub.PublicationID] = make(map[uint64]string)
 	}
 	// Echo has not been received yet for this publisher ID, publication ID, broker ID
 	if b.echoesReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == "" {
@@ -125,11 +125,11 @@ func (b Broker) handleReady(pub *pb.Publication) {
 
 	// Make the map so not trying to access nil reference
 	if b.readiesReceived[pub.PublisherID] == nil {
-		b.readiesReceived[pub.PublisherID] = make(map[int64]map[int64]string)
+		b.readiesReceived[pub.PublisherID] = make(map[int64]map[uint64]string)
 	}
 	// Make the map so not trying to access nil reference
 	if b.readiesReceived[pub.PublisherID][pub.PublicationID] == nil {
-		b.readiesReceived[pub.PublisherID][pub.PublicationID] = make(map[int64]string)
+		b.readiesReceived[pub.PublisherID][pub.PublicationID] = make(map[uint64]string)
 	}
 	// Echo has not been received yet for this publisher ID, publication ID, broker ID
 	if b.readiesReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == "" {
@@ -200,7 +200,7 @@ func getInfo(pub *pb.Publication) string {
 	topicBytes := make([]byte, 8)
 
 	buf.Write(pub.Content)
-	binary.PutVarint(topicBytes, pub.Topic)
+	binary.PutUvarint(topicBytes, pub.Topic)
 	buf.Write(topicBytes)
 
 	return buf.String()
@@ -209,11 +209,11 @@ func getInfo(pub *pb.Publication) string {
 // checkEchoQuorum checks that a quorum has been received for a specific publisher and publication.
 // It return true if a quorum has been found, false otherwise. It takes as input
 // the publisher ID and publication ID.
-func (b *Broker) checkEchoQuorum(publisherID int64, publicationID int64) bool {
+func (b *Broker) checkEchoQuorum(publisherID uint64, publicationID int64) bool {
 
 	// Just a temporary map to help with checking for a quorum. It keeps track of the number of each
 	// publication value with this publisher ID and publication ID.
-	countMap := make(map[string]int64)
+	countMap := make(map[string]uint64)
 
 	for _, echoContent := range b.echoesReceived[publisherID][publicationID] {
 		countMap[echoContent] = countMap[echoContent] + 1
@@ -228,11 +228,11 @@ func (b *Broker) checkEchoQuorum(publisherID int64, publicationID int64) bool {
 // checkReadyQuorum checks that a quorum has been received for a specific publisher and publication.
 // It return true if a quorum has been found, false otherwise. It takes as input
 // the publisher ID and publication ID.
-func (b *Broker) checkReadyQuorum(publisherID int64, publicationID int64) bool {
+func (b *Broker) checkReadyQuorum(publisherID uint64, publicationID int64) bool {
 
 	// Just a temporary map to help with checking for a quorum. It keeps track of the number of each
 	// publication value with this publisher ID and publication ID.
-	countMap := make(map[string]int64)
+	countMap := make(map[string]uint64)
 
 	for _, readyContent := range b.readiesReceived[publisherID][publicationID] {
 		countMap[readyContent] = countMap[readyContent] + 1

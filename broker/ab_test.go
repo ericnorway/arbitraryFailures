@@ -13,11 +13,11 @@ func TestHandleAbPublish(t *testing.T) {
 
 		// Manually add subscriber channels and topics
 		for j := 0; j < test.numSubscribers; j++ {
-			test.broker.AddSubscriber(int64(j), []byte("12345"))
-			test.broker.addToSubChannel(int64(j))
-			test.broker.subscribers[int64(j)].topics[1] = true
-			test.broker.subscribers[int64(j)].topics[2] = true
-			test.broker.subscribers[int64(j)].topics[3] = true
+			test.broker.AddSubscriber(uint64(j), []byte("12345"))
+			test.broker.addToSubChannel(uint64(j))
+			test.broker.subscribers[uint64(j)].topics[1] = true
+			test.broker.subscribers[uint64(j)].topics[2] = true
+			test.broker.subscribers[uint64(j)].topics[3] = true
 		}
 
 		for j, subtest := range test.subtests {

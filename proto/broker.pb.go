@@ -32,11 +32,11 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 type Publication struct {
-	PubType       int32    `protobuf:"varint,1,opt,name=PubType" json:"PubType,omitempty"`
-	PublisherID   int64    `protobuf:"varint,2,opt,name=PublisherID" json:"PublisherID,omitempty"`
-	PublicationID int64    `protobuf:"varint,3,opt,name=PublicationID" json:"PublicationID,omitempty"`
-	Topic         int64    `protobuf:"varint,4,opt,name=Topic" json:"Topic,omitempty"`
-	BrokerID      int64    `protobuf:"varint,5,opt,name=BrokerID" json:"BrokerID,omitempty"`
+	PubType       uint32   `protobuf:"varint,1,opt,name=PubType" json:"PubType,omitempty"`
+	PublisherID   uint64   `protobuf:"varint,2,opt,name=PublisherID" json:"PublisherID,omitempty"`
+	PublicationID int64    `protobuf:"zigzag64,3,opt,name=PublicationID" json:"PublicationID,omitempty"`
+	Topic         uint64   `protobuf:"varint,4,opt,name=Topic" json:"Topic,omitempty"`
+	BrokerID      uint64   `protobuf:"varint,5,opt,name=BrokerID" json:"BrokerID,omitempty"`
 	Content       []byte   `protobuf:"bytes,6,opt,name=Content,proto3" json:"Content,omitempty"`
 	MACs          [][]byte `protobuf:"bytes,7,rep,name=MACs,proto3" json:"MACs,omitempty"`
 }
@@ -68,8 +68,8 @@ func (m *ReadyResponse) String() string { return proto1.CompactTextString(m) }
 func (*ReadyResponse) ProtoMessage()    {}
 
 type SubRequest struct {
-	SubscriberID int64   `protobuf:"varint,1,opt,name=SubscriberID" json:"SubscriberID,omitempty"`
-	Topics       []int64 `protobuf:"varint,2,rep,name=Topics" json:"Topics,omitempty"`
+	SubscriberID uint64   `protobuf:"varint,1,opt,name=SubscriberID" json:"SubscriberID,omitempty"`
+	Topics       []uint64 `protobuf:"varint,2,rep,name=Topics" json:"Topics,omitempty"`
 }
 
 func (m *SubRequest) Reset()         { *m = SubRequest{} }

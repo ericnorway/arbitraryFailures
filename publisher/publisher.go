@@ -14,25 +14,25 @@ import (
 
 // Publisher is a struct containing a map of channels.
 type Publisher struct {
-	localID      int64
+	localID      uint64
 	currentPubID int64
 
 	brokersMutex      sync.RWMutex
-	brokers           map[int64]brokerInfo
-	brokerConnections int64
+	brokers           map[uint64]brokerInfo
+	brokerConnections uint64
 
-	historyRequestCh chan int64
+	historyRequestCh chan uint64
 	addToHistoryCh   chan pb.Publication
 }
 
 // NewPublisher returns a new Publisher.
-func NewPublisher(localID int64) *Publisher {
+func NewPublisher(localID uint64) *Publisher {
 	return &Publisher{
 		localID:           localID,
 		currentPubID:      0,
-		brokers:           make(map[int64]brokerInfo),
+		brokers:           make(map[uint64]brokerInfo),
 		brokerConnections: 0,
-		historyRequestCh:  make(chan int64, 8),
+		historyRequestCh:  make(chan uint64, 8),
 		addToHistoryCh:    make(chan pb.Publication, 8),
 	}
 }
@@ -113,7 +113,7 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 // a quorum of alpha requests is reached.
 func (p *Publisher) alphaHandler() {
 	var history []pb.Publication
-	historyRequests := make(map[int64]bool)
+	historyRequests := make(map[uint64]bool)
 	pubsSinceLastAlpha := 0
 	historyID := int64(-1)
 
@@ -142,7 +142,7 @@ func (p *Publisher) alphaHandler() {
 				historyID--
 
 				// Reset these
-				historyRequests = make(map[int64]bool)
+				historyRequests = make(map[uint64]bool)
 				pubsSinceLastAlpha = 0
 
 				p.brokersMutex.RLock()

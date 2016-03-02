@@ -8,7 +8,7 @@ import (
 
 // brokerInfo contains important information about a broker
 type brokerInfo struct {
-	id   int64
+	id   uint64
 	addr string
 	key  []byte
 	toCh chan pb.SubRequest
@@ -16,7 +16,7 @@ type brokerInfo struct {
 
 // AddBroker adds a broker to the map of brokers.
 // It takes as input the broker's id, address, and shared private key.
-func (s *Subscriber) AddBroker(id int64, addr string, key []byte) {
+func (s *Subscriber) AddBroker(id uint64, addr string, key []byte) {
 	fmt.Printf("Info for broker %v added.\n", id)
 
 	s.brokersMutex.Lock()
@@ -32,7 +32,7 @@ func (s *Subscriber) AddBroker(id int64, addr string, key []byte) {
 
 // RemoveBroker removes a broker from the map of brokers.
 // It takes as input the id of the broker.
-func (s *Subscriber) RemoveBroker(id int64) {
+func (s *Subscriber) RemoveBroker(id uint64) {
 	fmt.Printf("Info for broker %v removed.\n", id)
 
 	s.brokersMutex.Lock()
@@ -44,7 +44,7 @@ func (s *Subscriber) RemoveBroker(id int64) {
 // addChannel adds a channel to a broker in the broker info map.
 // It returns the new channel. It takes as input the id
 // of the broker.
-func (s *Subscriber) addChannel(id int64) chan pb.SubRequest {
+func (s *Subscriber) addChannel(id uint64) chan pb.SubRequest {
 	fmt.Printf("Channel to broker %v added.\n", id)
 
 	s.brokersMutex.Lock()
@@ -63,7 +63,7 @@ func (s *Subscriber) addChannel(id int64) chan pb.SubRequest {
 
 // removeChannel removes a channel from a broker in the broker info map.
 // It takes as input the id of the broker.
-func (s *Subscriber) removeChannel(id int64) {
+func (s *Subscriber) removeChannel(id uint64) {
 	fmt.Printf("Channel to broker %v removed.\n", id)
 
 	s.brokersMutex.Lock()

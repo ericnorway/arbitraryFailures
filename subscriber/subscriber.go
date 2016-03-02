@@ -17,10 +17,10 @@ import (
 // publications received, a map of publications learned,
 // and a map of topics.
 type Subscriber struct {
-	localID int64
+	localID uint64
 
 	brokersMutex      sync.RWMutex
-	brokers           map[int64]brokerInfo
+	brokers           map[uint64]brokerInfo
 	brokerConnections int64
 
 	fromBrokerChan chan *pb.Publication
@@ -31,38 +31,38 @@ type Subscriber struct {
 	// The second index references the publication ID.
 	// The third index references the broker ID.
 	// The byte slice contains the publication.
-	pubsReceived map[int64]map[int64]map[int64][]byte
+	pubsReceived map[uint64]map[int64]map[uint64][]byte
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The byte slice contains the publication.
-	pubsLearned map[int64]map[int64][]byte
+	pubsLearned map[uint64]map[int64][]byte
 
-	topics map[int64]bool
+	topics map[uint64]bool
 }
 
 // NewSubscriber returns a new Subscriber.
-func NewSubscriber(localID int64) *Subscriber {
+func NewSubscriber(localID uint64) *Subscriber {
 	return &Subscriber{
 		localID:           localID,
-		brokers:           make(map[int64]brokerInfo),
+		brokers:           make(map[uint64]brokerInfo),
 		brokerConnections: 0,
 		fromBrokerChan:    make(chan *pb.Publication, 8),
 		ToUser:            make(chan *pb.Publication, 8),
 		FromUser:          make(chan *pb.SubRequest, 8),
-		pubsReceived:      make(map[int64]map[int64]map[int64][]byte),
-		pubsLearned:       make(map[int64]map[int64][]byte),
-		topics:            make(map[int64]bool),
+		pubsReceived:      make(map[uint64]map[int64]map[uint64][]byte),
+		pubsLearned:       make(map[uint64]map[int64][]byte),
+		topics:            make(map[uint64]bool),
 	}
 }
 
 // AddTopic adds a topic to the map. It takes as input the topic ID.
-func (s *Subscriber) AddTopic(topic int64) {
+func (s *Subscriber) AddTopic(topic uint64) {
 	s.topics[topic] = true
 }
 
 // RemoveTopic removes a topic from the map. It takes as input the topic ID.
-func (s *Subscriber) RemoveTopic(topic int64) {
+func (s *Subscriber) RemoveTopic(topic uint64) {
 	delete(s.topics, topic)
 }
 
@@ -86,7 +86,7 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 		return false
 	}
 
-	var topics []int64
+	var topics []uint64
 	for i := range s.topics {
 		topics = append(topics, i)
 	}
@@ -188,11 +188,11 @@ func (s *Subscriber) processMessages() {
 func (s *Subscriber) processAbPublication(pub *pb.Publication) {
 	// Make the map so not trying to access nil reference
 	if s.pubsReceived[pub.PublisherID] == nil {
-		s.pubsReceived[pub.PublisherID] = make(map[int64]map[int64][]byte)
+		s.pubsReceived[pub.PublisherID] = make(map[int64]map[uint64][]byte)
 	}
 	// Make the map so not trying to access nil reference
 	if s.pubsReceived[pub.PublisherID][pub.PublicationID] == nil {
-		s.pubsReceived[pub.PublisherID][pub.PublicationID] = make(map[int64][]byte)
+		s.pubsReceived[pub.PublisherID][pub.PublicationID] = make(map[uint64][]byte)
 	}
 	// Publication has not been received yet for this publisher ID, publication ID, broker ID
 	if s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == nil {
@@ -214,11 +214,11 @@ func (s *Subscriber) processAbPublication(pub *pb.Publication) {
 func (s *Subscriber) processBrbPublication(pub *pb.Publication) {
 	// Make the map so not trying to access nil reference
 	if s.pubsReceived[pub.PublisherID] == nil {
-		s.pubsReceived[pub.PublisherID] = make(map[int64]map[int64][]byte)
+		s.pubsReceived[pub.PublisherID] = make(map[int64]map[uint64][]byte)
 	}
 	// Make the map so not trying to access nil reference
 	if s.pubsReceived[pub.PublisherID][pub.PublicationID] == nil {
-		s.pubsReceived[pub.PublisherID][pub.PublicationID] = make(map[int64][]byte)
+		s.pubsReceived[pub.PublisherID][pub.PublicationID] = make(map[uint64][]byte)
 	}
 	// Publication has not been received yet for this publisher ID, publication ID, broker ID
 	if s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == nil {
@@ -238,15 +238,15 @@ func (s *Subscriber) processBrbPublication(pub *pb.Publication) {
 // checkQuorum checks that a quorum has been received for a specific publisher and publication.
 // It return true if a quorum has been found, false otherwise. It takes as input
 // the publisher ID, publication ID, and quorum size.
-func (s *Subscriber) checkQuorum(publisherID int64, publicationID int64, quorumSize int) bool {
+func (s *Subscriber) checkQuorum(publisherID uint64, publicationID int64, quorumSize uint) bool {
 	// It's nil, so nothing to check.
 	if s.pubsReceived[publisherID] == nil {
-		s.pubsReceived[publisherID] = make(map[int64]map[int64][]byte)
+		s.pubsReceived[publisherID] = make(map[int64]map[uint64][]byte)
 		return false
 	}
 	// It's nil, so nothing to check.
 	if s.pubsReceived[publisherID][publicationID] == nil {
-		s.pubsReceived[publisherID][publicationID] = make(map[int64][]byte)
+		s.pubsReceived[publisherID][publicationID] = make(map[uint64][]byte)
 		return false
 	}
 
@@ -262,7 +262,7 @@ func (s *Subscriber) checkQuorum(publisherID int64, publicationID int64, quorumS
 
 	// Just a temporary map to help with checking for a quorum. It keeps track of the number of each
 	// publication value with this publisher ID and publication ID.
-	countMap := make(map[string]int)
+	countMap := make(map[string]uint)
 
 	for _, publication := range s.pubsReceived[publisherID][publicationID] {
 		pub := string(publication)

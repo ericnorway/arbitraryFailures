@@ -16,11 +16,11 @@ service InterBroker {
 }
 
 message Publication {
-	int32 PubType = 1;
-	int64 PublisherID = 2;
-	int64 PublicationID = 3;
-	int64 Topic = 4;
-	int64 BrokerID = 5;
+	uint32 PubType = 1;
+	uint64 PublisherID = 2;
+	sint64 PublicationID = 3;
+	uint64 Topic = 4;
+	uint64 BrokerID = 5;
 	bytes Content = 6;
 	repeated bytes MACs = 7;
 }
@@ -34,6 +34,6 @@ message EchoResponse{}
 message ReadyResponse{}
 
 message SubRequest {
-	int64 SubscriberID = 1;
-	repeated int64 Topics = 2;
+	uint64 SubscriberID = 1;
+	repeated uint64 Topics = 2;
 }

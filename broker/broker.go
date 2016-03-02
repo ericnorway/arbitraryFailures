@@ -18,30 +18,30 @@ import (
 // Broker is a struct containing channels used in communicating
 // with read and write loops.
 type Broker struct {
-	localID   int64
+	localID   uint64
 	localAddr string
 
-	alpha           int
-	numberOfServers int64
-	echoQuorumSize  int64
-	readyQuorumSize int64
-	faultsTolerated int64
+	alpha           uint64
+	numberOfServers uint64
+	echoQuorumSize  uint64
+	readyQuorumSize uint64
+	faultsTolerated uint64
 
 	// PUBLISHER VARIABLES
 	publishersMutex sync.RWMutex
-	publishers      map[int64]publisherInfo
+	publishers      map[uint64]publisherInfo
 	fromPublisherCh chan *pb.Publication
 
 	// BROKER CHANNEL VARIABLES
 	remoteBrokersMutex      sync.RWMutex
-	remoteBrokers           map[int64]brokerInfo
-	remoteBrokerConnections int64
+	remoteBrokers           map[uint64]brokerInfo
+	remoteBrokerConnections uint64
 	fromBrokerEchoCh        chan *pb.Publication
 	fromBrokerReadyCh       chan *pb.Publication
 
 	// SUBSCRIBER CHANNEL VARIABLES
 	subscribersMutex sync.RWMutex
-	subscribers      map[int64]subscriberInfo
+	subscribers      map[uint64]subscriberInfo
 	fromSubscriberCh chan *pb.SubRequest
 
 	// MESSAGE TRACKING VARIABLES
@@ -49,35 +49,35 @@ type Broker struct {
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The bool contains whether or not it was sent yet.
-	forwardSent map[int64]map[int64]bool
+	forwardSent map[uint64]map[int64]bool
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The bool contains whether or not it was sent yet.
-	echoesSent map[int64]map[int64]bool
+	echoesSent map[uint64]map[int64]bool
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The third index references the broker ID.
 	// The byte slice contains the content and topic of the publication.
-	echoesReceived map[int64]map[int64]map[int64]string
+	echoesReceived map[uint64]map[int64]map[uint64]string
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The bool contains whether or not it was sent yet.
-	readiesSent map[int64]map[int64]bool
+	readiesSent map[uint64]map[int64]bool
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The third index references the broker ID.
 	// The byte slice contains the content and topic of the publication.
-	readiesReceived map[int64]map[int64]map[int64]string
+	readiesReceived map[uint64]map[int64]map[uint64]string
 }
 
 // NewBroker returns a new Broker.
 // It takes as input the local broker ID, the local address and port,
 // and the alpha value.
-func NewBroker(localID int64, localAddr string, alpha int) *Broker {
+func NewBroker(localID uint64, localAddr string, alpha uint64) *Broker {
 	return &Broker{
 		localID:                 localID,
 		localAddr:               localAddr,
@@ -86,19 +86,19 @@ func NewBroker(localID int64, localAddr string, alpha int) *Broker {
 		echoQuorumSize:          3, // default
 		readyQuorumSize:         2, // default
 		faultsTolerated:         1, // default
-		publishers:              make(map[int64]publisherInfo),
+		publishers:              make(map[uint64]publisherInfo),
 		fromPublisherCh:         make(chan *pb.Publication, 32),
-		remoteBrokers:           make(map[int64]brokerInfo),
+		remoteBrokers:           make(map[uint64]brokerInfo),
 		remoteBrokerConnections: 0,
 		fromBrokerEchoCh:        make(chan *pb.Publication, 32),
 		fromBrokerReadyCh:       make(chan *pb.Publication, 32),
-		subscribers:             make(map[int64]subscriberInfo),
+		subscribers:             make(map[uint64]subscriberInfo),
 		fromSubscriberCh:        make(chan *pb.SubRequest, 32),
-		forwardSent:             make(map[int64]map[int64]bool),
-		echoesSent:              make(map[int64]map[int64]bool),
-		echoesReceived:          make(map[int64]map[int64]map[int64]string),
-		readiesSent:             make(map[int64]map[int64]bool),
-		readiesReceived:         make(map[int64]map[int64]map[int64]string),
+		forwardSent:             make(map[uint64]map[int64]bool),
+		echoesSent:              make(map[uint64]map[int64]bool),
+		echoesReceived:          make(map[uint64]map[int64]map[uint64]string),
+		readiesSent:             make(map[uint64]map[int64]bool),
+		readiesReceived:         make(map[uint64]map[int64]map[uint64]string),
 	}
 }
 
@@ -148,7 +148,7 @@ func (b *Broker) connectToOtherBrokers() {
 
 // connectToBroker connects to a single broker.
 // It takes as input the remote broker's ID and address.
-func (b *Broker) connectToBroker(brokerID int64, brokerAddr string) {
+func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string) {
 	fmt.Printf("Trying to connect to %v\n", brokerAddr)
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure(), grpc.WithBlock())

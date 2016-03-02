@@ -12,16 +12,16 @@ import (
 
 type Results struct {
 	// Publisher:Publication:SentTime
-	sendTimes map[int64]map[int64]int64
+	sendTimes map[uint64]map[int64]int64
 	// Publisher:Publication:Subscriber:ReceiveTime
-	recvTimes map[int64]map[int64]map[int64]int64
+	recvTimes map[uint64]map[int64]map[uint64]int64
 	durations Durations
 }
 
 func NewResults() *Results {
 	return &Results{
-		sendTimes: make(map[int64]map[int64]int64),
-		recvTimes: make(map[int64]map[int64]map[int64]int64),
+		sendTimes: make(map[uint64]map[int64]int64),
+		recvTimes: make(map[uint64]map[int64]map[uint64]int64),
 	}
 }
 
@@ -75,7 +75,7 @@ func (r *Results) readSentTimeFile(fileName string) {
 			continue
 		}
 		
-		publisherID, err := strconv.ParseInt(lineContents[0], 10, 64)
+		publisherID, err := strconv.ParseUint(lineContents[0], 10, 64)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			continue
@@ -124,7 +124,7 @@ func (r *Results) readReceivedTimeFile(fileName string) {
 			continue
 		}
 		
-		publisherID, err := strconv.ParseInt(lineContents[0], 10, 64)
+		publisherID, err := strconv.ParseUint(lineContents[0], 10, 64)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			continue
@@ -136,7 +136,7 @@ func (r *Results) readReceivedTimeFile(fileName string) {
 			continue
 		}
 		
-		subscriberID, err := strconv.ParseInt(lineContents[2], 10, 64)
+		subscriberID, err := strconv.ParseUint(lineContents[2], 10, 64)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			continue
@@ -149,10 +149,10 @@ func (r *Results) readReceivedTimeFile(fileName string) {
 		}
 		
 		if r.recvTimes[publisherID] == nil {
-			r.recvTimes[publisherID] = make(map[int64]map[int64]int64)
+			r.recvTimes[publisherID] = make(map[int64]map[uint64]int64)
 		}
 		if r.recvTimes[publisherID][publicationID] == nil {
-			r.recvTimes[publisherID][publicationID] = make(map[int64]int64)
+			r.recvTimes[publisherID][publicationID] = make(map[uint64]int64)
 		}
 		
 		r.recvTimes[publisherID][publicationID][subscriberID] = time

@@ -12,7 +12,7 @@ var tagPublisherKeys = "PUB_KEYS"
 var tagSubscriberKeys = "SUB_KEYS"
 var tagBrokerKeys = "BRK_KEYS"
 var tagBrokerAddrs = "BRK_ADDR"
-var localID int64
+var localID uint64
 var publisherKeys []string
 var subscriberKeys []string
 var brokerKeys []string
@@ -38,7 +38,7 @@ func ReadConfigFile(fileName string) error {
 		switch {
 		case lineContents[0] == tagID:
 			if len(lineContents) == 2 {
-				localID, err = strconv.ParseInt(lineContents[1], 10, 64)
+				localID, err = strconv.ParseUint(lineContents[1], 10, 64)
 				if err != nil {
 					return err
 				}

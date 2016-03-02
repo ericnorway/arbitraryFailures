@@ -22,17 +22,17 @@ func main() {
 	}
 
 	// Create new broker
-	b := broker.NewBroker(localID, brokerAddresses[localID], *alpha)
+	b := broker.NewBroker(localID, brokerAddresses[localID], uint64(*alpha))
 
 	// Add publisher information
 	for i, key := range publisherKeys {
-		id := int64(i)
+		id := uint64(i)
 		b.AddPublisher(id, []byte(key))
 	}
 
 	// Add broker information
 	for i, key := range brokerKeys {
-		id := int64(i)
+		id := uint64(i)
 		if id != localID {
 			b.AddBroker(id, brokerAddresses[id], []byte(key))
 		}
@@ -40,7 +40,7 @@ func main() {
 
 	// Add subscriber information
 	for i, key := range subscriberKeys {
-		id := int64(i)
+		id := uint64(i)
 		b.AddSubscriber(id, []byte(key))
 	}
 

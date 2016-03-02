@@ -12,10 +12,10 @@ func TestCheckQuorum(t *testing.T) {
 	for i, test := range quorumTests {
 		for j, subtest := range test.subtests {
 			if test.subscriber.pubsReceived[subtest.pub.PublisherID] == nil {
-				test.subscriber.pubsReceived[subtest.pub.PublisherID] = make(map[int64]map[int64][]byte)
+				test.subscriber.pubsReceived[subtest.pub.PublisherID] = make(map[int64]map[uint64][]byte)
 			}
 			if test.subscriber.pubsReceived[subtest.pub.PublisherID][subtest.pub.PublicationID] == nil {
-				test.subscriber.pubsReceived[subtest.pub.PublisherID][subtest.pub.PublicationID] = make(map[int64][]byte)
+				test.subscriber.pubsReceived[subtest.pub.PublisherID][subtest.pub.PublicationID] = make(map[uint64][]byte)
 			}
 			if test.subscriber.pubsReceived[subtest.pub.PublisherID][subtest.pub.PublicationID][subtest.pub.BrokerID] == nil {
 				test.subscriber.pubsReceived[subtest.pub.PublisherID][subtest.pub.PublicationID][subtest.pub.BrokerID] = subtest.pub.Content
@@ -42,7 +42,7 @@ func TestCheckQuorum(t *testing.T) {
 
 type quorumTest struct {
 	pub         pb.Publication
-	quorumSize  int
+	quorumSize  uint
 	wantLearned bool
 	wantMessage []byte
 }

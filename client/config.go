@@ -11,10 +11,10 @@ var tagID = "ID"
 var tagBrokerKeys = "BRK_KEYS"
 var tagBrokerAddrs = "BRK_ADDR"
 var tagTopics = "TOPICS"
-var localID int64
+var localID uint64
 var brokerKeys []string
 var brokerAddresses []string
-var topics []int64
+var topics []uint64
 
 // ReadConfigFile reads a config file and updated the values of global variables.
 // It returns an error, if any.
@@ -36,7 +36,7 @@ func ReadConfigFile(fileName string) error {
 		switch {
 		case lineContents[0] == tagID:
 			if len(lineContents) == 2 {
-				localID, err = strconv.ParseInt(lineContents[1], 10, 64)
+				localID, err = strconv.ParseUint(lineContents[1], 10, 64)
 				if err != nil {
 					return err
 				}
@@ -59,7 +59,7 @@ func ReadConfigFile(fileName string) error {
 			if len(lineContents) == 2 {
 				topicStrings := strings.Split(lineContents[1], ",")
 				for _, topicString := range topicStrings {
-					tempTopic, err := strconv.ParseInt(topicString, 10, 64)
+					tempTopic, err := strconv.ParseUint(topicString, 10, 64)
 					if err != nil {
 						return err
 					}
