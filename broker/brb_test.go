@@ -47,7 +47,7 @@ var handleBrbPublishTests = []struct {
 	subtests   []handleBrbPublishTest
 }{
 	{
-		broker:     NewBroker(0, "localhost"),
+		broker:     NewBroker(0, "localhost", 0),
 		desc:       "1 pub request, 3 other brokers",
 		numBrokers: 4,
 		subtests: []handleBrbPublishTest{
@@ -71,7 +71,7 @@ var handleBrbPublishTests = []struct {
 		},
 	},
 	{
-		broker:     NewBroker(0, "localhost"),
+		broker:     NewBroker(0, "localhost", 0),
 		desc:       "5 pub requests, 3 other brokers",
 		numBrokers: 3,
 		subtests: []handleBrbPublishTest{
@@ -260,7 +260,7 @@ var handleBrbEchoTests = []struct {
 	subtests       []handleBrbEchoTest
 }{
 	{
-		broker:         NewBroker(0, "localhost"),
+		broker:         NewBroker(0, "localhost", 0),
 		desc:           "4 x 1 echoes (4 echoes for 1 publication), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
@@ -323,7 +323,7 @@ var handleBrbEchoTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker(0, "localhost"),
+		broker:         NewBroker(0, "localhost", 0),
 		desc:           "4 x 1, 2 x 1, 3 x 1 echoes, 3 other brokers, 1 subscriber",
 		numBrokers:     4,
 		numSubscribers: 1,
@@ -453,7 +453,7 @@ var handleBrbEchoTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker(0, "localhost"),
+		broker:         NewBroker(0, "localhost", 0),
 		desc:           "4 x 1 echoes (1 with wrong content), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
@@ -516,7 +516,7 @@ var handleBrbEchoTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker(0, "localhost"),
+		broker:         NewBroker(0, "localhost", 0),
 		desc:           "4 x 1 echoes (4 echoes for 1 publication, 1 with wrong topic), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
@@ -685,7 +685,7 @@ var handleBrbReadyTests = []struct {
 	subtests       []handleBrbReadyTest
 }{
 	{
-		broker:         NewBroker(0, "localhost"),
+		broker:         NewBroker(0, "localhost", 0),
 		desc:           "4 x 1 readies (4 readies for 1 publication (not readied yet)), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
@@ -749,7 +749,7 @@ var handleBrbReadyTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker(0, "localhost"),
+		broker:         NewBroker(0, "localhost", 0),
 		desc:           "4 x 1 readies (4 readies for 1 publication (already readied)), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,
@@ -815,7 +815,7 @@ var handleBrbReadyTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker(0, "localhost"),
+		broker:         NewBroker(0, "localhost", 0),
 		desc:           "4 x 1 readies (4 readies for 1 publication (not readied yet, 1 ready has a different topic)), 3 other brokers, 2 subscriber",
 		numBrokers:     4,
 		numSubscribers: 2,

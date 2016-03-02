@@ -52,7 +52,7 @@ var handleAbPublishTests = []struct {
 	subtests       []handleAbPublishTest
 }{
 	{
-		broker:         NewBroker(0, "localhost"),
+		broker:         NewBroker(0, "localhost", 0),
 		desc:           "1 pub request, 1 subscriber",
 		numSubscribers: 1,
 		subtests: []handleAbPublishTest{
@@ -76,7 +76,7 @@ var handleAbPublishTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker(0, "localhost"),
+		broker:         NewBroker(0, "localhost", 0),
 		desc:           "1 pub request, 3 subscribers",
 		numSubscribers: 3,
 		subtests: []handleAbPublishTest{
@@ -100,7 +100,7 @@ var handleAbPublishTests = []struct {
 		},
 	},
 	{
-		broker:         NewBroker(0, "localhost"),
+		broker:         NewBroker(0, "localhost", 0),
 		desc:           "5 pub requests, 3 subscribers",
 		numSubscribers: 3,
 		subtests: []handleAbPublishTest{
