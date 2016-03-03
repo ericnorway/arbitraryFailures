@@ -130,7 +130,7 @@ func (p *Publisher) alphaHandler() {
 					PubType:       common.BRB,
 					PublisherID:   p.localID,
 					PublicationID: historyID,
-					Topic:         1,
+					TopicID:         1,
 					Content:       []byte(" "),
 				}
 

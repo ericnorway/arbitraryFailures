@@ -101,7 +101,7 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 		b.subscribersMutex.RLock()
 		for i, subscriber := range b.subscribers {
 			// Only if they are interested in the topic
-			if subscriber.toCh != nil && b.subscribers[i].topics[pub.Topic] == true {
+			if subscriber.toCh != nil && b.subscribers[i].topics[pub.TopicID] == true {
 				select {
 				case subscriber.toCh <- *pub:
 				}
@@ -176,7 +176,7 @@ func (b Broker) handleReady(pub *pb.Publication) {
 		b.subscribersMutex.RLock()
 		for i, subscriber := range b.subscribers {
 			// Only if they are interested in the topic
-			if subscriber.toCh != nil && b.subscribers[i].topics[pub.Topic] == true {
+			if subscriber.toCh != nil && b.subscribers[i].topics[pub.TopicID] == true {
 				select {
 				case subscriber.toCh <- *pub:
 				}
@@ -200,7 +200,7 @@ func getInfo(pub *pb.Publication) string {
 	topicBytes := make([]byte, 8)
 
 	buf.Write(pub.Content)
-	binary.PutUvarint(topicBytes, pub.Topic)
+	binary.PutUvarint(topicBytes, pub.TopicID)
 	buf.Write(topicBytes)
 
 	return buf.String()

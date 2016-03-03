@@ -36,7 +36,7 @@ type Publication struct {
 	PubType       uint32   `protobuf:"varint,1,opt,name=PubType" json:"PubType,omitempty"`
 	PublisherID   uint64   `protobuf:"varint,2,opt,name=PublisherID" json:"PublisherID,omitempty"`
 	PublicationID int64    `protobuf:"zigzag64,3,opt,name=PublicationID" json:"PublicationID,omitempty"`
-	Topic         uint64   `protobuf:"varint,4,opt,name=Topic" json:"Topic,omitempty"`
+	TopicID       uint64   `protobuf:"varint,4,opt,name=TopicID" json:"TopicID,omitempty"`
 	BrokerID      uint64   `protobuf:"varint,5,opt,name=BrokerID" json:"BrokerID,omitempty"`
 	Content       []byte   `protobuf:"bytes,6,opt,name=Content,proto3" json:"Content,omitempty"`
 	MACs          [][]byte `protobuf:"bytes,7,rep,name=MACs,proto3" json:"MACs,omitempty"`
@@ -47,7 +47,9 @@ func (m *Publication) String() string { return proto1.CompactTextString(m) }
 func (*Publication) ProtoMessage()    {}
 
 type PubResponse struct {
-	AlphaReached bool `protobuf:"varint,1,opt,name=AlphaReached" json:"AlphaReached,omitempty"`
+	Accepted     bool   `protobuf:"varint,1,opt,name=Accepted" json:"Accepted,omitempty"`
+	AlphaReached bool   `protobuf:"varint,2,opt,name=AlphaReached" json:"AlphaReached,omitempty"`
+	TopicID      uint64 `protobuf:"varint,3,opt,name=TopicID" json:"TopicID,omitempty"`
 }
 
 func (m *PubResponse) Reset()         { *m = PubResponse{} }
@@ -77,7 +79,7 @@ func (*ChainResponse) ProtoMessage()    {}
 
 type SubRequest struct {
 	SubscriberID uint64   `protobuf:"varint,1,opt,name=SubscriberID" json:"SubscriberID,omitempty"`
-	Topics       []uint64 `protobuf:"varint,2,rep,name=Topics" json:"Topics,omitempty"`
+	TopicIDs     []uint64 `protobuf:"varint,2,rep,name=TopicIDs" json:"TopicIDs,omitempty"`
 }
 
 func (m *SubRequest) Reset()         { *m = SubRequest{} }

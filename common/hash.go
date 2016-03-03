@@ -25,21 +25,21 @@ func ConvertPublicationToBytes(pub *pb.Publication) []byte {
 	publisherID := make([]byte, 8)
 	publicationID := make([]byte, 8)
 	brokerID := make([]byte, 8)
-	topic := make([]byte, 8)
+	topicID := make([]byte, 8)
 
 	// Convert publication information to byte slices
 	binary.PutUvarint(pubType, uint64(pub.PubType))
 	binary.PutUvarint(publisherID, pub.PublisherID)
 	binary.PutVarint(publicationID, pub.PublicationID)
 	binary.PutUvarint(brokerID, pub.BrokerID)
-	binary.PutUvarint(topic, pub.Topic)
+	binary.PutUvarint(topicID, pub.TopicID)
 
 	// Write publication information to buffer
 	buf.Write(pubType)
 	buf.Write(publisherID)
 	buf.Write(publicationID)
 	buf.Write(brokerID)
-	buf.Write(topic)
+	buf.Write(topicID)
 	buf.Write(pub.Content)
 
 	return buf.Bytes()

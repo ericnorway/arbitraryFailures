@@ -82,7 +82,7 @@ func (b Broker) changeTopics(req *pb.SubRequest) {
 		b.subscribers[req.SubscriberID].topics[i] = false
 	}
 
-	for _, topic := range req.Topics {
+	for _, topic := range req.TopicIDs {
 		b.subscribers[req.SubscriberID].topics[topic] = true
 	}
 }

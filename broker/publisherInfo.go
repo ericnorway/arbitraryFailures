@@ -6,9 +6,8 @@ import (
 
 // publisherInfo contains important information about a publisher
 type publisherInfo struct {
-	id       uint64
-	key      []byte
-	pubCount uint64
+	id  uint64
+	key []byte
 }
 
 // AddPublisher adds a Publisher to the map of Publishers.
@@ -20,9 +19,8 @@ func (b *Broker) AddPublisher(id uint64, key []byte) {
 	defer b.publishersMutex.Unlock()
 
 	b.publishers[id] = publisherInfo{
-		id:       id,
-		key:      key,
-		pubCount: 0,
+		id:  id,
+		key: key,
 	}
 }
 
@@ -35,26 +33,4 @@ func (b *Broker) RemovePublisher(id uint64) {
 	defer b.publishersMutex.Unlock()
 
 	delete(b.publishers, id)
-}
-
-func (b *Broker) IncrementPubCount(id uint64) bool {
-	b.publishersMutex.Lock()
-	defer b.publishersMutex.Unlock()
-
-	alphaReached := false
-	tempPublisher := b.publishers[id]
-
-	// Increment the publication count
-	tempPublisher.pubCount++
-
-	// Check if alpha has been reached.
-	if tempPublisher.pubCount >= b.alpha {
-		alphaReached = true
-		tempPublisher.pubCount = 0
-	}
-
-	// Update publisher infomation
-	b.publishers[id] = tempPublisher
-
-	return alphaReached
 }

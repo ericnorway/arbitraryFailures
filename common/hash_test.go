@@ -31,15 +31,15 @@ var convertPublicationToBytesTests = []struct {
 			PublisherID:   7,
 			PublicationID: 9,
 			BrokerID:      2,
-			Topic:         33,
+			TopicID:       33,
 			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
 		},
 		want: []byte{
-			2, 0, 0, 0, 0, 0, 0, 0, // BRB
-			14, 0, 0, 0, 0, 0, 0, 0, // 7
-			18, 0, 0, 0, 0, 0, 0, 0, // 9
-			4, 0, 0, 0, 0, 0, 0, 0, // 2
-			66, 0, 0, 0, 0, 0, 0, 0, // 33
+			1, 0, 0, 0, 0, 0, 0, 0, // BRB
+			7, 0, 0, 0, 0, 0, 0, 0, // 7
+			18, 0, 0, 0, 0, 0, 0, 0, // 9 (18 because signed)
+			2, 0, 0, 0, 0, 0, 0, 0, // 2
+			33, 0, 0, 0, 0, 0, 0, 0, // 33
 			84, 104, 101, // The
 			32,
 			113, 117, 105, 99, 107, // quick
@@ -68,15 +68,15 @@ var convertPublicationToBytesTests = []struct {
 			PublisherID:   1,
 			PublicationID: 2,
 			BrokerID:      3,
-			Topic:         4,
+			TopicID:       4,
 			Content:       nil,
 		},
 		want: []byte{
 			0, 0, 0, 0, 0, 0, 0, 0, // AB
-			2, 0, 0, 0, 0, 0, 0, 0, // 1
-			4, 0, 0, 0, 0, 0, 0, 0, // 2
-			6, 0, 0, 0, 0, 0, 0, 0, // 3
-			8, 0, 0, 0, 0, 0, 0, 0, // 4
+			1, 0, 0, 0, 0, 0, 0, 0, // 1
+			4, 0, 0, 0, 0, 0, 0, 0, // 2 (4 because signed)
+			3, 0, 0, 0, 0, 0, 0, 0, // 3
+			4, 0, 0, 0, 0, 0, 0, 0, // 4
 		},
 	},
 }
@@ -106,12 +106,12 @@ var createPublicationMACTests = []struct {
 			PublisherID:   7,
 			PublicationID: 9,
 			BrokerID:      2,
-			Topic:         33,
+			TopicID:       33,
 			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
 		},
 		key:  []byte("12345"),
 		alg:  crypto.MD5,
-		want: []byte{170, 117, 87, 155, 209, 35, 81, 95, 90, 137, 77, 129, 207, 26, 195, 161},
+		want: []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 	},
 	{
 		desc: "Normal Publication, SHA1",
@@ -120,12 +120,12 @@ var createPublicationMACTests = []struct {
 			PublisherID:   7,
 			PublicationID: 9,
 			BrokerID:      2,
-			Topic:         33,
+			TopicID:       33,
 			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
 		},
 		key:  []byte("Spaceballs"),
 		alg:  crypto.SHA1,
-		want: []byte{131, 142, 165, 166, 153, 206, 112, 193, 132, 51, 205, 244, 218, 187, 81, 181, 108, 52, 225, 208},
+		want: []byte{44, 223, 131, 126, 19, 219, 233, 218, 35, 155, 91, 26, 11, 239, 188, 90, 139, 245, 51, 175},
 	},
 	{
 		desc: "Normal Publication, SHA256",
@@ -134,12 +134,12 @@ var createPublicationMACTests = []struct {
 			PublisherID:   7,
 			PublicationID: 9,
 			BrokerID:      2,
-			Topic:         33,
+			TopicID:       33,
 			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
 		},
 		key:  []byte("DarkHelmet"),
 		alg:  crypto.SHA256,
-		want: []byte{204, 99, 197, 75, 225, 226, 243, 24, 96, 183, 185, 64, 138, 186, 118, 8, 76, 206, 182, 78, 162, 59, 86, 63, 222, 99, 5, 28, 245, 71, 177, 37},
+		want: []byte{142, 7, 47, 183, 114, 96, 55, 169, 219, 36, 219, 169, 56, 53, 186, 45, 243, 188, 91, 241, 235, 9, 121, 243, 62, 156, 216, 14, 119, 193, 146, 165},
 	},
 	{
 		desc: "Normal Publication, SHA512",
@@ -148,13 +148,13 @@ var createPublicationMACTests = []struct {
 			PublisherID:   7,
 			PublicationID: 9,
 			BrokerID:      2,
-			Topic:         33,
+			TopicID:       33,
 			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
 		},
 		key: []byte("dARKhELMET"),
 		alg: crypto.SHA512,
-		want: []byte{66, 117, 187, 97, 208, 108, 194, 20, 223, 126, 99, 142, 254, 34, 171, 128, 70, 108, 208, 231, 79, 221, 51, 22, 69, 124, 45, 121, 171, 225, 72, 5,
-			242, 29, 237, 4, 188, 170, 119, 142, 170, 134, 202, 48, 89, 25, 131, 181, 126, 140, 206, 128, 120, 167, 255, 244, 38, 138, 172, 247, 178, 172, 18, 139},
+		want: []byte{1, 229, 203, 231, 251, 143, 55, 96, 245, 27, 237, 39, 85, 90, 188, 175, 144, 79, 79, 87, 100, 25, 250, 208, 196, 182, 110, 252, 244, 147, 217, 8,
+			244, 250, 38, 239, 128, 237, 251, 10, 38, 194, 247, 234, 7, 51, 142, 159, 169, 32, 70, 52, 168, 231, 167, 146, 206, 135, 222, 230, 162, 42, 125, 174},
 	},
 }
 
@@ -184,10 +184,10 @@ var checkPublicationMACTests = []struct {
 			PublisherID:   7,
 			PublicationID: 9,
 			BrokerID:      2,
-			Topic:         33,
+			TopicID:       33,
 			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
 		},
-		mac:  []byte{170, 117, 87, 155, 209, 35, 81, 95, 90, 137, 77, 129, 207, 26, 195, 161},
+		mac:  []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 		key:  []byte("12345"),
 		alg:  crypto.MD5,
 		want: true,
@@ -199,10 +199,10 @@ var checkPublicationMACTests = []struct {
 			PublisherID:   7,
 			PublicationID: 9,
 			BrokerID:      2,
-			Topic:         33,
+			TopicID:       33,
 			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
 		},
-		mac:  []byte{170, 117, 87, 155, 209, 35, 81, 95, 90, 137, 77, 129, 207, 26, 195, 161},
+		mac:  []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 		key:  []byte("12345"),
 		alg:  crypto.MD5,
 		want: false,
@@ -214,10 +214,10 @@ var checkPublicationMACTests = []struct {
 			PublisherID:   11,
 			PublicationID: 9,
 			BrokerID:      2,
-			Topic:         33,
+			TopicID:       33,
 			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
 		},
-		mac:  []byte{170, 117, 87, 155, 209, 35, 81, 95, 90, 137, 77, 129, 207, 26, 195, 161},
+		mac:  []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 		key:  []byte("12345"),
 		alg:  crypto.MD5,
 		want: false,
@@ -229,10 +229,10 @@ var checkPublicationMACTests = []struct {
 			PublisherID:   7,
 			PublicationID: 1,
 			BrokerID:      2,
-			Topic:         33,
+			TopicID:       33,
 			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
 		},
-		mac:  []byte{170, 117, 87, 155, 209, 35, 81, 95, 90, 137, 77, 129, 207, 26, 195, 161},
+		mac:  []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 		key:  []byte("12345"),
 		alg:  crypto.MD5,
 		want: false,
@@ -244,25 +244,25 @@ var checkPublicationMACTests = []struct {
 			PublisherID:   7,
 			PublicationID: 9,
 			BrokerID:      20,
-			Topic:         33,
+			TopicID:       33,
 			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
 		},
-		mac:  []byte{170, 117, 87, 155, 209, 35, 81, 95, 90, 137, 77, 129, 207, 26, 195, 161},
+		mac:  []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 		key:  []byte("12345"),
 		alg:  crypto.MD5,
 		want: false,
 	},
 	{
-		desc: "Normal Publication, MD5, Topic changed",
+		desc: "Normal Publication, MD5, topic changed",
 		pub: pb.Publication{
 			PubType:       BRB,
 			PublisherID:   7,
 			PublicationID: 9,
 			BrokerID:      2,
-			Topic:         99,
+			TopicID:       99,
 			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
 		},
-		mac:  []byte{170, 117, 87, 155, 209, 35, 81, 95, 90, 137, 77, 129, 207, 26, 195, 161},
+		mac:  []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 		key:  []byte("12345"),
 		alg:  crypto.MD5,
 		want: false,
@@ -274,10 +274,10 @@ var checkPublicationMACTests = []struct {
 			PublisherID:   7,
 			PublicationID: 9,
 			BrokerID:      2,
-			Topic:         33,
+			TopicID:       33,
 			Content:       []byte("Wrong content."),
 		},
-		mac:  []byte{170, 117, 87, 155, 209, 35, 81, 95, 90, 137, 77, 129, 207, 26, 195, 161},
+		mac:  []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 		key:  []byte("12345"),
 		alg:  crypto.MD5,
 		want: false,
@@ -289,10 +289,10 @@ var checkPublicationMACTests = []struct {
 			PublisherID:   7,
 			PublicationID: 9,
 			BrokerID:      2,
-			Topic:         33,
+			TopicID:       33,
 			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
 		},
-		mac:  []byte{170, 117, 87, 155, 209, 35, 81, 95, 90, 137, 77, 129, 207, 26, 195, 161},
+		mac:  []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 		key:  []byte("Spaceballs"),
 		alg:  crypto.MD5,
 		want: false,

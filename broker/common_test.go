@@ -21,7 +21,7 @@ func Equals(a pb.Publication, b pb.Publication) bool {
 	if a.PublicationID != b.PublicationID {
 		return false
 	}
-	if a.Topic != b.Topic {
+	if a.TopicID != b.TopicID {
 		return false
 	}
 	if a.BrokerID != b.BrokerID {

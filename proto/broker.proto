@@ -20,14 +20,16 @@ message Publication {
 	uint32 PubType = 1;
 	uint64 PublisherID = 2;
 	sint64 PublicationID = 3;
-	uint64 Topic = 4;
+	uint64 TopicID = 4;
 	uint64 BrokerID = 5;
 	bytes Content = 6;
 	repeated bytes MACs = 7;
 }
 
 message PubResponse{
-	bool AlphaReached = 1;
+	bool Accepted = 1;
+	bool AlphaReached = 2;
+	uint64 TopicID = 3;
 }
 
 message EchoResponse{}
@@ -38,5 +40,5 @@ message ChainResponse{}
 
 message SubRequest {
 	uint64 SubscriberID = 1;
-	repeated uint64 Topics = 2;
+	repeated uint64 TopicIDs = 2;
 }

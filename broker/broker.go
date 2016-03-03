@@ -73,6 +73,11 @@ type Broker struct {
 	// The third index references the broker ID.
 	// The byte slice contains the content and topic of the publication.
 	readiesReceived map[uint64]map[int64]map[uint64]string
+
+	// The first index references the publisher ID.
+	// The second index references the topic.
+	// The value is a count of the messages received since the last history.
+	alphaCounters map[uint64]map[uint64]uint64
 }
 
 // NewBroker returns a new Broker.
@@ -101,6 +106,7 @@ func NewBroker(localID uint64, localAddr string, alpha uint64) *Broker {
 		echoesReceived:          make(map[uint64]map[int64]map[uint64]string),
 		readiesSent:             make(map[uint64]map[int64]bool),
 		readiesReceived:         make(map[uint64]map[int64]map[uint64]string),
+		alphaCounters:           make(map[uint64]map[uint64]uint64),
 	}
 }
 
@@ -193,7 +199,7 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 
 	// Check MAC
 	if !exists || pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], publisher.key, common.Algorithm) == false {
-		return &pb.PubResponse{AlphaReached: false}, nil
+		return &pb.PubResponse{Accepted: false, AlphaReached: false, TopicID: 0}, nil
 	}
 
 	select {
@@ -205,10 +211,10 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 	// If using alpha values
 	if b.alpha > 0 && pub.PubType != common.BRB {
 		// Check if alpha has been reached for this publisher.
-		alphaReached = b.IncrementPubCount(pub.PublisherID)
+		//alphaReached = b.IncrementPubCount(pub.PublisherID)
 	}
 
-	return &pb.PubResponse{AlphaReached: alphaReached}, nil
+	return &pb.PubResponse{Accepted: true, AlphaReached: alphaReached, TopicID: pub.TopicID}, nil
 }
 
 // Echo handles incoming BRB echo requests from other brokers
@@ -342,4 +348,12 @@ func (b Broker) handleMessages() {
 // It takes as input the subscription request.
 func (b Broker) handleSubscribe(req *pb.SubRequest) {
 	b.changeTopics(req)
+}
+
+func (b Broker) checkDoubleAlpha(publisherID uint64, topicID uint64) bool {
+	return false
+}
+
+func (b Broker) incrementAlpha(publisherID uint64, topicID uint64) bool {
+	return false
 }

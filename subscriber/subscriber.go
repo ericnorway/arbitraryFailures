@@ -139,7 +139,7 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 	// Send the initial subscribe request.
 	case ch <- pb.SubRequest{
 		SubscriberID: s.localID,
-		Topics:       topics,
+		TopicIDs:       topics,
 	}:
 	}
 
