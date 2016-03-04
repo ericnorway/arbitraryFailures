@@ -22,7 +22,7 @@ message Publication {
 	sint64 PublicationID = 3;
 	uint64 TopicID = 4;
 	uint64 BrokerID = 5;
-	bytes Content = 6;
+	repeated bytes Contents = 6;
 	repeated bytes MACs = 7;
 }
 

@@ -40,7 +40,9 @@ func ConvertPublicationToBytes(pub *pb.Publication) []byte {
 	buf.Write(publicationID)
 	buf.Write(brokerID)
 	buf.Write(topicID)
-	buf.Write(pub.Content)
+	for i := range pub.Contents {
+		buf.Write(pub.Contents[i])
+	}
 
 	return buf.Bytes()
 }

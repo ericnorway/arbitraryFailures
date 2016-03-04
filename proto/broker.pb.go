@@ -38,7 +38,7 @@ type Publication struct {
 	PublicationID int64    `protobuf:"zigzag64,3,opt,name=PublicationID" json:"PublicationID,omitempty"`
 	TopicID       uint64   `protobuf:"varint,4,opt,name=TopicID" json:"TopicID,omitempty"`
 	BrokerID      uint64   `protobuf:"varint,5,opt,name=BrokerID" json:"BrokerID,omitempty"`
-	Content       []byte   `protobuf:"bytes,6,opt,name=Content,proto3" json:"Content,omitempty"`
+	Contents      [][]byte `protobuf:"bytes,6,rep,name=Contents,proto3" json:"Contents,omitempty"`
 	MACs          [][]byte `protobuf:"bytes,7,rep,name=MACs,proto3" json:"MACs,omitempty"`
 }
 

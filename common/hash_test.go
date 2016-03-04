@@ -32,7 +32,9 @@ var convertPublicationToBytesTests = []struct {
 			PublicationID: 9,
 			BrokerID:      2,
 			TopicID:       33,
-			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
+			Contents: [][]byte{
+				[]byte("The quick, brown fox jumped over the lazy dog."),
+			},
 		},
 		want: []byte{
 			1, 0, 0, 0, 0, 0, 0, 0, // BRB
@@ -69,7 +71,7 @@ var convertPublicationToBytesTests = []struct {
 			PublicationID: 2,
 			BrokerID:      3,
 			TopicID:       4,
-			Content:       nil,
+			Contents:      [][]byte{},
 		},
 		want: []byte{
 			0, 0, 0, 0, 0, 0, 0, 0, // AB
@@ -107,7 +109,9 @@ var createPublicationMACTests = []struct {
 			PublicationID: 9,
 			BrokerID:      2,
 			TopicID:       33,
-			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
+			Contents: [][]byte{
+				[]byte("The quick, brown fox jumped over the lazy dog."),
+			},
 		},
 		key:  []byte("12345"),
 		alg:  crypto.MD5,
@@ -121,7 +125,9 @@ var createPublicationMACTests = []struct {
 			PublicationID: 9,
 			BrokerID:      2,
 			TopicID:       33,
-			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
+			Contents: [][]byte{
+				[]byte("The quick, brown fox jumped over the lazy dog."),
+			},
 		},
 		key:  []byte("Spaceballs"),
 		alg:  crypto.SHA1,
@@ -135,7 +141,9 @@ var createPublicationMACTests = []struct {
 			PublicationID: 9,
 			BrokerID:      2,
 			TopicID:       33,
-			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
+			Contents: [][]byte{
+				[]byte("The quick, brown fox jumped over the lazy dog."),
+			},
 		},
 		key:  []byte("DarkHelmet"),
 		alg:  crypto.SHA256,
@@ -149,7 +157,9 @@ var createPublicationMACTests = []struct {
 			PublicationID: 9,
 			BrokerID:      2,
 			TopicID:       33,
-			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
+			Contents: [][]byte{
+				[]byte("The quick, brown fox jumped over the lazy dog."),
+			},
 		},
 		key: []byte("dARKhELMET"),
 		alg: crypto.SHA512,
@@ -185,7 +195,9 @@ var checkPublicationMACTests = []struct {
 			PublicationID: 9,
 			BrokerID:      2,
 			TopicID:       33,
-			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
+			Contents: [][]byte{
+				[]byte("The quick, brown fox jumped over the lazy dog."),
+			},
 		},
 		mac:  []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 		key:  []byte("12345"),
@@ -200,7 +212,9 @@ var checkPublicationMACTests = []struct {
 			PublicationID: 9,
 			BrokerID:      2,
 			TopicID:       33,
-			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
+			Contents: [][]byte{
+				[]byte("The quick, brown fox jumped over the lazy dog."),
+			},
 		},
 		mac:  []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 		key:  []byte("12345"),
@@ -215,7 +229,9 @@ var checkPublicationMACTests = []struct {
 			PublicationID: 9,
 			BrokerID:      2,
 			TopicID:       33,
-			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
+			Contents: [][]byte{
+				[]byte("The quick, brown fox jumped over the lazy dog."),
+			},
 		},
 		mac:  []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 		key:  []byte("12345"),
@@ -230,7 +246,9 @@ var checkPublicationMACTests = []struct {
 			PublicationID: 1,
 			BrokerID:      2,
 			TopicID:       33,
-			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
+			Contents: [][]byte{
+				[]byte("The quick, brown fox jumped over the lazy dog."),
+			},
 		},
 		mac:  []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 		key:  []byte("12345"),
@@ -245,7 +263,9 @@ var checkPublicationMACTests = []struct {
 			PublicationID: 9,
 			BrokerID:      20,
 			TopicID:       33,
-			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
+			Contents: [][]byte{
+				[]byte("The quick, brown fox jumped over the lazy dog."),
+			},
 		},
 		mac:  []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 		key:  []byte("12345"),
@@ -260,7 +280,9 @@ var checkPublicationMACTests = []struct {
 			PublicationID: 9,
 			BrokerID:      2,
 			TopicID:       99,
-			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
+			Contents: [][]byte{
+				[]byte("The quick, brown fox jumped over the lazy dog."),
+			},
 		},
 		mac:  []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 		key:  []byte("12345"),
@@ -275,7 +297,9 @@ var checkPublicationMACTests = []struct {
 			PublicationID: 9,
 			BrokerID:      2,
 			TopicID:       33,
-			Content:       []byte("Wrong content."),
+			Contents: [][]byte{
+				[]byte("Wrong content."),
+			},
 		},
 		mac:  []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 		key:  []byte("12345"),
@@ -290,7 +314,9 @@ var checkPublicationMACTests = []struct {
 			PublicationID: 9,
 			BrokerID:      2,
 			TopicID:       33,
-			Content:       []byte("The quick, brown fox jumped over the lazy dog."),
+			Contents: [][]byte{
+				[]byte("The quick, brown fox jumped over the lazy dog."),
+			},
 		},
 		mac:  []byte{36, 127, 152, 131, 226, 176, 168, 141, 12, 162, 91, 99, 134, 27, 155, 83},
 		key:  []byte("Spaceballs"),

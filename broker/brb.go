@@ -1,10 +1,9 @@
 package broker
 
 import (
-	"bytes"
-	"encoding/binary"
 	// "fmt"
 
+	"github.com/ericnorway/arbitraryFailures/common"
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
 
@@ -61,7 +60,7 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 	// Echo has not been received yet for this publisher ID, publication ID, broker ID
 	if b.echoesReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == "" {
 		// So record it
-		b.echoesReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = getInfo(pub)
+		b.echoesReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = common.GetInfo(pub)
 
 		// Check if there is a quorum yet for this publisher ID and publication ID
 		foundQuorum := b.checkEchoQuorum(pub.PublisherID, pub.PublicationID)
@@ -134,7 +133,7 @@ func (b Broker) handleReady(pub *pb.Publication) {
 	// Echo has not been received yet for this publisher ID, publication ID, broker ID
 	if b.readiesReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == "" {
 		// So record it
-		b.readiesReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = getInfo(pub)
+		b.readiesReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = common.GetInfo(pub)
 
 		// Check if there is a quorum yet for this publisher ID and publication ID
 		foundQuorum := b.checkReadyQuorum(pub.PublisherID, pub.PublicationID)
@@ -191,19 +190,6 @@ func (b Broker) handleReady(pub *pb.Publication) {
 	}
 
 	// fmt.Printf("handleReady: Already sent readies publication %v by publisher %v.\n", pub.PublicationID, pub.PublisherID)
-}
-
-// getInfo gets important info to verify from the publication (content and topic).
-// It returns a string containing the information. It takes as input the publication.
-func getInfo(pub *pb.Publication) string {
-	var buf bytes.Buffer
-	topicBytes := make([]byte, 8)
-
-	buf.Write(pub.Content)
-	binary.PutUvarint(topicBytes, pub.TopicID)
-	buf.Write(topicBytes)
-
-	return buf.String()
 }
 
 // checkEchoQuorum checks that a quorum has been received for a specific publisher and publication.

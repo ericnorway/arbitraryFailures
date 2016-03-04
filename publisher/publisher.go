@@ -149,7 +149,9 @@ func (p *Publisher) alphaHandler() {
 					PublisherID:   p.localID,
 					PublicationID: historyID,
 					TopicID:       1,
-					Content:       []byte(" "),
+					Contents:      [][]byte{
+						[]byte(" "),
+					},
 				}
 
 				// TODO: Add content

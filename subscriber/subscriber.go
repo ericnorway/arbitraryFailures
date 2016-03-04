@@ -31,12 +31,12 @@ type Subscriber struct {
 	// The second index references the publication ID.
 	// The third index references the broker ID.
 	// The byte slice contains the publication.
-	pubsReceived map[uint64]map[int64]map[uint64][]byte
+	pubsReceived map[uint64]map[int64]map[uint64]string
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The byte slice contains the publication.
-	pubsLearned map[uint64]map[int64][]byte
+	pubsLearned map[uint64]map[int64]string
 
 	topics map[uint64]bool
 }
@@ -50,8 +50,8 @@ func NewSubscriber(localID uint64) *Subscriber {
 		fromBrokerChan:    make(chan *pb.Publication, 8),
 		ToUser:            make(chan *pb.Publication, 8),
 		FromUser:          make(chan *pb.SubRequest, 8),
-		pubsReceived:      make(map[uint64]map[int64]map[uint64][]byte),
-		pubsLearned:       make(map[uint64]map[int64][]byte),
+		pubsReceived:      make(map[uint64]map[int64]map[uint64]string),
+		pubsLearned:       make(map[uint64]map[int64]string),
 		topics:            make(map[uint64]bool),
 	}
 }
@@ -139,7 +139,7 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 	// Send the initial subscribe request.
 	case ch <- pb.SubRequest{
 		SubscriberID: s.localID,
-		TopicIDs:       topics,
+		TopicIDs:     topics,
 	}:
 	}
 
@@ -188,16 +188,16 @@ func (s *Subscriber) processMessages() {
 func (s *Subscriber) processAbPublication(pub *pb.Publication) {
 	// Make the map so not trying to access nil reference
 	if s.pubsReceived[pub.PublisherID] == nil {
-		s.pubsReceived[pub.PublisherID] = make(map[int64]map[uint64][]byte)
+		s.pubsReceived[pub.PublisherID] = make(map[int64]map[uint64]string)
 	}
 	// Make the map so not trying to access nil reference
 	if s.pubsReceived[pub.PublisherID][pub.PublicationID] == nil {
-		s.pubsReceived[pub.PublisherID][pub.PublicationID] = make(map[uint64][]byte)
+		s.pubsReceived[pub.PublisherID][pub.PublicationID] = make(map[uint64]string)
 	}
 	// Publication has not been received yet for this publisher ID, publication ID, broker ID
-	if s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == nil {
+	if s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == "" {
 		// So record it
-		s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = pub.Content
+		s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = common.GetInfo(pub)
 		// Check if there is a quorum yet for this publisher ID and publication ID
 		foundQuorum := s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
 
@@ -214,16 +214,16 @@ func (s *Subscriber) processAbPublication(pub *pb.Publication) {
 func (s *Subscriber) processBrbPublication(pub *pb.Publication) {
 	// Make the map so not trying to access nil reference
 	if s.pubsReceived[pub.PublisherID] == nil {
-		s.pubsReceived[pub.PublisherID] = make(map[int64]map[uint64][]byte)
+		s.pubsReceived[pub.PublisherID] = make(map[int64]map[uint64]string)
 	}
 	// Make the map so not trying to access nil reference
 	if s.pubsReceived[pub.PublisherID][pub.PublicationID] == nil {
-		s.pubsReceived[pub.PublisherID][pub.PublicationID] = make(map[uint64][]byte)
+		s.pubsReceived[pub.PublisherID][pub.PublicationID] = make(map[uint64]string)
 	}
 	// Publication has not been received yet for this publisher ID, publication ID, broker ID
-	if s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == nil {
+	if s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == "" {
 		// So record it
-		s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = pub.Content
+		s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = common.GetInfo(pub)
 		// Check if there is a quorum yet for this publisher ID and publication ID
 		foundQuorum := s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
 
@@ -241,21 +241,21 @@ func (s *Subscriber) processBrbPublication(pub *pb.Publication) {
 func (s *Subscriber) checkQuorum(publisherID uint64, publicationID int64, quorumSize uint) bool {
 	// It's nil, so nothing to check.
 	if s.pubsReceived[publisherID] == nil {
-		s.pubsReceived[publisherID] = make(map[int64]map[uint64][]byte)
+		s.pubsReceived[publisherID] = make(map[int64]map[uint64]string)
 		return false
 	}
 	// It's nil, so nothing to check.
 	if s.pubsReceived[publisherID][publicationID] == nil {
-		s.pubsReceived[publisherID][publicationID] = make(map[uint64][]byte)
+		s.pubsReceived[publisherID][publicationID] = make(map[uint64]string)
 		return false
 	}
 
 	// Make the map so not trying to access nil reference
 	if s.pubsLearned[publisherID] == nil {
-		s.pubsLearned[publisherID] = make(map[int64][]byte)
+		s.pubsLearned[publisherID] = make(map[int64]string)
 	}
 	// If already learned this publication
-	if s.pubsLearned[publisherID][publicationID] != nil {
+	if s.pubsLearned[publisherID][publicationID] != "" {
 		// fmt.Printf("Already learned publication %v from publisher %v.\n", publicationID, publisherID)
 		return false
 	}
@@ -264,11 +264,10 @@ func (s *Subscriber) checkQuorum(publisherID uint64, publicationID int64, quorum
 	// publication value with this publisher ID and publication ID.
 	countMap := make(map[string]uint)
 
-	for _, publication := range s.pubsReceived[publisherID][publicationID] {
-		pub := string(publication)
-		countMap[pub] = countMap[pub] + 1
-		if countMap[pub] >= quorumSize {
-			s.pubsLearned[publisherID][publicationID] = publication
+	for _, contents := range s.pubsReceived[publisherID][publicationID] {
+		countMap[contents] = countMap[contents] + 1
+		if countMap[contents] >= quorumSize {
+			s.pubsLearned[publisherID][publicationID] = contents
 			// fmt.Printf("Learned publication %v from publisher %v.\n", publicationID, publisherID)
 			return true
 		}

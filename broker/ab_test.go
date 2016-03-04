@@ -29,7 +29,7 @@ func TestHandleAbPublish(t *testing.T) {
 			for _, subscriber := range test.broker.subscribers {
 				select {
 				case pub := <-subscriber.toCh:
-					if !Equals(pub, subtest.want) {
+					if !common.Equals(pub, subtest.want) {
 						t.Errorf("HandleAbPublish\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 							i+1, test.desc, j+1, &subtest.want, pub)
 					}
@@ -62,7 +62,9 @@ var handleAbPublishTests = []struct {
 					PublisherID:   1,
 					PublicationID: 1,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				want: pb.Publication{
 					PubType:       common.AB,
@@ -70,7 +72,9 @@ var handleAbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       1,
 					BrokerID:      0,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 			},
 		},
@@ -86,7 +90,9 @@ var handleAbPublishTests = []struct {
 					PublisherID:   1,
 					PublicationID: 1,
 					TopicID:       2,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				want: pb.Publication{
 					PubType:       common.AB,
@@ -94,7 +100,9 @@ var handleAbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       2,
 					BrokerID:      0,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 			},
 		},
@@ -110,7 +118,9 @@ var handleAbPublishTests = []struct {
 					PublisherID:   1,
 					PublicationID: 1,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				want: pb.Publication{
 					PubType:       common.AB,
@@ -118,7 +128,9 @@ var handleAbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       1,
 					BrokerID:      0,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 			},
 			{
@@ -127,7 +139,9 @@ var handleAbPublishTests = []struct {
 					PublisherID:   1,
 					PublicationID: 2,
 					TopicID:       1,
-					Content:       []byte(message2),
+					Contents: [][]byte{
+						[]byte(message2),
+					},
 				},
 				want: pb.Publication{
 					PubType:       common.AB,
@@ -135,7 +149,9 @@ var handleAbPublishTests = []struct {
 					PublicationID: 2,
 					TopicID:       1,
 					BrokerID:      0,
-					Content:       []byte(message2),
+					Contents: [][]byte{
+						[]byte(message2),
+					},
 				},
 			},
 			{
@@ -144,7 +160,9 @@ var handleAbPublishTests = []struct {
 					PublisherID:   2,
 					PublicationID: 1,
 					TopicID:       2,
-					Content:       []byte(message3),
+					Contents: [][]byte{
+						[]byte(message3),
+					},
 				},
 				want: pb.Publication{
 					PubType:       common.AB,
@@ -152,7 +170,9 @@ var handleAbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       2,
 					BrokerID:      0,
-					Content:       []byte(message3),
+					Contents: [][]byte{
+						[]byte(message3),
+					},
 				},
 			},
 			{
@@ -161,7 +181,9 @@ var handleAbPublishTests = []struct {
 					PublisherID:   2,
 					PublicationID: 2,
 					TopicID:       3,
-					Content:       []byte(message4),
+					Contents: [][]byte{
+						[]byte(message4),
+					},
 				},
 				want: pb.Publication{
 					PubType:       common.AB,
@@ -169,7 +191,9 @@ var handleAbPublishTests = []struct {
 					PublicationID: 2,
 					TopicID:       3,
 					BrokerID:      0,
-					Content:       []byte(message4),
+					Contents: [][]byte{
+						[]byte(message4),
+					},
 				},
 			},
 			{
@@ -178,7 +202,9 @@ var handleAbPublishTests = []struct {
 					PublisherID:   3,
 					PublicationID: 1,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				want: pb.Publication{
 					PubType:       common.AB,
@@ -186,7 +212,9 @@ var handleAbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       1,
 					BrokerID:      0,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 			},
 		},

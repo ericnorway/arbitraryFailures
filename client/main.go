@@ -118,8 +118,10 @@ func mainPub() {
 			PubType:       publicationType,
 			PublisherID:   localID,
 			PublicationID: i,
-			TopicID:         1,
-			Content:       sum,
+			TopicID:       1,
+			Contents:      [][]byte{
+				sum,
+			},
 		}
 
 		// Record the time sent in a map.

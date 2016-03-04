@@ -24,7 +24,7 @@ func TestHandleBrbPublish(t *testing.T) {
 			for _, remoteBroker := range test.broker.remoteBrokers {
 				select {
 				case pub := <-remoteBroker.toEchoCh:
-					if !Equals(pub, subtest.want) {
+					if !common.Equals(pub, subtest.want) {
 						t.Errorf("HandleBrbPublish\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 							i+1, test.desc, j+1, &subtest.want, pub)
 					}
@@ -57,7 +57,9 @@ var handleBrbPublishTests = []struct {
 					PublisherID:   1,
 					PublicationID: 1,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				want: pb.Publication{
 					PubType:       common.BRB,
@@ -65,7 +67,9 @@ var handleBrbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       1,
 					BrokerID:      0,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 			},
 		},
@@ -81,7 +85,9 @@ var handleBrbPublishTests = []struct {
 					PublisherID:   1,
 					PublicationID: 1,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				want: pb.Publication{
 					PubType:       common.BRB,
@@ -89,7 +95,9 @@ var handleBrbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       1,
 					BrokerID:      0,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 			},
 			{
@@ -98,7 +106,9 @@ var handleBrbPublishTests = []struct {
 					PublisherID:   1,
 					PublicationID: 2,
 					TopicID:       1,
-					Content:       []byte(message2),
+					Contents: [][]byte{
+						[]byte(message2),
+					},
 				},
 				want: pb.Publication{
 					PubType:       common.BRB,
@@ -106,7 +116,9 @@ var handleBrbPublishTests = []struct {
 					PublicationID: 2,
 					TopicID:       1,
 					BrokerID:      0,
-					Content:       []byte(message2),
+					Contents: [][]byte{
+						[]byte(message2),
+					},
 				},
 			},
 			{
@@ -115,7 +127,9 @@ var handleBrbPublishTests = []struct {
 					PublisherID:   2,
 					PublicationID: 1,
 					TopicID:       2,
-					Content:       []byte(message3),
+					Contents: [][]byte{
+						[]byte(message3),
+					},
 				},
 				want: pb.Publication{
 					PubType:       common.BRB,
@@ -123,7 +137,9 @@ var handleBrbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       2,
 					BrokerID:      0,
-					Content:       []byte(message3),
+					Contents: [][]byte{
+						[]byte(message3),
+					},
 				},
 			},
 			{
@@ -132,7 +148,9 @@ var handleBrbPublishTests = []struct {
 					PublisherID:   2,
 					PublicationID: 2,
 					TopicID:       3,
-					Content:       []byte(message4),
+					Contents: [][]byte{
+						[]byte(message4),
+					},
 				},
 				want: pb.Publication{
 					PubType:       common.BRB,
@@ -140,7 +158,9 @@ var handleBrbPublishTests = []struct {
 					PublicationID: 2,
 					TopicID:       3,
 					BrokerID:      0,
-					Content:       []byte(message4),
+					Contents: [][]byte{
+						[]byte(message4),
+					},
 				},
 			},
 			{
@@ -149,7 +169,9 @@ var handleBrbPublishTests = []struct {
 					PublisherID:   3,
 					PublicationID: 1,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				want: pb.Publication{
 					PubType:       common.BRB,
@@ -157,7 +179,9 @@ var handleBrbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       1,
 					BrokerID:      0,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 			},
 		},
@@ -196,7 +220,7 @@ func TestHandleBrbEcho(t *testing.T) {
 					}
 					select {
 					case pub := <-remoteBroker.toReadyCh:
-						if !Equals(pub, subtest.want) {
+						if !common.Equals(pub, subtest.want) {
 							t.Errorf("HandleBrbEcho\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 								i+1, test.desc, j+1, &subtest.want, pub)
 						}
@@ -214,7 +238,7 @@ func TestHandleBrbEcho(t *testing.T) {
 					}
 					select {
 					case pub := <-subscriber.toCh:
-						if !Equals(pub, subtest.want) {
+						if !common.Equals(pub, subtest.want) {
 							t.Errorf("HandleBrbEcho\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 								i+1, test.desc, j+1, &subtest.want, pub)
 						}
@@ -272,7 +296,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      0,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -284,7 +310,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      1,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -296,7 +324,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      2,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: true,
 				want: pb.Publication{
@@ -305,7 +335,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      0,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 			},
 			{
@@ -315,7 +347,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      3,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -335,7 +369,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      0,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -347,7 +383,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 3,
 					BrokerID:      1,
 					TopicID:       2,
-					Content:       []byte(message3),
+					Contents: [][]byte{
+						[]byte(message3),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -359,7 +397,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      1,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -371,7 +411,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 2,
 					BrokerID:      0,
 					TopicID:       3,
-					Content:       []byte(message2),
+					Contents: [][]byte{
+						[]byte(message2),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -383,7 +425,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      2,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: true,
 				want: pb.Publication{
@@ -392,7 +436,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      0,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 			},
 			{
@@ -402,7 +448,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      3,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -414,7 +462,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 2,
 					BrokerID:      1,
 					TopicID:       3,
-					Content:       []byte(message2),
+					Contents: [][]byte{
+						[]byte(message2),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -426,7 +476,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 3,
 					BrokerID:      0,
 					TopicID:       2,
-					Content:       []byte(message3),
+					Contents: [][]byte{
+						[]byte(message3),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -438,7 +490,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 3,
 					BrokerID:      2,
 					TopicID:       2,
-					Content:       []byte(message3),
+					Contents: [][]byte{
+						[]byte(message3),
+					},
 				},
 				output: true,
 				want: pb.Publication{
@@ -447,7 +501,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 3,
 					BrokerID:      0,
 					TopicID:       2,
-					Content:       []byte(message3),
+					Contents: [][]byte{
+						[]byte(message3),
+					},
 				},
 			},
 		},
@@ -465,7 +521,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      0,
 					TopicID:       1,
-					Content:       []byte(message2),
+					Contents: [][]byte{
+						[]byte(message2),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -477,7 +535,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      1,
 					TopicID:       1,
-					Content:       []byte(message4),
+					Contents: [][]byte{
+						[]byte(message4),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -489,7 +549,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      2,
 					TopicID:       1,
-					Content:       []byte(message2),
+					Contents: [][]byte{
+						[]byte(message2),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -501,7 +563,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      3,
 					TopicID:       1,
-					Content:       []byte(message2),
+					Contents: [][]byte{
+						[]byte(message2),
+					},
 				},
 				output: true,
 				want: pb.Publication{
@@ -510,7 +574,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      0,
 					TopicID:       1,
-					Content:       []byte(message2),
+					Contents: [][]byte{
+						[]byte(message2),
+					},
 				},
 			},
 		},
@@ -528,7 +594,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      0,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -540,7 +608,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      1,
 					TopicID:       7,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -552,7 +622,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      2,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -564,7 +636,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      3,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: true,
 				want: pb.Publication{
@@ -573,7 +647,9 @@ var handleBrbEchoTests = []struct {
 					PublicationID: 1,
 					BrokerID:      0,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 			},
 		},
@@ -620,7 +696,7 @@ func TestHandleBrbReady(t *testing.T) {
 					}
 					select {
 					case pub := <-remoteBroker.toReadyCh:
-						if !Equals(pub, subtest.want) {
+						if !common.Equals(pub, subtest.want) {
 							t.Errorf("HandleBrbReady\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 								i+1, test.desc, j+1, &subtest.want, pub)
 						}
@@ -638,7 +714,7 @@ func TestHandleBrbReady(t *testing.T) {
 					}
 					select {
 					case pub := <-subscriber.toCh:
-						if !Equals(pub, subtest.want) {
+						if !common.Equals(pub, subtest.want) {
 							t.Errorf("HandleBrbReady\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 								i+1, test.desc, j+1, &subtest.want, pub)
 						}
@@ -698,7 +774,9 @@ var handleBrbReadyTests = []struct {
 					PublicationID: 1,
 					BrokerID:      0,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -710,7 +788,9 @@ var handleBrbReadyTests = []struct {
 					PublicationID: 1,
 					BrokerID:      1,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: true,
 				want: pb.Publication{
@@ -719,7 +799,9 @@ var handleBrbReadyTests = []struct {
 					PublicationID: 1,
 					BrokerID:      0,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 			},
 			{
@@ -729,7 +811,9 @@ var handleBrbReadyTests = []struct {
 					PublicationID: 1,
 					BrokerID:      2,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -741,7 +825,9 @@ var handleBrbReadyTests = []struct {
 					PublicationID: 1,
 					BrokerID:      3,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -760,7 +846,9 @@ var handleBrbReadyTests = []struct {
 				PublicationID: 1,
 				BrokerID:      0,
 				TopicID:       1,
-				Content:       []byte(message1),
+				Contents: [][]byte{
+					[]byte(message1),
+				},
 			},
 		},
 		subtests: []handleBrbReadyTest{
@@ -771,7 +859,9 @@ var handleBrbReadyTests = []struct {
 					PublicationID: 1,
 					BrokerID:      0,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -783,7 +873,9 @@ var handleBrbReadyTests = []struct {
 					PublicationID: 1,
 					BrokerID:      1,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -795,7 +887,9 @@ var handleBrbReadyTests = []struct {
 					PublicationID: 1,
 					BrokerID:      2,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -807,7 +901,9 @@ var handleBrbReadyTests = []struct {
 					PublicationID: 1,
 					BrokerID:      3,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -828,7 +924,9 @@ var handleBrbReadyTests = []struct {
 					PublicationID: 1,
 					BrokerID:      0,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -840,7 +938,9 @@ var handleBrbReadyTests = []struct {
 					PublicationID: 1,
 					BrokerID:      1,
 					TopicID:       2,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
@@ -852,7 +952,9 @@ var handleBrbReadyTests = []struct {
 					PublicationID: 1,
 					BrokerID:      2,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: true,
 				want: pb.Publication{
@@ -861,7 +963,9 @@ var handleBrbReadyTests = []struct {
 					PublicationID: 1,
 					BrokerID:      0,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 			},
 			{
@@ -871,7 +975,9 @@ var handleBrbReadyTests = []struct {
 					PublicationID: 1,
 					BrokerID:      3,
 					TopicID:       1,
-					Content:       []byte(message1),
+					Contents: [][]byte{
+						[]byte(message1),
+					},
 				},
 				output: false,
 				want:   pb.Publication{},
