@@ -29,7 +29,8 @@ message Publication {
 message PubResponse{
 	bool Accepted = 1;
 	bool AlphaReached = 2;
-	uint64 TopicID = 3;
+	bool DoubleAlphaReached = 3;
+	uint64 TopicID = 4;
 }
 
 message EchoResponse{}

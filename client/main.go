@@ -118,7 +118,7 @@ func mainPub() {
 			PubType:       publicationType,
 			PublisherID:   localID,
 			PublicationID: i,
-			Topic:         1,
+			TopicID:         1,
 			Content:       sum,
 		}
 

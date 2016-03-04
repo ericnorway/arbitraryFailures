@@ -199,7 +199,15 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 
 	// Check MAC
 	if !exists || pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], publisher.key, common.Algorithm) == false {
-		return &pb.PubResponse{Accepted: false, AlphaReached: false, TopicID: 0}, nil
+		return &pb.PubResponse{Accepted: false, AlphaReached: false, DoubleAlphaReached: false, TopicID: 0}, nil
+	}
+
+	// If using alpha values
+	if b.alpha > 0 {
+		// Don't allow more than 2 * alpha publications for a topic and publisher without a history request
+		if b.checkDoubleAlphaCounter(pub.PublisherID, pub.TopicID) && pub.PubType != common.BRB {
+			return &pb.PubResponse{Accepted: false, AlphaReached: false, DoubleAlphaReached: true, TopicID: 0}, nil
+		}
 	}
 
 	select {
@@ -209,12 +217,15 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 	alphaReached := false
 
 	// If using alpha values
-	if b.alpha > 0 && pub.PubType != common.BRB {
-		// Check if alpha has been reached for this publisher.
-		//alphaReached = b.IncrementPubCount(pub.PublisherID)
+	if b.alpha > 0 {
+		if pub.PubType == common.BRB {
+			b.resetAlphaCounter(pub.PublisherID, pub.TopicID)
+		} else {
+			alphaReached = b.incrementAlphaCounter(pub.PublisherID, pub.TopicID)
+		}
 	}
 
-	return &pb.PubResponse{Accepted: true, AlphaReached: alphaReached, TopicID: pub.TopicID}, nil
+	return &pb.PubResponse{Accepted: true, AlphaReached: alphaReached, DoubleAlphaReached: false, TopicID: pub.TopicID}, nil
 }
 
 // Echo handles incoming BRB echo requests from other brokers
@@ -350,10 +361,35 @@ func (b Broker) handleSubscribe(req *pb.SubRequest) {
 	b.changeTopics(req)
 }
 
-func (b Broker) checkDoubleAlpha(publisherID uint64, topicID uint64) bool {
+func (b Broker) checkDoubleAlphaCounter(publisherID uint64, topicID uint64) bool {
+	if b.alphaCounters[publisherID] == nil {
+		b.alphaCounters[publisherID] = make(map[uint64]uint64)
+	}
+
+	if b.alphaCounters[publisherID][topicID] >= 2*b.alpha {
+		return true
+	}
 	return false
 }
 
-func (b Broker) incrementAlpha(publisherID uint64, topicID uint64) bool {
+func (b Broker) incrementAlphaCounter(publisherID uint64, topicID uint64) bool {
+	if b.alphaCounters[publisherID] == nil {
+		b.alphaCounters[publisherID] = make(map[uint64]uint64)
+	}
+
+	b.alphaCounters[publisherID][topicID]++
+
+	if b.alphaCounters[publisherID][topicID] == b.alpha {
+		return true
+	}
+
 	return false
+}
+
+func (b Broker) resetAlphaCounter(publisherID uint64, topicID uint64) {
+	if b.alphaCounters[publisherID] == nil {
+		b.alphaCounters[publisherID] = make(map[uint64]uint64)
+	}
+
+	b.alphaCounters[publisherID][topicID] = 0
 }

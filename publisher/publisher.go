@@ -21,8 +21,16 @@ type Publisher struct {
 	brokers           map[uint64]brokerInfo
 	brokerConnections uint64
 
-	historyRequestCh chan uint64
+	historyRequestCh chan BrokerTopicPair
 	addToHistoryCh   chan pb.Publication
+	blockCh          chan BrokerTopicPair
+
+	blockTopic map[uint64]bool
+}
+
+type BrokerTopicPair struct {
+	brokerID uint64
+	topicID  uint64
 }
 
 // NewPublisher returns a new Publisher.
@@ -32,8 +40,9 @@ func NewPublisher(localID uint64) *Publisher {
 		currentPubID:      0,
 		brokers:           make(map[uint64]brokerInfo),
 		brokerConnections: 0,
-		historyRequestCh:  make(chan uint64, 8),
+		historyRequestCh:  make(chan BrokerTopicPair, 8),
 		addToHistoryCh:    make(chan pb.Publication, 8),
+		blockCh:           make(chan BrokerTopicPair, 8),
 	}
 }
 
@@ -102,7 +111,13 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 
 			if resp.AlphaReached == true {
 				select {
-				case p.historyRequestCh <- broker.id:
+				case p.historyRequestCh <- BrokerTopicPair{brokerID: broker.id, topicID: resp.TopicID}:
+				}
+			}
+
+			if resp.DoubleAlphaReached == true {
+				select {
+				case p.blockCh <- BrokerTopicPair{brokerID: broker.id, topicID: resp.TopicID}:
 				}
 			}
 		}
@@ -113,37 +128,36 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 // a quorum of alpha requests is reached.
 func (p *Publisher) alphaHandler() {
 	var history []pb.Publication
-	historyRequests := make(map[uint64]bool)
-	pubsSinceLastAlpha := 0
+	historyRequests := make(map[uint64]map[uint64]bool)
+	pubsSinceLastAlpha := make(map[uint64]uint64)
 	historyID := int64(-1)
 
 	for {
 		select {
 		case pub := <-p.addToHistoryCh:
 			history = append(history, pub)
-			pubsSinceLastAlpha++
-		case id := <-p.historyRequestCh:
-			historyRequests[id] = true
-			if len(historyRequests) > len(p.brokers)/2 {
+			pubsSinceLastAlpha[pub.TopicID]++
+		case pair := <-p.historyRequestCh:
+			if historyRequests[pair.topicID] == nil {
+				historyRequests[pair.topicID] = make(map[uint64]bool)
+			}
+			historyRequests[pair.topicID][pair.brokerID] = true
+			if len(historyRequests[pair.topicID]) > len(p.brokers)/2 {
 				// Create the publication.
 				pub := &pb.Publication{
 					PubType:       common.BRB,
 					PublisherID:   p.localID,
 					PublicationID: historyID,
-					TopicID:         1,
+					TopicID:       1,
 					Content:       []byte(" "),
 				}
 
 				// TODO: Add content
 
-				// Send the publication.
-				p.Publish(pub)
-
 				historyID--
 
 				// Reset these
-				historyRequests = make(map[uint64]bool)
-				pubsSinceLastAlpha = 0
+				historyRequests[pair.topicID] = make(map[uint64]bool)
 
 				p.brokersMutex.RLock()
 				for _, broker := range p.brokers {
@@ -154,6 +168,8 @@ func (p *Publisher) alphaHandler() {
 					}
 				}
 				p.brokersMutex.RUnlock()
+
+				pubsSinceLastAlpha[pub.TopicID] = 0
 			}
 		}
 	}
