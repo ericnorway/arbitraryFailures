@@ -8,8 +8,8 @@ import (
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
 
-func TestHandleABPublications(t *testing.T) {
-	for i, test := range handleAbPublishTests {
+func TestHandlePublications(t *testing.T) {
+	for i, test := range handlePublishTests {
 		go test.subscriber.handlePublications()
 
 		for j, subtest := range test.subtests {
@@ -31,23 +31,23 @@ func TestHandleABPublications(t *testing.T) {
 	}
 }
 
-type handleAbPublishTest struct {
+type handlePublishTest struct {
 	pubReq pb.Publication
 	output bool
 	want   pb.Publication
 }
 
-var handleAbPublishTests = []struct {
+var handlePublishTests = []struct {
 	subscriber     *Subscriber
 	desc           string
 	numSubscribers int
-	subtests       []handleAbPublishTest
+	subtests       []handlePublishTest
 }{
 	{
 		subscriber:     NewSubscriber(0),
-		desc:           "1 publication from 4 brokers",
+		desc:           "1 AB publication from 4 brokers",
 		numSubscribers: 1,
-		subtests: []handleAbPublishTest{
+		subtests: []handlePublishTest{
 			{
 				pubReq: pb.Publication{
 					PubType:       common.AB,
@@ -114,145 +114,279 @@ var handleAbPublishTests = []struct {
 				want:   pb.Publication{},
 			},
 		},
-	}, /*
-		{
-			subscriber:         NewSubscriber(0),
-			desc:           "1 pub request, 3 subscribers",
-			numSubscribers: 3,
-			subtests: []handleAbPublishTest{
-				{
-					pubReq: pb.Publication{
-						PubType:       common.AB,
-						PublisherID:   1,
-						PublicationID: 1,
-						TopicID:       2,
-						Contents: [][]byte{
-							[]byte(common.Message1),
-						},
-					},
-					want: pb.Publication{
-						PubType:       common.AB,
-						PublisherID:   1,
-						PublicationID: 1,
-						TopicID:       2,
-						BrokerID:      0,
-						Contents: [][]byte{
-							[]byte(common.Message1),
-						},
+	},
+	{
+		subscriber:     NewSubscriber(0),
+		desc:           "2 AB publications from 4 brokers",
+		numSubscribers: 1,
+		subtests: []handlePublishTest{
+			{
+				pubReq: pb.Publication{
+					PubType:       common.AB,
+					PublisherID:   1,
+					PublicationID: 1,
+					TopicID:       1,
+					BrokerID:      0,
+					Contents: [][]byte{
+						[]byte(common.Message1),
 					},
 				},
+				output: false,
+				want:   pb.Publication{},
+			},
+			{
+				pubReq: pb.Publication{
+					PubType:       common.AB,
+					PublisherID:   1,
+					PublicationID: 1,
+					TopicID:       1,
+					BrokerID:      1,
+					Contents: [][]byte{
+						[]byte(common.Message1),
+					},
+				},
+				output: false,
+				want:   pb.Publication{},
+			},
+			{
+				pubReq: pb.Publication{
+					PubType:       common.AB,
+					PublisherID:   1,
+					PublicationID: 2,
+					TopicID:       1,
+					BrokerID:      0,
+					Contents: [][]byte{
+						[]byte(common.Message1),
+					},
+				},
+				output: false,
+				want:   pb.Publication{},
+			},
+			{
+				pubReq: pb.Publication{
+					PubType:       common.AB,
+					PublisherID:   1,
+					PublicationID: 2,
+					TopicID:       1,
+					BrokerID:      1,
+					Contents: [][]byte{
+						[]byte(common.Message1),
+					},
+				},
+				output: false,
+				want:   pb.Publication{},
+			},
+			{
+				pubReq: pb.Publication{
+					PubType:       common.AB,
+					PublisherID:   1,
+					PublicationID: 1,
+					TopicID:       1,
+					BrokerID:      2,
+					Contents: [][]byte{
+						[]byte(common.Message1),
+					},
+				},
+				output: true,
+				want: pb.Publication{
+					PubType:       common.AB,
+					PublisherID:   1,
+					PublicationID: 1,
+					TopicID:       1,
+					BrokerID:      2,
+					Contents: [][]byte{
+						[]byte(common.Message1),
+					},
+				},
+			},
+			{
+				pubReq: pb.Publication{
+					PubType:       common.AB,
+					PublisherID:   1,
+					PublicationID: 1,
+					TopicID:       1,
+					BrokerID:      3,
+					Contents: [][]byte{
+						[]byte(common.Message1),
+					},
+				},
+				output: false,
+				want:   pb.Publication{},
+			},
+			{
+				pubReq: pb.Publication{
+					PubType:       common.AB,
+					PublisherID:   1,
+					PublicationID: 2,
+					TopicID:       1,
+					BrokerID:      2,
+					Contents: [][]byte{
+						[]byte(common.Message1),
+					},
+				},
+				output: true,
+				want: pb.Publication{
+					PubType:       common.AB,
+					PublisherID:   1,
+					PublicationID: 2,
+					TopicID:       1,
+					BrokerID:      2,
+					Contents: [][]byte{
+						[]byte(common.Message1),
+					},
+				},
+			},
+			{
+				pubReq: pb.Publication{
+					PubType:       common.AB,
+					PublisherID:   1,
+					PublicationID: 2,
+					TopicID:       1,
+					BrokerID:      3,
+					Contents: [][]byte{
+						[]byte(common.Message1),
+					},
+				},
+				output: false,
+				want:   pb.Publication{},
 			},
 		},
-		{
-			subscriber:         NewSubscriber(0),
-			desc:           "5 pub requests, 3 subscribers",
-			numSubscribers: 3,
-			subtests: []handleAbPublishTest{
-				{
-					pubReq: pb.Publication{
-						PubType:       common.AB,
-						PublisherID:   1,
-						PublicationID: 1,
-						TopicID:       1,
-						Contents: [][]byte{
-							[]byte(common.Message1),
-						},
-					},
-					want: pb.Publication{
-						PubType:       common.AB,
-						PublisherID:   1,
-						PublicationID: 1,
-						TopicID:       1,
-						BrokerID:      0,
-						Contents: [][]byte{
-							[]byte(common.Message1),
-						},
+	},
+	{
+		subscriber:     NewSubscriber(0),
+		desc:           "1 AB publication, 1 BRB from 4 brokers",
+		numSubscribers: 1,
+		subtests: []handlePublishTest{
+			{
+				pubReq: pb.Publication{
+					PubType:       common.AB,
+					PublisherID:   1,
+					PublicationID: 1,
+					TopicID:       1,
+					BrokerID:      0,
+					Contents: [][]byte{
+						[]byte(common.Message1),
 					},
 				},
-				{
-					pubReq: pb.Publication{
-						PubType:       common.AB,
-						PublisherID:   1,
-						PublicationID: 2,
-						TopicID:       1,
-						Contents: [][]byte{
-							[]byte(common.Message2),
-						},
-					},
-					want: pb.Publication{
-						PubType:       common.AB,
-						PublisherID:   1,
-						PublicationID: 2,
-						TopicID:       1,
-						BrokerID:      0,
-						Contents: [][]byte{
-							[]byte(common.Message2),
-						},
+				output: false,
+				want:   pb.Publication{},
+			},
+			{
+				pubReq: pb.Publication{
+					PubType:       common.AB,
+					PublisherID:   1,
+					PublicationID: 1,
+					TopicID:       1,
+					BrokerID:      1,
+					Contents: [][]byte{
+						[]byte(common.Message1),
 					},
 				},
-				{
-					pubReq: pb.Publication{
-						PubType:       common.AB,
-						PublisherID:   2,
-						PublicationID: 1,
-						TopicID:       2,
-						Contents: [][]byte{
-							[]byte(common.Message3),
-						},
-					},
-					want: pb.Publication{
-						PubType:       common.AB,
-						PublisherID:   2,
-						PublicationID: 1,
-						TopicID:       2,
-						BrokerID:      0,
-						Contents: [][]byte{
-							[]byte(common.Message3),
-						},
+				output: false,
+				want:   pb.Publication{},
+			},
+			{
+				pubReq: pb.Publication{
+					PubType:       common.BRB,
+					PublisherID:   1,
+					PublicationID: 2,
+					TopicID:       1,
+					BrokerID:      0,
+					Contents: [][]byte{
+						[]byte(common.Message1),
 					},
 				},
-				{
-					pubReq: pb.Publication{
-						PubType:       common.AB,
-						PublisherID:   2,
-						PublicationID: 2,
-						TopicID:       3,
-						Contents: [][]byte{
-							[]byte(common.Message4),
-						},
-					},
-					want: pb.Publication{
-						PubType:       common.AB,
-						PublisherID:   2,
-						PublicationID: 2,
-						TopicID:       3,
-						BrokerID:      0,
-						Contents: [][]byte{
-							[]byte(common.Message4),
-						},
+				output: false,
+				want:   pb.Publication{},
+			},
+			{
+				pubReq: pb.Publication{
+					PubType:       common.BRB,
+					PublisherID:   1,
+					PublicationID: 2,
+					TopicID:       1,
+					BrokerID:      1,
+					Contents: [][]byte{
+						[]byte(common.Message1),
 					},
 				},
-				{
-					pubReq: pb.Publication{
-						PubType:       common.AB,
-						PublisherID:   3,
-						PublicationID: 1,
-						TopicID:       1,
-						Contents: [][]byte{
-							[]byte(common.Message1),
-						},
+				output: false,
+				want:   pb.Publication{},
+			},
+			{
+				pubReq: pb.Publication{
+					PubType:       common.AB,
+					PublisherID:   1,
+					PublicationID: 1,
+					TopicID:       1,
+					BrokerID:      2,
+					Contents: [][]byte{
+						[]byte(common.Message1),
 					},
-					want: pb.Publication{
-						PubType:       common.AB,
-						PublisherID:   3,
-						PublicationID: 1,
-						TopicID:       1,
-						BrokerID:      0,
-						Contents: [][]byte{
-							[]byte(common.Message1),
-						},
+				},
+				output: true,
+				want: pb.Publication{
+					PubType:       common.AB,
+					PublisherID:   1,
+					PublicationID: 1,
+					TopicID:       1,
+					BrokerID:      2,
+					Contents: [][]byte{
+						[]byte(common.Message1),
 					},
 				},
 			},
-		},*/
+			{
+				pubReq: pb.Publication{
+					PubType:       common.AB,
+					PublisherID:   1,
+					PublicationID: 1,
+					TopicID:       1,
+					BrokerID:      3,
+					Contents: [][]byte{
+						[]byte(common.Message1),
+					},
+				},
+				output: false,
+				want:   pb.Publication{},
+			},
+			{
+				pubReq: pb.Publication{
+					PubType:       common.BRB,
+					PublisherID:   1,
+					PublicationID: 2,
+					TopicID:       1,
+					BrokerID:      2,
+					Contents: [][]byte{
+						[]byte(common.Message1),
+					},
+				},
+				output: true,
+				want: pb.Publication{
+					PubType:       common.BRB,
+					PublisherID:   1,
+					PublicationID: 2,
+					TopicID:       1,
+					BrokerID:      2,
+					Contents: [][]byte{
+						[]byte(common.Message1),
+					},
+				},
+			},
+			{
+				pubReq: pb.Publication{
+					PubType:       common.BRB,
+					PublisherID:   1,
+					PublicationID: 2,
+					TopicID:       1,
+					BrokerID:      3,
+					Contents: [][]byte{
+						[]byte(common.Message1),
+					},
+				},
+				output: false,
+				want:   pb.Publication{},
+			},
+		},
+	},
 }
