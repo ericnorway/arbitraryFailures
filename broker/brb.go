@@ -24,7 +24,7 @@ func (b Broker) handleBrbPublish(pub *pb.Publication) {
 
 		// "Send" the echo request to itself
 		select {
-		case b.fromBrokerEchoCh <- pub:
+		case b.fromBrokerEchoCh <- *pub:
 		}
 
 		// Send the echo request to all other brokers
@@ -82,7 +82,7 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 
 		// "Send" the ready request to itself
 		select {
-		case b.fromBrokerReadyCh <- pub:
+		case b.fromBrokerReadyCh <- *pub:
 		}
 
 		// Send the ready to all other brokers
@@ -156,7 +156,7 @@ func (b Broker) handleReady(pub *pb.Publication) {
 		// "Send" the ready request to itself, if not already from self
 		if pub.BrokerID != pub.BrokerID {
 			select {
-			case b.fromBrokerReadyCh <- pub:
+			case b.fromBrokerReadyCh <- *pub:
 			}
 		}
 

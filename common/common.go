@@ -7,6 +7,11 @@ import (
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
 
+var Message1 = "Some data."
+var Message2 = "Some other data."
+var Message3 = "Some more data."
+var Message4 = "Even more data..."
+
 // Enumeration of the different algorithms used
 const (
 	AB    = iota // Authenticated Broadcast algorithm

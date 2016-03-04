@@ -23,9 +23,9 @@ type Subscriber struct {
 	brokers           map[uint64]brokerInfo
 	brokerConnections int64
 
-	fromBrokerChan chan *pb.Publication
-	ToUser         chan *pb.Publication
-	FromUser       chan *pb.SubRequest
+	fromBrokerCh chan pb.Publication
+	ToUserCh     chan pb.Publication
+	FromUserCh   chan pb.SubRequest
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
@@ -47,9 +47,9 @@ func NewSubscriber(localID uint64) *Subscriber {
 		localID:           localID,
 		brokers:           make(map[uint64]brokerInfo),
 		brokerConnections: 0,
-		fromBrokerChan:    make(chan *pb.Publication, 8),
-		ToUser:            make(chan *pb.Publication, 8),
-		FromUser:          make(chan *pb.SubRequest, 8),
+		fromBrokerCh:      make(chan pb.Publication, 8),
+		ToUserCh:          make(chan pb.Publication, 8),
+		FromUserCh:        make(chan pb.SubRequest, 8),
 		pubsReceived:      make(map[uint64]map[int64]map[uint64]string),
 		pubsLearned:       make(map[uint64]map[int64]string),
 		topics:            make(map[uint64]bool),
@@ -130,7 +130,7 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 			}
 
 			select {
-			case s.fromBrokerChan <- pub:
+			case s.fromBrokerCh <- *pub:
 			}
 		}
 	}()
@@ -158,24 +158,34 @@ func (s *Subscriber) Start() {
 	}
 	fmt.Printf("...done\n")
 
-	s.processMessages()
+	s.handlePublications()
 }
 
-// processMessages processes messages from brokers and from the user.
-func (s *Subscriber) processMessages() {
+// handlePublications processes messages from brokers and from the user.
+func (s *Subscriber) handlePublications() {
 	for {
 		select {
-		case pub := <-s.fromBrokerChan:
+		case pub := <-s.fromBrokerCh:
 			if pub.PubType == common.AB {
-				s.processAbPublication(pub)
+				foundQuorum := s.handleAbPublication(&pub)
+				if foundQuorum {
+					select {
+					case s.ToUserCh <- pub:
+					}
+				}
 			} else if pub.PubType == common.BRB {
-				s.processBrbPublication(pub)
+				foundQuorum := s.handleBrbPublication(&pub)
+				if foundQuorum {
+					select {
+					case s.ToUserCh <- pub:
+					}
+				}
 			}
-		case sub := <-s.FromUser:
+		case sub := <-s.FromUserCh:
 			s.brokersMutex.RLock()
 			for _, broker := range s.brokers {
 				select {
-				case broker.toCh <- *sub:
+				case broker.toCh <- sub:
 				}
 			}
 			s.brokersMutex.RUnlock()
@@ -183,9 +193,9 @@ func (s *Subscriber) processMessages() {
 	}
 }
 
-// processAbPublication processes an Authenticated Broadcast publication.
+// handleAbPublication processes an Authenticated Broadcast publication.
 // It takes as input a publication.
-func (s *Subscriber) processAbPublication(pub *pb.Publication) {
+func (s *Subscriber) handleAbPublication(pub *pb.Publication) bool {
 	// Make the map so not trying to access nil reference
 	if s.pubsReceived[pub.PublisherID] == nil {
 		s.pubsReceived[pub.PublisherID] = make(map[int64]map[uint64]string)
@@ -194,24 +204,22 @@ func (s *Subscriber) processAbPublication(pub *pb.Publication) {
 	if s.pubsReceived[pub.PublisherID][pub.PublicationID] == nil {
 		s.pubsReceived[pub.PublisherID][pub.PublicationID] = make(map[uint64]string)
 	}
+
 	// Publication has not been received yet for this publisher ID, publication ID, broker ID
 	if s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == "" {
 		// So record it
 		s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = common.GetInfo(pub)
-		// Check if there is a quorum yet for this publisher ID and publication ID
-		foundQuorum := s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
 
-		if foundQuorum {
-			select {
-			case s.ToUser <- pub:
-			}
-		}
+		// Check if there is a quorum yet for this publisher ID and publication ID
+		return s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
 	}
+
+	return false
 }
 
-// processBrbPublication processes a Bracha's Reliable Broadcast publication.
+// handleBrbPublication processes a Bracha's Reliable Broadcast publication.
 // It takes as input a publication.
-func (s *Subscriber) processBrbPublication(pub *pb.Publication) {
+func (s *Subscriber) handleBrbPublication(pub *pb.Publication) bool {
 	// Make the map so not trying to access nil reference
 	if s.pubsReceived[pub.PublisherID] == nil {
 		s.pubsReceived[pub.PublisherID] = make(map[int64]map[uint64]string)
@@ -225,14 +233,10 @@ func (s *Subscriber) processBrbPublication(pub *pb.Publication) {
 		// So record it
 		s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = common.GetInfo(pub)
 		// Check if there is a quorum yet for this publisher ID and publication ID
-		foundQuorum := s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
-
-		if foundQuorum {
-			select {
-			case s.ToUser <- pub:
-			}
-		}
+		return s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
 	}
+
+	return false
 }
 
 // checkQuorum checks that a quorum has been received for a specific publisher and publication.
@@ -263,7 +267,6 @@ func (s *Subscriber) checkQuorum(publisherID uint64, publicationID int64, quorum
 	// Just a temporary map to help with checking for a quorum. It keeps track of the number of each
 	// publication value with this publisher ID and publication ID.
 	countMap := make(map[string]uint)
-
 	for _, contents := range s.pubsReceived[publisherID][publicationID] {
 		countMap[contents] = countMap[contents] + 1
 		if countMap[contents] >= quorumSize {

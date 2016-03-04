@@ -59,7 +59,7 @@ func mainSub() {
 	go func() {
 		for {
 			select {
-			case pub := <-s.ToUser:
+			case pub := <-s.ToUserCh:
 				if pubTimes[pub.PublisherID] == nil {
 					pubTimes[pub.PublisherID] = make(map[int64]int64)
 				}

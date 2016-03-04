@@ -63,7 +63,7 @@ var handleAbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				want: pb.Publication{
@@ -73,7 +73,7 @@ var handleAbPublishTests = []struct {
 					TopicID:       1,
 					BrokerID:      0,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 			},
@@ -91,7 +91,7 @@ var handleAbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       2,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				want: pb.Publication{
@@ -101,7 +101,7 @@ var handleAbPublishTests = []struct {
 					TopicID:       2,
 					BrokerID:      0,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 			},
@@ -119,7 +119,7 @@ var handleAbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				want: pb.Publication{
@@ -129,7 +129,7 @@ var handleAbPublishTests = []struct {
 					TopicID:       1,
 					BrokerID:      0,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 			},
@@ -140,7 +140,7 @@ var handleAbPublishTests = []struct {
 					PublicationID: 2,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message2),
+						[]byte(common.Message2),
 					},
 				},
 				want: pb.Publication{
@@ -150,7 +150,7 @@ var handleAbPublishTests = []struct {
 					TopicID:       1,
 					BrokerID:      0,
 					Contents: [][]byte{
-						[]byte(message2),
+						[]byte(common.Message2),
 					},
 				},
 			},
@@ -161,7 +161,7 @@ var handleAbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       2,
 					Contents: [][]byte{
-						[]byte(message3),
+						[]byte(common.Message3),
 					},
 				},
 				want: pb.Publication{
@@ -171,7 +171,7 @@ var handleAbPublishTests = []struct {
 					TopicID:       2,
 					BrokerID:      0,
 					Contents: [][]byte{
-						[]byte(message3),
+						[]byte(common.Message3),
 					},
 				},
 			},
@@ -182,7 +182,7 @@ var handleAbPublishTests = []struct {
 					PublicationID: 2,
 					TopicID:       3,
 					Contents: [][]byte{
-						[]byte(message4),
+						[]byte(common.Message4),
 					},
 				},
 				want: pb.Publication{
@@ -192,7 +192,7 @@ var handleAbPublishTests = []struct {
 					TopicID:       3,
 					BrokerID:      0,
 					Contents: [][]byte{
-						[]byte(message4),
+						[]byte(common.Message4),
 					},
 				},
 			},
@@ -203,7 +203,7 @@ var handleAbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				want: pb.Publication{
@@ -213,7 +213,7 @@ var handleAbPublishTests = []struct {
 					TopicID:       1,
 					BrokerID:      0,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 			},

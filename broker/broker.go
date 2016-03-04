@@ -30,20 +30,20 @@ type Broker struct {
 	// PUBLISHER VARIABLES
 	publishersMutex sync.RWMutex
 	publishers      map[uint64]publisherInfo
-	fromPublisherCh chan *pb.Publication
+	fromPublisherCh chan pb.Publication
 
 	// BROKER CHANNEL VARIABLES
 	remoteBrokersMutex      sync.RWMutex
 	remoteBrokers           map[uint64]brokerInfo
 	remoteBrokerConnections uint64
-	fromBrokerEchoCh        chan *pb.Publication
-	fromBrokerReadyCh       chan *pb.Publication
-	fromBrokerChainCh       chan *pb.Publication
+	fromBrokerEchoCh        chan pb.Publication
+	fromBrokerReadyCh       chan pb.Publication
+	fromBrokerChainCh       chan pb.Publication
 
 	// SUBSCRIBER CHANNEL VARIABLES
 	subscribersMutex sync.RWMutex
 	subscribers      map[uint64]subscriberInfo
-	fromSubscriberCh chan *pb.SubRequest
+	fromSubscriberCh chan pb.SubRequest
 
 	// MESSAGE TRACKING VARIABLES
 
@@ -93,14 +93,14 @@ func NewBroker(localID uint64, localAddr string, alpha uint64) *Broker {
 		readyQuorumSize:         2, // default
 		faultsTolerated:         1, // default
 		publishers:              make(map[uint64]publisherInfo),
-		fromPublisherCh:         make(chan *pb.Publication, 32),
+		fromPublisherCh:         make(chan pb.Publication, 32),
 		remoteBrokers:           make(map[uint64]brokerInfo),
 		remoteBrokerConnections: 0,
-		fromBrokerEchoCh:        make(chan *pb.Publication, 32),
-		fromBrokerReadyCh:       make(chan *pb.Publication, 32),
-		fromBrokerChainCh:       make(chan *pb.Publication, 32),
+		fromBrokerEchoCh:        make(chan pb.Publication, 32),
+		fromBrokerReadyCh:       make(chan pb.Publication, 32),
+		fromBrokerChainCh:       make(chan pb.Publication, 32),
 		subscribers:             make(map[uint64]subscriberInfo),
-		fromSubscriberCh:        make(chan *pb.SubRequest, 32),
+		fromSubscriberCh:        make(chan pb.SubRequest, 32),
 		forwardSent:             make(map[uint64]map[int64]bool),
 		echoesSent:              make(map[uint64]map[int64]bool),
 		echoesReceived:          make(map[uint64]map[int64]map[uint64]string),
@@ -211,7 +211,7 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 	}
 
 	select {
-	case b.fromPublisherCh <- pub:
+	case b.fromPublisherCh <- *pub:
 	}
 
 	alphaReached := false
@@ -238,7 +238,7 @@ func (b *Broker) Echo(ctx context.Context, pub *pb.Publication) (*pb.EchoRespons
 	}
 
 	select {
-	case b.fromBrokerEchoCh <- pub:
+	case b.fromBrokerEchoCh <- *pub:
 	}
 
 	return &pb.EchoResponse{}, nil
@@ -254,7 +254,7 @@ func (b *Broker) Ready(ctx context.Context, pub *pb.Publication) (*pb.ReadyRespo
 	}
 
 	select {
-	case b.fromBrokerReadyCh <- pub:
+	case b.fromBrokerReadyCh <- *pub:
 	}
 
 	return &pb.ReadyResponse{}, nil
@@ -291,7 +291,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	ch := b.addToSubChannel(id)
 
 	// Add initial subscribe for processing
-	b.fromSubscriberCh <- req
+	b.fromSubscriberCh <- *req
 
 	// Write loop
 	go func() {
@@ -323,7 +323,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 		}
 
 		select {
-		case b.fromSubscriberCh <- req:
+		case b.fromSubscriberCh <- *req:
 		}
 	}
 
@@ -338,19 +338,19 @@ func (b Broker) handleMessages() {
 		case req := <-b.fromPublisherCh:
 			if req.PubType == common.AB {
 				// Handle an Authenticated Broadcast publish request
-				b.handleAbPublish(req)
+				b.handleAbPublish(&req)
 			} else if req.PubType == common.BRB {
 				// Handle a Bracha's Reliable Broadcast publish request
-				b.handleBrbPublish(req)
+				b.handleBrbPublish(&req)
 			} else if req.PubType == common.Chain {
 				// Handle a Chain publish request
 			}
 		case req := <-b.fromBrokerEchoCh:
-			b.handleEcho(req)
+			b.handleEcho(&req)
 		case req := <-b.fromBrokerReadyCh:
-			b.handleReady(req)
+			b.handleReady(&req)
 		case req := <-b.fromSubscriberCh:
-			b.handleSubscribe(req)
+			b.handleSubscribe(&req)
 		}
 	}
 }

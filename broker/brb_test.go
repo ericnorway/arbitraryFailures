@@ -58,7 +58,7 @@ var handleBrbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				want: pb.Publication{
@@ -68,7 +68,7 @@ var handleBrbPublishTests = []struct {
 					TopicID:       1,
 					BrokerID:      0,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 			},
@@ -86,7 +86,7 @@ var handleBrbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				want: pb.Publication{
@@ -96,7 +96,7 @@ var handleBrbPublishTests = []struct {
 					TopicID:       1,
 					BrokerID:      0,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 			},
@@ -107,7 +107,7 @@ var handleBrbPublishTests = []struct {
 					PublicationID: 2,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message2),
+						[]byte(common.Message2),
 					},
 				},
 				want: pb.Publication{
@@ -117,7 +117,7 @@ var handleBrbPublishTests = []struct {
 					TopicID:       1,
 					BrokerID:      0,
 					Contents: [][]byte{
-						[]byte(message2),
+						[]byte(common.Message2),
 					},
 				},
 			},
@@ -128,7 +128,7 @@ var handleBrbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       2,
 					Contents: [][]byte{
-						[]byte(message3),
+						[]byte(common.Message3),
 					},
 				},
 				want: pb.Publication{
@@ -138,7 +138,7 @@ var handleBrbPublishTests = []struct {
 					TopicID:       2,
 					BrokerID:      0,
 					Contents: [][]byte{
-						[]byte(message3),
+						[]byte(common.Message3),
 					},
 				},
 			},
@@ -149,7 +149,7 @@ var handleBrbPublishTests = []struct {
 					PublicationID: 2,
 					TopicID:       3,
 					Contents: [][]byte{
-						[]byte(message4),
+						[]byte(common.Message4),
 					},
 				},
 				want: pb.Publication{
@@ -159,7 +159,7 @@ var handleBrbPublishTests = []struct {
 					TopicID:       3,
 					BrokerID:      0,
 					Contents: [][]byte{
-						[]byte(message4),
+						[]byte(common.Message4),
 					},
 				},
 			},
@@ -170,7 +170,7 @@ var handleBrbPublishTests = []struct {
 					PublicationID: 1,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				want: pb.Publication{
@@ -180,7 +180,7 @@ var handleBrbPublishTests = []struct {
 					TopicID:       1,
 					BrokerID:      0,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 			},
@@ -297,7 +297,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      0,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -311,7 +311,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      1,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -325,7 +325,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      2,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: true,
@@ -336,7 +336,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      0,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 			},
@@ -348,7 +348,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      3,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -370,7 +370,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      0,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -384,7 +384,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      1,
 					TopicID:       2,
 					Contents: [][]byte{
-						[]byte(message3),
+						[]byte(common.Message3),
 					},
 				},
 				output: false,
@@ -398,7 +398,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      1,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -412,7 +412,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      0,
 					TopicID:       3,
 					Contents: [][]byte{
-						[]byte(message2),
+						[]byte(common.Message2),
 					},
 				},
 				output: false,
@@ -426,7 +426,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      2,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: true,
@@ -437,7 +437,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      0,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 			},
@@ -449,7 +449,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      3,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -463,7 +463,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      1,
 					TopicID:       3,
 					Contents: [][]byte{
-						[]byte(message2),
+						[]byte(common.Message2),
 					},
 				},
 				output: false,
@@ -477,7 +477,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      0,
 					TopicID:       2,
 					Contents: [][]byte{
-						[]byte(message3),
+						[]byte(common.Message3),
 					},
 				},
 				output: false,
@@ -491,7 +491,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      2,
 					TopicID:       2,
 					Contents: [][]byte{
-						[]byte(message3),
+						[]byte(common.Message3),
 					},
 				},
 				output: true,
@@ -502,7 +502,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      0,
 					TopicID:       2,
 					Contents: [][]byte{
-						[]byte(message3),
+						[]byte(common.Message3),
 					},
 				},
 			},
@@ -522,7 +522,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      0,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message2),
+						[]byte(common.Message2),
 					},
 				},
 				output: false,
@@ -536,7 +536,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      1,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message4),
+						[]byte(common.Message4),
 					},
 				},
 				output: false,
@@ -550,7 +550,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      2,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message2),
+						[]byte(common.Message2),
 					},
 				},
 				output: false,
@@ -564,7 +564,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      3,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message2),
+						[]byte(common.Message2),
 					},
 				},
 				output: true,
@@ -575,7 +575,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      0,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message2),
+						[]byte(common.Message2),
 					},
 				},
 			},
@@ -595,7 +595,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      0,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -609,7 +609,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      1,
 					TopicID:       7,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -623,7 +623,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      2,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -637,7 +637,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      3,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: true,
@@ -648,7 +648,7 @@ var handleBrbEchoTests = []struct {
 					BrokerID:      0,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 			},
@@ -775,7 +775,7 @@ var handleBrbReadyTests = []struct {
 					BrokerID:      0,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -789,7 +789,7 @@ var handleBrbReadyTests = []struct {
 					BrokerID:      1,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: true,
@@ -800,7 +800,7 @@ var handleBrbReadyTests = []struct {
 					BrokerID:      0,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 			},
@@ -812,7 +812,7 @@ var handleBrbReadyTests = []struct {
 					BrokerID:      2,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -826,7 +826,7 @@ var handleBrbReadyTests = []struct {
 					BrokerID:      3,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -847,7 +847,7 @@ var handleBrbReadyTests = []struct {
 				BrokerID:      0,
 				TopicID:       1,
 				Contents: [][]byte{
-					[]byte(message1),
+					[]byte(common.Message1),
 				},
 			},
 		},
@@ -860,7 +860,7 @@ var handleBrbReadyTests = []struct {
 					BrokerID:      0,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -874,7 +874,7 @@ var handleBrbReadyTests = []struct {
 					BrokerID:      1,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -888,7 +888,7 @@ var handleBrbReadyTests = []struct {
 					BrokerID:      2,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -902,7 +902,7 @@ var handleBrbReadyTests = []struct {
 					BrokerID:      3,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -925,7 +925,7 @@ var handleBrbReadyTests = []struct {
 					BrokerID:      0,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -939,7 +939,7 @@ var handleBrbReadyTests = []struct {
 					BrokerID:      1,
 					TopicID:       2,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
@@ -953,7 +953,7 @@ var handleBrbReadyTests = []struct {
 					BrokerID:      2,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: true,
@@ -964,7 +964,7 @@ var handleBrbReadyTests = []struct {
 					BrokerID:      0,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 			},
@@ -976,7 +976,7 @@ var handleBrbReadyTests = []struct {
 					BrokerID:      3,
 					TopicID:       1,
 					Contents: [][]byte{
-						[]byte(message1),
+						[]byte(common.Message1),
 					},
 				},
 				output: false,
