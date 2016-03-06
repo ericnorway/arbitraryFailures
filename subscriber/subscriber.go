@@ -274,8 +274,6 @@ func (s *Subscriber) handleHistoryPublication(pub *pb.Publication) {
 		publicationID, _ := binary.ReadVarint(buf)
 		content := histPub[8:]
 
-		fmt.Printf("PubID: %v Content: %v\n\n", publicationID, content)
-
 		// Make the map so not trying to access nil reference
 		if s.pubsLearned[pub.PublisherID] == nil {
 			s.pubsLearned[pub.PublisherID] = make(map[int64]string)
@@ -291,6 +289,7 @@ func (s *Subscriber) handleHistoryPublication(pub *pb.Publication) {
 				PublisherID:   pub.PublisherID,
 				PublicationID: publicationID,
 				TopicID:       pub.TopicID,
+				BrokerID:      pub.BrokerID,
 				Contents: [][]byte{
 					content,
 				},
