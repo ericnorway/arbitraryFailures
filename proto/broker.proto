@@ -28,8 +28,8 @@ message Publication {
 
 message PubResponse{
 	bool Accepted = 1;
-	bool AlphaReached = 2;
-	bool DoubleAlphaReached = 3;
+	bool RequestHistory = 2;
+	bool Blocked = 3;
 	uint64 TopicID = 4;
 }
 

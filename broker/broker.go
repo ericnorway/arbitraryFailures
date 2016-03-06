@@ -199,14 +199,14 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 
 	// Check MAC
 	if !exists || pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], publisher.key, common.Algorithm) == false {
-		return &pb.PubResponse{Accepted: false, AlphaReached: false, DoubleAlphaReached: false, TopicID: 0}, nil
+		return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: false, TopicID: 0}, nil
 	}
 
 	// If using alpha values
 	if b.alpha > 0 {
 		// Don't allow more than 2 * alpha publications for a topic and publisher without a history request
 		if b.checkDoubleAlphaCounter(pub.PublisherID, pub.TopicID) && pub.PubType != common.BRB {
-			return &pb.PubResponse{Accepted: false, AlphaReached: false, DoubleAlphaReached: true, TopicID: 0}, nil
+			return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: true, TopicID: 0}, nil
 		}
 	}
 
@@ -214,18 +214,18 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 	case b.fromPublisherCh <- *pub:
 	}
 
-	alphaReached := false
+	requestHistory := false
 
 	// If using alpha values
 	if b.alpha > 0 {
 		if pub.PubType == common.BRB {
 			b.resetAlphaCounter(pub.PublisherID, pub.TopicID)
 		} else {
-			alphaReached = b.incrementAlphaCounter(pub.PublisherID, pub.TopicID)
+			requestHistory = b.incrementAlphaCounter(pub.PublisherID, pub.TopicID)
 		}
 	}
 
-	return &pb.PubResponse{Accepted: true, AlphaReached: alphaReached, DoubleAlphaReached: false, TopicID: pub.TopicID}, nil
+	return &pb.PubResponse{Accepted: true, RequestHistory: requestHistory, Blocked: false, TopicID: pub.TopicID}, nil
 }
 
 // Echo handles incoming BRB echo requests from other brokers
