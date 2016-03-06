@@ -129,8 +129,10 @@ func mainPub() {
 		pubTimes[pub.PublicationID] = timeNano
 		pubIDs = append(pubIDs, pub.PublicationID)
 
-		// Send the publication.
-		p.Publish(pub)
+		for sent := false; sent == false; {
+			// Send the publication.
+			sent = p.Publish(pub)
+		}
 
 		fmt.Printf(".")
 		time.Sleep(5 * time.Millisecond)

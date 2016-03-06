@@ -30,9 +30,10 @@ type Publisher struct {
 	blockTopic map[uint64]bool // The key is TopicID
 }
 
+// BrokerTopicPair is a struct of BrokerID and TopicID that can be easily sent on a channel
 type BrokerTopicPair struct {
-	brokerID uint64
-	topicID  uint64
+	BrokerID uint64
+	TopicID  uint64
 }
 
 // NewPublisher returns a new Publisher.
@@ -54,6 +55,7 @@ func NewPublisher(localID uint64) *Publisher {
 // It takes as input a publication.
 func (p *Publisher) Publish(pub *pb.Publication) bool {
 	if p.blockTopic[pub.TopicID] == true {
+		fmt.Printf("Blocked\n")
 		return false
 	}
 
@@ -121,14 +123,13 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 
 			if resp.RequestHistory == true {
 				select {
-				case p.historyRequestCh <- BrokerTopicPair{brokerID: broker.id, topicID: resp.TopicID}:
+				case p.historyRequestCh <- BrokerTopicPair{BrokerID: broker.id, TopicID: resp.TopicID}:
 				}
 			}
 
 			if resp.Blocked == true {
-				fmt.Printf("Block requested\n")
 				select {
-				case p.blockCh <- BrokerTopicPair{brokerID: broker.id, topicID: resp.TopicID}:
+				case p.blockCh <- BrokerTopicPair{BrokerID: broker.id, TopicID: resp.TopicID}:
 				}
 			}
 		}
@@ -156,23 +157,23 @@ func (p *Publisher) historyHandler() {
 			history[pub.TopicID] = append(history[pub.TopicID], pub)
 			pubsSinceLastHistory[pub.TopicID]++
 		case pair := <-p.historyRequestCh:
-			if historyRequests[pair.topicID] == nil {
-				historyRequests[pair.topicID] = make(map[uint64]bool)
+			if historyRequests[pair.TopicID] == nil {
+				historyRequests[pair.TopicID] = make(map[uint64]bool)
 			}
 
 			// If a history Publication was recently sent, ignore this request.
-			if pubsSinceLastHistory[pair.topicID] < 2 {
+			if pubsSinceLastHistory[pair.TopicID] < 2 {
 				continue
 			}
 
-			historyRequests[pair.topicID][pair.brokerID] = true
-			if len(historyRequests[pair.topicID]) > len(p.brokers)/2 {
+			historyRequests[pair.TopicID][pair.BrokerID] = true
+			if len(historyRequests[pair.TopicID]) > len(p.brokers)/2 {
 				// Create the publication.
 				pub := &pb.Publication{
 					PubType:       common.BRB,
 					PublisherID:   p.localID,
 					PublicationID: historyID,
-					TopicID:       pair.topicID,
+					TopicID:       pair.TopicID,
 					Contents: [][]byte{
 						[]byte(" "),
 					},
@@ -195,9 +196,7 @@ func (p *Publisher) historyHandler() {
 
 				historyID--
 
-				// Reset these
-				historyRequests[pair.topicID] = make(map[uint64]bool)
-
+				// Send the history to all brokers
 				p.brokersMutex.RLock()
 				for _, broker := range p.brokers {
 					if broker.toCh != nil {
@@ -208,18 +207,28 @@ func (p *Publisher) historyHandler() {
 				}
 				p.brokersMutex.RUnlock()
 
-				p.blockTopic[pair.topicID] = false
+				// Reset these
+				historyRequests[pair.TopicID] = make(map[uint64]bool)
 				pubsSinceLastHistory[pub.TopicID] = 0
+				p.blockTopic[pair.TopicID] = false
+				blockRequests[pair.TopicID] = make(map[uint64]bool)
 			}
 		case pair := <-p.blockCh:
-			if blockRequests[pair.topicID] == nil {
-				blockRequests[pair.topicID] = make(map[uint64]bool)
+			if blockRequests[pair.TopicID] == nil {
+				blockRequests[pair.TopicID] = make(map[uint64]bool)
 			}
 
-			blockRequests[pair.topicID][pair.brokerID] = true
+			blockRequests[pair.TopicID][pair.BrokerID] = true
+
 			// If more than one broker is blocking
-			if len(blockRequests[pair.topicID]) > 1 {
-				p.blockTopic[pair.topicID] = true
+			if len(blockRequests[pair.TopicID]) > len(p.brokers)/2 {
+				// Don't allow any more publications from this topic.
+				p.blockTopic[pair.TopicID] = true
+			}
+
+			// Send a request for history.
+			select {
+			case p.historyRequestCh <- pair:
 			}
 		}
 	}
