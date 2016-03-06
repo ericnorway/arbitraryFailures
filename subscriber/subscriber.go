@@ -1,6 +1,8 @@
 package subscriber
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"sync"
@@ -30,12 +32,12 @@ type Subscriber struct {
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
 	// The third index references the broker ID.
-	// The byte slice contains the publication.
+	// The string contains the publication.
 	pubsReceived map[uint64]map[int64]map[uint64]string
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
-	// The byte slice contains the publication.
+	// The string contains the publication.
 	pubsLearned map[uint64]map[int64]string
 
 	topics map[uint64]bool
@@ -180,6 +182,8 @@ func (s *Subscriber) handlePublications() {
 					case s.ToUserCh <- pub:
 					}
 				}
+			} else if pub.PubType == common.Chain {
+
 			}
 		case sub := <-s.FromUserCh:
 			s.brokersMutex.RLock()
@@ -196,6 +200,8 @@ func (s *Subscriber) handlePublications() {
 // handleAbPublication processes an Authenticated Broadcast publication.
 // It takes as input a publication.
 func (s *Subscriber) handleAbPublication(pub *pb.Publication) bool {
+	foundQuorum := false
+
 	// Make the map so not trying to access nil reference
 	if s.pubsReceived[pub.PublisherID] == nil {
 		s.pubsReceived[pub.PublisherID] = make(map[int64]map[uint64]string)
@@ -211,15 +217,17 @@ func (s *Subscriber) handleAbPublication(pub *pb.Publication) bool {
 		s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = common.GetInfo(pub)
 
 		// Check if there is a quorum yet for this publisher ID and publication ID
-		return s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
+		foundQuorum = s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
 	}
 
-	return false
+	return foundQuorum
 }
 
 // handleBrbPublication processes a Bracha's Reliable Broadcast publication.
 // It takes as input a publication.
 func (s *Subscriber) handleBrbPublication(pub *pb.Publication) bool {
+	foundQuorum := false
+
 	// Make the map so not trying to access nil reference
 	if s.pubsReceived[pub.PublisherID] == nil {
 		s.pubsReceived[pub.PublisherID] = make(map[int64]map[uint64]string)
@@ -233,10 +241,67 @@ func (s *Subscriber) handleBrbPublication(pub *pb.Publication) bool {
 		// So record it
 		s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = common.GetInfo(pub)
 		// Check if there is a quorum yet for this publisher ID and publication ID
-		return s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
+		foundQuorum = s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
+
+		if foundQuorum && len(pub.Contents) > 1 {
+			s.handleHistoryPublication(pub)
+		}
 	}
 
-	return false
+	return foundQuorum
+}
+
+// handleChainPublication processes a Bracha's Reliable Broadcast publication.
+// It takes as input a publication.
+func (s *Subscriber) handleChainPublication(pub *pb.Publication) bool {
+	macsValid := false
+
+	return macsValid
+}
+
+// handleHistoryPublication processes a Bracha's Reliable Broadcast publication.
+// It takes as input a publication.
+func (s *Subscriber) handleHistoryPublication(pub *pb.Publication) {
+	// For each publication in the history
+	for _, histPub := range pub.Contents {
+
+		if len(histPub) < 8 {
+			continue
+		}
+
+		buf := bytes.NewBuffer(histPub)
+
+		publicationID, _ := binary.ReadVarint(buf)
+		content := histPub[8:]
+
+		fmt.Printf("PubID: %v Content: %v\n\n", publicationID, content)
+
+		// Make the map so not trying to access nil reference
+		if s.pubsLearned[pub.PublisherID] == nil {
+			s.pubsLearned[pub.PublisherID] = make(map[int64]string)
+		}
+
+		// If a quorum has not been reached yet for this individual publication in the history.
+		if s.pubsLearned[pub.PublisherID][publicationID] == "" {
+			s.pubsLearned[pub.PublisherID][publicationID] = string(content)
+
+			// Create the publication.
+			pub := &pb.Publication{
+				PubType:       pub.PubType,
+				PublisherID:   pub.PublisherID,
+				PublicationID: publicationID,
+				TopicID:       pub.TopicID,
+				Contents: [][]byte{
+					content,
+				},
+			}
+
+			// Send it to the user.
+			select {
+			case s.ToUserCh <- *pub:
+			}
+		}
+	}
 }
 
 // checkQuorum checks that a quorum has been received for a specific publisher and publication.
