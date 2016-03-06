@@ -1,6 +1,8 @@
 package publisher
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"sync"
 	"time"
@@ -18,14 +20,14 @@ type Publisher struct {
 	currentPubID int64
 
 	brokersMutex      sync.RWMutex
-	brokers           map[uint64]brokerInfo
+	brokers           map[uint64]brokerInfo // The key is the BrokerID
 	brokerConnections uint64
 
 	historyRequestCh chan BrokerTopicPair
 	addToHistoryCh   chan pb.Publication
-	blockCh          chan BrokerTopicPair
 
-	blockTopic map[uint64]bool
+	blockCh    chan BrokerTopicPair
+	blockTopic map[uint64]bool // The key is TopicID
 }
 
 type BrokerTopicPair struct {
@@ -43,12 +45,18 @@ func NewPublisher(localID uint64) *Publisher {
 		historyRequestCh:  make(chan BrokerTopicPair, 8),
 		addToHistoryCh:    make(chan pb.Publication, 8),
 		blockCh:           make(chan BrokerTopicPair, 8),
+		blockTopic:        make(map[uint64]bool),
 	}
 }
 
 // Publish publishes a publication to all the brokers.
+// It returns false if the topic ID is currently blocked, true otherwise.
 // It takes as input a publication.
-func (p *Publisher) Publish(pub *pb.Publication) {
+func (p *Publisher) Publish(pub *pb.Publication) bool {
+	if p.blockTopic[pub.TopicID] == true {
+		return false
+	}
+
 	select {
 	case p.addToHistoryCh <- *pub:
 	}
@@ -63,11 +71,13 @@ func (p *Publisher) Publish(pub *pb.Publication) {
 			}
 		}
 	}
+
+	return true
 }
 
 // Start starts the publisher.
 func (p *Publisher) Start() {
-	go p.alphaHandler()
+	go p.historyHandler()
 
 	for _, broker := range p.brokers {
 		go p.startBrokerClient(broker)
@@ -109,13 +119,14 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 				continue
 			}
 
-			if resp.AlphaReached == true {
+			if resp.RequestHistory == true {
 				select {
 				case p.historyRequestCh <- BrokerTopicPair{brokerID: broker.id, topicID: resp.TopicID}:
 				}
 			}
 
-			if resp.DoubleAlphaReached == true {
+			if resp.Blocked == true {
+				fmt.Printf("Block requested\n")
 				select {
 				case p.blockCh <- BrokerTopicPair{brokerID: broker.id, topicID: resp.TopicID}:
 				}
@@ -124,23 +135,36 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 	}
 }
 
-// alphaHandler keeps a hisotry of the publications and sends alpha values when
+// historyHandler keeps a hisotry of the publications and sends alpha values when
 // a quorum of alpha requests is reached.
-func (p *Publisher) alphaHandler() {
-	var history []pb.Publication
+func (p *Publisher) historyHandler() {
+	// The key is TopicID
+	pubsSinceLastHistory := make(map[uint64]uint64)
+	// The first key is TopicID. The second key is BrokerID.
 	historyRequests := make(map[uint64]map[uint64]bool)
-	pubsSinceLastAlpha := make(map[uint64]uint64)
+	// The key in the TopicID
+	history := make(map[uint64][]pb.Publication)
+	// The Publication ID for the history publications. Use negative numbers.
 	historyID := int64(-1)
+
+	// The first key is TopicID. The second key is BrokerID
+	blockRequests := make(map[uint64]map[uint64]bool)
 
 	for {
 		select {
 		case pub := <-p.addToHistoryCh:
-			history = append(history, pub)
-			pubsSinceLastAlpha[pub.TopicID]++
+			history[pub.TopicID] = append(history[pub.TopicID], pub)
+			pubsSinceLastHistory[pub.TopicID]++
 		case pair := <-p.historyRequestCh:
 			if historyRequests[pair.topicID] == nil {
 				historyRequests[pair.topicID] = make(map[uint64]bool)
 			}
+
+			// If a history Publication was recently sent, ignore this request.
+			if pubsSinceLastHistory[pair.topicID] < 2 {
+				continue
+			}
+
 			historyRequests[pair.topicID][pair.brokerID] = true
 			if len(historyRequests[pair.topicID]) > len(p.brokers)/2 {
 				// Create the publication.
@@ -148,13 +172,26 @@ func (p *Publisher) alphaHandler() {
 					PubType:       common.BRB,
 					PublisherID:   p.localID,
 					PublicationID: historyID,
-					TopicID:       1,
-					Contents:      [][]byte{
+					TopicID:       pair.topicID,
+					Contents: [][]byte{
 						[]byte(" "),
 					},
 				}
 
-				// TODO: Add content
+				// For all the publications since the last history
+				length := uint64(len(history[pub.TopicID]))
+				for i := pubsSinceLastHistory[pub.TopicID]; i > 0; i-- {
+					var buf bytes.Buffer
+					publicationID := make([]byte, 8)
+
+					// Write publication ID and contents to buffer
+					binary.PutVarint(publicationID, history[pub.TopicID][length-i].PublicationID)
+					buf.Write(publicationID)
+					buf.Write(history[pub.TopicID][length-i].Contents[0])
+
+					// Add to the contents
+					pub.Contents = append(pub.Contents, buf.Bytes())
+				}
 
 				historyID--
 
@@ -171,7 +208,18 @@ func (p *Publisher) alphaHandler() {
 				}
 				p.brokersMutex.RUnlock()
 
-				pubsSinceLastAlpha[pub.TopicID] = 0
+				p.blockTopic[pair.topicID] = false
+				pubsSinceLastHistory[pub.TopicID] = 0
+			}
+		case pair := <-p.blockCh:
+			if blockRequests[pair.topicID] == nil {
+				blockRequests[pair.topicID] = make(map[uint64]bool)
+			}
+
+			blockRequests[pair.topicID][pair.brokerID] = true
+			// If more than one broker is blocking
+			if len(blockRequests[pair.topicID]) > 1 {
+				p.blockTopic[pair.topicID] = true
 			}
 		}
 	}
