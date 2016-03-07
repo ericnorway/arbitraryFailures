@@ -44,6 +44,9 @@ func main() {
 		b.AddSubscriber(id, []byte(key))
 	}
 
+	// Add the chain path
+	b.AddChainPath(chain, localID)
+
 	// Start the broker
 	b.StartBroker()
 }

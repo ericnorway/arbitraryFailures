@@ -47,37 +47,42 @@ type Broker struct {
 
 	// MESSAGE TRACKING VARIABLES
 
-	// The first index references the publisher ID.
-	// The second index references the publication ID.
-	// The bool contains whether or not it was sent yet.
+	// The first key references the publisher ID.
+	// The second key references the publication ID.
+	// The value contains whether or not it was sent yet.
 	forwardSent map[uint64]map[int64]bool
 
-	// The first index references the publisher ID.
-	// The second index references the publication ID.
-	// The bool contains whether or not it was sent yet.
+	// The first key references the publisher ID.
+	// The second key references the publication ID.
+	// The value contains whether or not it was sent yet.
 	echoesSent map[uint64]map[int64]bool
 
-	// The first index references the publisher ID.
-	// The second index references the publication ID.
-	// The third index references the broker ID.
-	// The byte slice contains the content and topic of the publication.
+	// The first key references the publisher ID.
+	// The second key references the publication ID.
+	// The third key references the broker ID.
+	// The value contains the content and topic of the publication.
 	echoesReceived map[uint64]map[int64]map[uint64]string
 
-	// The first index references the publisher ID.
-	// The second index references the publication ID.
-	// The bool contains whether or not it was sent yet.
+	// The first key references the publisher ID.
+	// The second key references the publication ID.
+	// The value contains whether or not it was sent yet.
 	readiesSent map[uint64]map[int64]bool
 
-	// The first index references the publisher ID.
-	// The second index references the publication ID.
-	// The third index references the broker ID.
-	// The byte slice contains the content and topic of the publication.
+	// The first key references the publisher ID.
+	// The second key references the publication ID.
+	// The third key references the broker ID.
+	// The value contains the content and topic of the publication.
 	readiesReceived map[uint64]map[int64]map[uint64]string
 
-	// The first index references the publisher ID.
-	// The second index references the topic.
+	// The first key references the publisher ID.
+	// The second key references the topic.
 	// The value is a count of the messages received since the last history.
 	alphaCounters map[uint64]map[uint64]uint64
+	
+	// The first key references where the links are in relation to this node: 
+	//    one before previous (-2), previous (-1), next (1), one after next (2)
+	// The slice contains all the links in that position.
+	chainLinks map[int32][]chainLink
 }
 
 // NewBroker returns a new Broker.
@@ -107,6 +112,7 @@ func NewBroker(localID uint64, localAddr string, alpha uint64) *Broker {
 		readiesSent:             make(map[uint64]map[int64]bool),
 		readiesReceived:         make(map[uint64]map[int64]map[uint64]string),
 		alphaCounters:           make(map[uint64]map[uint64]uint64),
+		chainLinks:              make(map[int32][]chainLink),
 	}
 }
 
@@ -359,37 +365,4 @@ func (b Broker) handleMessages() {
 // It takes as input the subscription request.
 func (b Broker) handleSubscribe(req *pb.SubRequest) {
 	b.changeTopics(req)
-}
-
-func (b Broker) checkDoubleAlphaCounter(publisherID uint64, topicID uint64) bool {
-	if b.alphaCounters[publisherID] == nil {
-		b.alphaCounters[publisherID] = make(map[uint64]uint64)
-	}
-
-	if b.alphaCounters[publisherID][topicID] >= 2*b.alpha {
-		return true
-	}
-	return false
-}
-
-func (b Broker) incrementAlphaCounter(publisherID uint64, topicID uint64) bool {
-	if b.alphaCounters[publisherID] == nil {
-		b.alphaCounters[publisherID] = make(map[uint64]uint64)
-	}
-
-	b.alphaCounters[publisherID][topicID]++
-
-	if b.alphaCounters[publisherID][topicID] == b.alpha {
-		return true
-	}
-
-	return false
-}
-
-func (b Broker) resetAlphaCounter(publisherID uint64, topicID uint64) {
-	if b.alphaCounters[publisherID] == nil {
-		b.alphaCounters[publisherID] = make(map[uint64]uint64)
-	}
-
-	b.alphaCounters[publisherID][topicID] = 0
 }
