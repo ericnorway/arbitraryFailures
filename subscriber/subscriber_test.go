@@ -40,13 +40,11 @@ type handlePublishTest struct {
 var handlePublishTests = []struct {
 	subscriber     *Subscriber
 	desc           string
-	numSubscribers int
 	subtests       []handlePublishTest
 }{
 	{
 		subscriber:     NewSubscriber(0),
 		desc:           "1 AB publication from 4 brokers",
-		numSubscribers: 1,
 		subtests: []handlePublishTest{
 			{
 				pubReq: pb.Publication{
@@ -118,7 +116,6 @@ var handlePublishTests = []struct {
 	{
 		subscriber:     NewSubscriber(0),
 		desc:           "2 AB publications from 4 brokers",
-		numSubscribers: 1,
 		subtests: []handlePublishTest{
 			{
 				pubReq: pb.Publication{
@@ -255,7 +252,6 @@ var handlePublishTests = []struct {
 	{
 		subscriber:     NewSubscriber(0),
 		desc:           "1 AB publication, 1 BRB from 4 brokers",
-		numSubscribers: 1,
 		subtests: []handlePublishTest{
 			{
 				pubReq: pb.Publication{
@@ -442,20 +438,14 @@ type handleHistoryTest struct {
 	want   []pb.Publication
 }
 
-var message1PubID1 = []byte{2, 0, 0, 0, 0, 0, 0, 0, 83, 111, 109, 101, 32, 100, 97, 116, 97, 46}
-var message3PubID2 = []byte{4, 0, 0, 0, 0, 0, 0, 0, 83, 111, 109, 101, 32, 109, 111, 114, 101, 32, 100, 97, 116, 97, 46}
-var message4PubID3 = []byte{6, 0, 0, 0, 0, 0, 0, 0, 69, 118, 101, 110, 32, 109, 111, 114, 101, 32, 100, 97, 116, 97, 46, 46, 46}
-
 var handleHistoryTests = []struct {
 	subscriber     *Subscriber
 	desc           string
-	numSubscribers int
 	subtests       []handleHistoryTest
 }{
 	{
 		subscriber:     NewSubscriber(0),
 		desc:           "3 AB publications from 4 brokers\n (2nd publication missing from two brokers),\n 1 BRB history publication from 4 brokers",
-		numSubscribers: 1,
 		subtests: []handleHistoryTest{
 			{
 				pubReq: pb.Publication{
@@ -627,9 +617,9 @@ var handleHistoryTests = []struct {
 					TopicID:       1,
 					BrokerID:      0,
 					Contents: [][]byte{
-						message1PubID1,
-						message3PubID2,
-						message4PubID3,
+						common.Message1PubID1,
+						common.Message3PubID2,
+						common.Message4PubID3,
 					},
 				},
 				output: 0,
@@ -643,9 +633,9 @@ var handleHistoryTests = []struct {
 					TopicID:       1,
 					BrokerID:      1,
 					Contents: [][]byte{
-						message1PubID1,
-						message3PubID2,
-						message4PubID3,
+						common.Message1PubID1,
+						common.Message3PubID2,
+						common.Message4PubID3,
 					},
 				},
 				output: 0,
@@ -659,9 +649,9 @@ var handleHistoryTests = []struct {
 					TopicID:       1,
 					BrokerID:      2,
 					Contents: [][]byte{
-						message1PubID1,
-						message3PubID2,
-						message4PubID3,
+						common.Message1PubID1,
+						common.Message3PubID2,
+						common.Message4PubID3,
 					},
 				},
 				output: 2,
@@ -673,9 +663,9 @@ var handleHistoryTests = []struct {
 						TopicID:       1,
 						BrokerID:      2,
 						Contents: [][]byte{
-							message1PubID1,
-							message3PubID2,
-							message4PubID3,
+							common.Message1PubID1,
+							common.Message3PubID2,
+							common.Message4PubID3,
 						},
 					},
 					pb.Publication{
@@ -698,9 +688,9 @@ var handleHistoryTests = []struct {
 					TopicID:       1,
 					BrokerID:      3,
 					Contents: [][]byte{
-						message1PubID1,
-						message3PubID2,
-						message4PubID3,
+						common.Message1PubID1,
+						common.Message3PubID2,
+						common.Message4PubID3,
 					},
 				},
 				output: 0,

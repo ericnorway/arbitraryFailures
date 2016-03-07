@@ -1,7 +1,7 @@
 package broker
 
 import (
-	"fmt"
+	//"fmt"
 
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
@@ -18,7 +18,7 @@ type brokerInfo struct {
 // AddBroker adds a broker to the map of brokers.
 // It takes as input the broker's id, address, and shared private key.
 func (b *Broker) AddBroker(id uint64, addr string, key []byte) {
-	fmt.Printf("Info for broker %v added.\n", id)
+	//fmt.Printf("Info for broker %v added.\n", id)
 
 	b.remoteBrokersMutex.Lock()
 	defer b.remoteBrokersMutex.Unlock()
@@ -35,7 +35,7 @@ func (b *Broker) AddBroker(id uint64, addr string, key []byte) {
 // RemoveBroker removes a broker from the map of brokers.
 // It takes as input the id of the broker.
 func (b *Broker) RemoveBroker(id uint64) {
-	fmt.Printf("Info for broker %v removed.\n", id)
+	//fmt.Printf("Info for broker %v removed.\n", id)
 
 	b.remoteBrokersMutex.Lock()
 	defer b.remoteBrokersMutex.Unlock()
@@ -47,7 +47,7 @@ func (b *Broker) RemoveBroker(id uint64) {
 // It returns the new channels. It takes as input the id
 // of the broker.
 func (b *Broker) addBrokerChannels(id uint64) (chan pb.Publication, chan pb.Publication) {
-	fmt.Printf("Channels to broker %v added.\n", id)
+	//fmt.Printf("Channels to broker %v added.\n", id)
 
 	b.remoteBrokersMutex.Lock()
 	defer b.remoteBrokersMutex.Unlock()
@@ -68,7 +68,7 @@ func (b *Broker) addBrokerChannels(id uint64) (chan pb.Publication, chan pb.Publ
 // removeBrokerChannels removes the channels from a broker in the broker info map.
 // It takes as input the id of the broker.
 func (b *Broker) removeBrokerChannels(id uint64) {
-	fmt.Printf("Channels to broker %v removed.\n", id)
+	//fmt.Printf("Channels to broker %v removed.\n", id)
 
 	b.remoteBrokersMutex.Lock()
 	defer b.remoteBrokersMutex.Unlock()

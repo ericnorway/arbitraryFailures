@@ -1,7 +1,7 @@
 package broker
 
 import (
-	"fmt"
+//"fmt"
 )
 
 // publisherInfo contains important information about a publisher
@@ -13,7 +13,7 @@ type publisherInfo struct {
 // AddPublisher adds a Publisher to the map of Publishers.
 // It takes as input the Publisher's id and shared private key.
 func (b *Broker) AddPublisher(id uint64, key []byte) {
-	fmt.Printf("Info for publisher %v added.\n", id)
+	//fmt.Printf("Info for publisher %v added.\n", id)
 
 	b.publishersMutex.Lock()
 	defer b.publishersMutex.Unlock()
@@ -27,7 +27,7 @@ func (b *Broker) AddPublisher(id uint64, key []byte) {
 // RemovePublisher removes a Publisher from the map of Publishers.
 // It takes as input the id of the Publisher.
 func (b *Broker) RemovePublisher(id uint64) {
-	fmt.Printf("Info for publisher %v removed.\n", id)
+	//fmt.Printf("Info for publisher %v removed.\n", id)
 
 	b.publishersMutex.Lock()
 	defer b.publishersMutex.Unlock()

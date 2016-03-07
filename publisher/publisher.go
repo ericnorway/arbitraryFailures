@@ -167,6 +167,7 @@ func (p *Publisher) historyHandler() {
 			}
 
 			historyRequests[pair.TopicID][pair.BrokerID] = true
+
 			if len(historyRequests[pair.TopicID]) > len(p.brokers)/2 {
 				// Create the publication.
 				pub := &pb.Publication{
@@ -174,9 +175,7 @@ func (p *Publisher) historyHandler() {
 					PublisherID:   p.localID,
 					PublicationID: historyID,
 					TopicID:       pair.TopicID,
-					Contents: [][]byte{
-						[]byte(" "),
-					},
+					Contents:      [][]byte{},
 				}
 
 				// For all the publications since the last history

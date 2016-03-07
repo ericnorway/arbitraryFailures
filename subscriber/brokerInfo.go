@@ -1,7 +1,7 @@
 package subscriber
 
 import (
-	"fmt"
+	//"fmt"
 
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
@@ -17,7 +17,7 @@ type brokerInfo struct {
 // AddBroker adds a broker to the map of brokers.
 // It takes as input the broker's id, address, and shared private key.
 func (s *Subscriber) AddBroker(id uint64, addr string, key []byte) {
-	fmt.Printf("Info for broker %v added.\n", id)
+	//fmt.Printf("Info for broker %v added.\n", id)
 
 	s.brokersMutex.Lock()
 	defer s.brokersMutex.Unlock()
@@ -33,7 +33,7 @@ func (s *Subscriber) AddBroker(id uint64, addr string, key []byte) {
 // RemoveBroker removes a broker from the map of brokers.
 // It takes as input the id of the broker.
 func (s *Subscriber) RemoveBroker(id uint64) {
-	fmt.Printf("Info for broker %v removed.\n", id)
+	//fmt.Printf("Info for broker %v removed.\n", id)
 
 	s.brokersMutex.Lock()
 	defer s.brokersMutex.Unlock()
@@ -45,7 +45,7 @@ func (s *Subscriber) RemoveBroker(id uint64) {
 // It returns the new channel. It takes as input the id
 // of the broker.
 func (s *Subscriber) addChannel(id uint64) chan pb.SubRequest {
-	fmt.Printf("Channel to broker %v added.\n", id)
+	//fmt.Printf("Channel to broker %v added.\n", id)
 
 	s.brokersMutex.Lock()
 	defer s.brokersMutex.Unlock()
@@ -64,7 +64,7 @@ func (s *Subscriber) addChannel(id uint64) chan pb.SubRequest {
 // removeChannel removes a channel from a broker in the broker info map.
 // It takes as input the id of the broker.
 func (s *Subscriber) removeChannel(id uint64) {
-	fmt.Printf("Channel to broker %v removed.\n", id)
+	//fmt.Printf("Channel to broker %v removed.\n", id)
 
 	s.brokersMutex.Lock()
 	defer s.brokersMutex.Unlock()
