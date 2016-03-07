@@ -38,13 +38,13 @@ type handlePublishTest struct {
 }
 
 var handlePublishTests = []struct {
-	subscriber     *Subscriber
-	desc           string
-	subtests       []handlePublishTest
+	subscriber *Subscriber
+	desc       string
+	subtests   []handlePublishTest
 }{
 	{
-		subscriber:     NewSubscriber(0),
-		desc:           "1 AB publication from 4 brokers",
+		subscriber: NewSubscriber(0),
+		desc:       "1 AB publication from 4 brokers",
 		subtests: []handlePublishTest{
 			{
 				pubReq: pb.Publication{
@@ -114,8 +114,8 @@ var handlePublishTests = []struct {
 		},
 	},
 	{
-		subscriber:     NewSubscriber(0),
-		desc:           "2 AB publications from 4 brokers",
+		subscriber: NewSubscriber(0),
+		desc:       "2 AB publications from 4 brokers",
 		subtests: []handlePublishTest{
 			{
 				pubReq: pb.Publication{
@@ -250,8 +250,8 @@ var handlePublishTests = []struct {
 		},
 	},
 	{
-		subscriber:     NewSubscriber(0),
-		desc:           "1 AB publication, 1 BRB from 4 brokers",
+		subscriber: NewSubscriber(0),
+		desc:       "1 AB publication, 1 BRB from 4 brokers",
 		subtests: []handlePublishTest{
 			{
 				pubReq: pb.Publication{
@@ -439,13 +439,13 @@ type handleHistoryTest struct {
 }
 
 var handleHistoryTests = []struct {
-	subscriber     *Subscriber
-	desc           string
-	subtests       []handleHistoryTest
+	subscriber *Subscriber
+	desc       string
+	subtests   []handleHistoryTest
 }{
 	{
-		subscriber:     NewSubscriber(0),
-		desc:           "3 AB publications from 4 brokers\n (2nd publication missing from two brokers),\n 1 BRB history publication from 4 brokers",
+		subscriber: NewSubscriber(0),
+		desc:       "3 AB publications from 4 brokers\n (2nd publication missing from two brokers),\n 1 BRB history publication from 4 brokers",
 		subtests: []handleHistoryTest{
 			{
 				pubReq: pb.Publication{
