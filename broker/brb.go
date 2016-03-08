@@ -65,56 +65,49 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 		// Check if there is a quorum yet for this publisher ID and publication ID
 		foundQuorum := b.checkEchoQuorum(pub.PublisherID, pub.PublicationID)
 
-		if !foundQuorum {
-			return
-		}
-	}
-
-	if b.readiesSent[pub.PublisherID] == nil {
-		b.readiesSent[pub.PublisherID] = make(map[int64]bool)
-	}
-
-	// If this publication has not been readied yet
-	if b.readiesSent[pub.PublisherID][pub.PublicationID] == false {
-
-		// Update broker ID
-		pub.BrokerID = b.localID
-
-		// "Send" the ready request to itself
-		select {
-		case b.fromBrokerReadyCh <- *pub:
+		if b.readiesSent[pub.PublisherID] == nil {
+			b.readiesSent[pub.PublisherID] = make(map[int64]bool)
 		}
 
-		// Send the ready to all other brokers
-		b.remoteBrokersMutex.RLock()
-		for _, remoteBroker := range b.remoteBrokers {
-			if remoteBroker.toReadyCh != nil {
-				select {
-				case remoteBroker.toReadyCh <- *pub:
+		// If this publication has not been readied yet
+		if foundQuorum && b.readiesSent[pub.PublisherID][pub.PublicationID] == false {
+
+			// Update broker ID
+			pub.BrokerID = b.localID
+
+			// "Send" the ready request to itself
+			select {
+			case b.fromBrokerReadyCh <- *pub:
+			}
+
+			// Send the ready to all other brokers
+			b.remoteBrokersMutex.RLock()
+			for _, remoteBroker := range b.remoteBrokers {
+				if remoteBroker.toReadyCh != nil {
+					select {
+					case remoteBroker.toReadyCh <- *pub:
+					}
 				}
 			}
-		}
-		b.remoteBrokersMutex.RUnlock()
+			b.remoteBrokersMutex.RUnlock()
 
-		// Send the publication to all subscribers
-		b.subscribersMutex.RLock()
-		for i, subscriber := range b.subscribers {
-			// Only if they are interested in the topic
-			if subscriber.toCh != nil && b.subscribers[i].topics[pub.TopicID] == true {
-				select {
-				case subscriber.toCh <- *pub:
+			// Send the publication to all subscribers
+			b.subscribersMutex.RLock()
+			for i, subscriber := range b.subscribers {
+				// Only if they are interested in the topic
+				if subscriber.toCh != nil && b.subscribers[i].topics[pub.TopicID] == true {
+					select {
+					case subscriber.toCh <- *pub:
+					}
 				}
 			}
+			b.subscribersMutex.RUnlock()
+
+			// Mark this publication as readied
+			b.readiesSent[pub.PublisherID][pub.PublicationID] = true
+			// fmt.Printf("handleEcho: Sent readies for publication %v by publisher %v.\n", pub.PublicationID, pub.PublisherID)
 		}
-		b.subscribersMutex.RUnlock()
-
-		// Mark this publication as readied
-		b.readiesSent[pub.PublisherID][pub.PublicationID] = true
-		// fmt.Printf("handleEcho: Sent readies for publication %v by publisher %v.\n", pub.PublicationID, pub.PublisherID)
-		return
 	}
-
-	// fmt.Printf("handleEcho: Already sent readies publication %v by publisher %v.\n", pub.PublicationID, pub.PublisherID)
 }
 
 // handleReady handles ready requests from Bracha's Reliable Broadcast.
@@ -138,58 +131,51 @@ func (b Broker) handleReady(pub *pb.Publication) {
 		// Check if there is a quorum yet for this publisher ID and publication ID
 		foundQuorum := b.checkReadyQuorum(pub.PublisherID, pub.PublicationID)
 
-		if !foundQuorum {
-			return
-		}
-	}
-
-	if b.readiesSent[pub.PublisherID] == nil {
-		b.readiesSent[pub.PublisherID] = make(map[int64]bool)
-	}
-
-	// If this publication has not been echoed yet
-	if b.readiesSent[pub.PublisherID][pub.PublicationID] == false {
-
-		// Update broker ID
-		pub.BrokerID = b.localID
-
-		// "Send" the ready request to itself, if not already from self
-		if pub.BrokerID != pub.BrokerID {
-			select {
-			case b.fromBrokerReadyCh <- *pub:
-			}
+		if b.readiesSent[pub.PublisherID] == nil {
+			b.readiesSent[pub.PublisherID] = make(map[int64]bool)
 		}
 
-		// Send the ready to all other brokers
-		b.remoteBrokersMutex.RLock()
-		for _, remoteBroker := range b.remoteBrokers {
-			if remoteBroker.toReadyCh != nil {
+		// If this publication has not been echoed yet
+		if foundQuorum && b.readiesSent[pub.PublisherID][pub.PublicationID] == false {
+
+			// Update broker ID
+			pub.BrokerID = b.localID
+
+			// "Send" the ready request to itself, if not already from self
+			if pub.BrokerID != pub.BrokerID {
 				select {
-				case remoteBroker.toReadyCh <- *pub:
+				case b.fromBrokerReadyCh <- *pub:
 				}
 			}
-		}
-		b.remoteBrokersMutex.RUnlock()
 
-		// Send the publication to all subscribers
-		b.subscribersMutex.RLock()
-		for i, subscriber := range b.subscribers {
-			// Only if they are interested in the topic
-			if subscriber.toCh != nil && b.subscribers[i].topics[pub.TopicID] == true {
-				select {
-				case subscriber.toCh <- *pub:
+			// Send the ready to all other brokers
+			b.remoteBrokersMutex.RLock()
+			for _, remoteBroker := range b.remoteBrokers {
+				if remoteBroker.toReadyCh != nil {
+					select {
+					case remoteBroker.toReadyCh <- *pub:
+					}
 				}
 			}
+			b.remoteBrokersMutex.RUnlock()
+
+			// Send the publication to all subscribers
+			b.subscribersMutex.RLock()
+			for i, subscriber := range b.subscribers {
+				// Only if they are interested in the topic
+				if subscriber.toCh != nil && b.subscribers[i].topics[pub.TopicID] == true {
+					select {
+					case subscriber.toCh <- *pub:
+					}
+				}
+			}
+			b.subscribersMutex.RUnlock()
+
+			// Mark this publication as readied
+			b.readiesSent[pub.PublisherID][pub.PublicationID] = true
+			// fmt.Printf("handleReady: Sent readies for publication %v by publisher %v.\n", pub.PublicationID, pub.PublisherID)
 		}
-		b.subscribersMutex.RUnlock()
-
-		// Mark this publication as readied
-		b.readiesSent[pub.PublisherID][pub.PublicationID] = true
-		// fmt.Printf("handleReady: Sent readies for publication %v by publisher %v.\n", pub.PublicationID, pub.PublisherID)
-		return
 	}
-
-	// fmt.Printf("handleReady: Already sent readies publication %v by publisher %v.\n", pub.PublicationID, pub.PublisherID)
 }
 
 // checkEchoQuorum checks that a quorum has been received for a specific publisher and publication.

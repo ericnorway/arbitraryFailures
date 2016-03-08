@@ -1,6 +1,6 @@
 package broker
 
-import(
+import (
 	"fmt"
 	"strconv"
 	"strings"
@@ -24,13 +24,13 @@ type chainLink struct {
 
 // AddChainPath takes slice of slices of nodes and builds a more detailed
 // collection of nodes to use in the Chain algorithm.
-// It takes as input a slice of slices of nodes (first index is position in 
+// It takes as input a slice of slices of nodes (first index is position in
 // the path and the second index references all the nodes in that position)
 // and the local ID.
 func (b *Broker) AddChainPath(chainPath [][]string, id uint64) {
 	position := -1
 	thisNode := fmt.Sprintf("BROKER%v", id)
-	
+
 	// Find the position of the local ID in the chain path.
 	for i, currentNodes := range chainPath {
 		for _, node := range currentNodes {
@@ -39,20 +39,20 @@ func (b *Broker) AddChainPath(chainPath [][]string, id uint64) {
 			}
 		}
 	}
-	
+
 	if position == -1 {
 		return
 	}
-	
+
 	for i, currentNodes := range chainPath {
 		// If the link is outside the range, skip it
-		if i < position - chainRange || i > position + chainRange {
+		if i < position-chainRange || i > position+chainRange {
 			continue
 		}
-	
+
 		for _, node := range currentNodes {
 			var link chainLink
-			
+
 			// Build the link
 			if strings.HasPrefix(node, "PUBLISHER") {
 				link.linkType = PublisherEnum
@@ -85,19 +85,19 @@ func (b *Broker) AddChainPath(chainPath [][]string, id uint64) {
 				}
 				link.key = b.subscribers[link.id].key
 			}
-			
+
 			// Add the link to the correct position.
-			if i == position - 2 {
+			if i == position-2 {
 				b.chainLinks[-2] = append(b.chainLinks[-2], link)
-			} else if i == position - 1 {
+			} else if i == position-1 {
 				b.chainLinks[-1] = append(b.chainLinks[-1], link)
-			} else if i == position + 1 {
+			} else if i == position+1 {
 				b.chainLinks[1] = append(b.chainLinks[1], link)
-			} else if i == position + 2 {
+			} else if i == position+2 {
 				b.chainLinks[2] = append(b.chainLinks[2], link)
 			}
 		}
 	}
-	
+
 	//fmt.Printf("%v\n", b.chainLinks)
 }

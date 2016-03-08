@@ -78,8 +78,8 @@ type Broker struct {
 	// The second key references the topic.
 	// The value is a count of the messages received since the last history.
 	alphaCounters map[uint64]map[uint64]uint64
-	
-	// The first key references where the links are in relation to this node: 
+
+	// The first key references where the links are in relation to this node:
 	//    one before previous (-2), previous (-1), next (1), one after next (2)
 	// The slice contains all the links in that position.
 	chainLinks map[int32][]chainLink
