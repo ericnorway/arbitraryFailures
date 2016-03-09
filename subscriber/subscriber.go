@@ -38,7 +38,14 @@ type Subscriber struct {
 	// The string contains the publication.
 	pubsLearned map[uint64]map[int64]string
 
+	// The key is the Topic ID.
+	// The value is whether or not the subscriber is interested in that topic.
 	topics map[uint64]bool
+
+	// The first key references where the links are in relation to this node:
+	//    one before previous (-2), previous (-1), next (1), one after next (2)
+	// The slice contains all the links in that position.
+	chainLinks map[int32][]chainLink
 }
 
 // NewSubscriber returns a new Subscriber.
@@ -53,6 +60,7 @@ func NewSubscriber(localID uint64) *Subscriber {
 		pubsReceived:      make(map[uint64]map[int64]map[uint64]string),
 		pubsLearned:       make(map[uint64]map[int64]string),
 		topics:            make(map[uint64]bool),
+		chainLinks:        make(map[int32][]chainLink),
 	}
 }
 
@@ -193,68 +201,6 @@ func (s *Subscriber) handlePublications() {
 			s.brokersMutex.RUnlock()
 		}
 	}
-}
-
-// handleAbPublication processes an Authenticated Broadcast publication.
-// It takes as input a publication.
-func (s *Subscriber) handleAbPublication(pub *pb.Publication) bool {
-	foundQuorum := false
-
-	// Make the map so not trying to access nil reference
-	if s.pubsReceived[pub.PublisherID] == nil {
-		s.pubsReceived[pub.PublisherID] = make(map[int64]map[uint64]string)
-	}
-	// Make the map so not trying to access nil reference
-	if s.pubsReceived[pub.PublisherID][pub.PublicationID] == nil {
-		s.pubsReceived[pub.PublisherID][pub.PublicationID] = make(map[uint64]string)
-	}
-
-	// Publication has not been received yet for this publisher ID, publication ID, broker ID
-	if s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == "" {
-		// So record it
-		s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = common.GetInfo(pub)
-
-		// Check if there is a quorum yet for this publisher ID and publication ID
-		foundQuorum = s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
-	}
-
-	return foundQuorum
-}
-
-// handleBrbPublication processes a Bracha's Reliable Broadcast publication.
-// It takes as input a publication.
-func (s *Subscriber) handleBrbPublication(pub *pb.Publication) bool {
-	foundQuorum := false
-
-	// Make the map so not trying to access nil reference
-	if s.pubsReceived[pub.PublisherID] == nil {
-		s.pubsReceived[pub.PublisherID] = make(map[int64]map[uint64]string)
-	}
-	// Make the map so not trying to access nil reference
-	if s.pubsReceived[pub.PublisherID][pub.PublicationID] == nil {
-		s.pubsReceived[pub.PublisherID][pub.PublicationID] = make(map[uint64]string)
-	}
-	// Publication has not been received yet for this publisher ID, publication ID, broker ID
-	if s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] == "" {
-		// So record it
-		s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = common.GetInfo(pub)
-		// Check if there is a quorum yet for this publisher ID and publication ID
-		foundQuorum = s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
-
-		if foundQuorum && len(pub.Contents) > 1 {
-			s.handleHistoryPublication(pub)
-		}
-	}
-
-	return foundQuorum
-}
-
-// handleChainPublication processes a Bracha's Reliable Broadcast publication.
-// It takes as input a publication.
-func (s *Subscriber) handleChainPublication(pub *pb.Publication) bool {
-	macsValid := false
-
-	return macsValid
 }
 
 // checkQuorum checks that a quorum has been received for a specific publisher and publication.

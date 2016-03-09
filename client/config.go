@@ -11,10 +11,12 @@ var tagID = "ID"
 var tagBrokerKeys = "BRK_KEYS"
 var tagBrokerAddrs = "BRK_ADDR"
 var tagTopics = "TOPICS"
+var tagChain = "CHAIN"
 var localID uint64
 var brokerKeys []string
 var brokerAddresses []string
 var topics []uint64
+var chain [][]string
 
 // ReadConfigFile reads a config file and updated the values of global variables.
 // It returns an error, if any.
@@ -64,6 +66,15 @@ func ReadConfigFile(fileName string) error {
 						return err
 					}
 					topics = append(topics, tempTopic)
+				}
+			} else {
+				return fmt.Errorf("Error parsing the config file entry for %s.\n", lineContents[0])
+			}
+		case lineContents[0] == tagChain:
+			if len(lineContents) == 2 {
+				temp := strings.Split(lineContents[1], ",")
+				for i := range temp {
+					chain = append(chain, strings.Split(temp[i], ":"))
 				}
 			} else {
 				return fmt.Errorf("Error parsing the config file entry for %s.\n", lineContents[0])

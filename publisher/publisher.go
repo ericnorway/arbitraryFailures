@@ -28,6 +28,11 @@ type Publisher struct {
 	blockTopic map[uint64]bool // The key is TopicID
 
 	ToUserRecordCh chan common.RecordTime
+
+	// The first key references where the links are in relation to this node:
+	//    one before previous (-2), previous (-1), next (1), one after next (2)
+	// The slice contains all the links in that position.
+	chainLinks map[int32][]chainLink
 }
 
 // BrokerTopicPair is a struct of BrokerID and TopicID that can be easily sent on a channel
@@ -48,6 +53,7 @@ func NewPublisher(localID uint64) *Publisher {
 		blockCh:           make(chan BrokerTopicPair, 8),
 		blockTopic:        make(map[uint64]bool),
 		ToUserRecordCh:    make(chan common.RecordTime, 8),
+		chainLinks:        make(map[int32][]chainLink),
 	}
 }
 
