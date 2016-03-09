@@ -20,7 +20,7 @@ func TestHandlePublications(t *testing.T) {
 
 			if subtest.output {
 				select {
-				case pub := <-test.subscriber.ToUserCh:
+				case pub := <-test.subscriber.ToUserPubCh:
 					if !common.Equals(pub, subtest.want) {
 						t.Errorf("HandleAbPublish\ntest nr:%d\ndescription: %s\naction nr: %d\nwant: %v\ngot: %v\n",
 							i+1, test.desc, j+1, &subtest.want, pub)
@@ -401,7 +401,7 @@ func TestHandleHistory(t *testing.T) {
 
 			for k := 0; k < subtest.output; k++ {
 				select {
-				case pub := <-test.subscriber.ToUserCh:
+				case pub := <-test.subscriber.ToUserPubCh:
 					got = append(got, pub)
 				}
 			}
