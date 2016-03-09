@@ -23,9 +23,9 @@ type Subscriber struct {
 	brokers           map[uint64]brokerInfo
 	brokerConnections int64
 
-	fromBrokerCh chan pb.Publication
-	ToUserCh     chan pb.Publication
-	FromUserCh   chan pb.SubRequest
+	fromBrokerCh  chan pb.Publication
+	ToUserPubCh   chan pb.Publication
+	FromUserSubCh chan pb.SubRequest
 
 	// The first index references the publisher ID.
 	// The second index references the publication ID.
@@ -48,8 +48,8 @@ func NewSubscriber(localID uint64) *Subscriber {
 		brokers:           make(map[uint64]brokerInfo),
 		brokerConnections: 0,
 		fromBrokerCh:      make(chan pb.Publication, 8),
-		ToUserCh:          make(chan pb.Publication, 8),
-		FromUserCh:        make(chan pb.SubRequest, 8),
+		ToUserPubCh:       make(chan pb.Publication, 8),
+		FromUserSubCh:     make(chan pb.SubRequest, 8),
 		pubsReceived:      make(map[uint64]map[int64]map[uint64]string),
 		pubsLearned:       make(map[uint64]map[int64]string),
 		topics:            make(map[uint64]bool),
@@ -170,20 +170,20 @@ func (s *Subscriber) handlePublications() {
 				foundQuorum := s.handleAbPublication(&pub)
 				if foundQuorum {
 					select {
-					case s.ToUserCh <- pub:
+					case s.ToUserPubCh <- pub:
 					}
 				}
 			} else if pub.PubType == common.BRB {
 				foundQuorum := s.handleBrbPublication(&pub)
 				if foundQuorum {
 					select {
-					case s.ToUserCh <- pub:
+					case s.ToUserPubCh <- pub:
 					}
 				}
 			} else if pub.PubType == common.Chain {
 
 			}
-		case sub := <-s.FromUserCh:
+		case sub := <-s.FromUserSubCh:
 			s.brokersMutex.RLock()
 			for _, broker := range s.brokers {
 				select {

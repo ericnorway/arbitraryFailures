@@ -26,6 +26,8 @@ type Publisher struct {
 
 	blockCh    chan BrokerTopicPair
 	blockTopic map[uint64]bool // The key is TopicID
+
+	ToUserRecordCh chan common.RecordTime
 }
 
 // BrokerTopicPair is a struct of BrokerID and TopicID that can be easily sent on a channel
@@ -45,6 +47,7 @@ func NewPublisher(localID uint64) *Publisher {
 		addToHistoryCh:    make(chan pb.Publication, 8),
 		blockCh:           make(chan BrokerTopicPair, 8),
 		blockTopic:        make(map[uint64]bool),
+		ToUserRecordCh:    make(chan common.RecordTime, 8),
 	}
 }
 

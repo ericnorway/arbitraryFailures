@@ -3,6 +3,7 @@ package publisher
 import (
 	"bytes"
 	"encoding/binary"
+	"time"
 
 	"github.com/ericnorway/arbitraryFailures/common"
 	pb "github.com/ericnorway/arbitraryFailures/proto"
@@ -66,6 +67,19 @@ func (p *Publisher) historyHandler() {
 				}
 
 				historyID--
+
+				// Let the user know about the history publication.
+				// Mostly just used in performance testing.
+				select {
+				case p.ToUserRecordCh <- common.RecordTime{
+					PublisherID:   pub.PublisherID,
+					PublicationID: pub.PublicationID,
+					Time:          time.Now().UnixNano(),
+				}:
+				default:
+					// Use the default case just in case the user isn't reading from this channel
+					// and the channel fills up.
+				}
 
 				// Send the history to all brokers
 				p.brokersMutex.RLock()

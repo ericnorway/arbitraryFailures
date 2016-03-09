@@ -23,6 +23,12 @@ const (
 	Chain        // Chain algorithm
 )
 
+type RecordTime struct {
+	PublisherID   uint64
+	PublicationID int64
+	Time          int64
+}
+
 // GetInfo gets important info to verify from the publication (content and topic).
 // It returns a string containing the information. It takes as input the publication.
 func GetInfo(pub *pb.Publication) string {

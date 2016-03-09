@@ -45,7 +45,7 @@ func (s *Subscriber) handleHistoryPublication(pub *pb.Publication) {
 
 			// Send it to the user.
 			select {
-			case s.ToUserCh <- *pub:
+			case s.ToUserPubCh <- *pub:
 			}
 		}
 	}

@@ -33,7 +33,7 @@ var (
 		"AB",
 		"The algorithm to use: AB, BRB, Chain (publisher only).",
 	)
-	publicationType  uint32
+	publicationType uint32
 )
 
 func usage() {

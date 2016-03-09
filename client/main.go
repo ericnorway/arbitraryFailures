@@ -5,10 +5,10 @@ import (
 	"crypto/sha512"
 	"fmt"
 	"os"
-	"os/signal"
 	"strconv"
 	"time"
 
+	"github.com/ericnorway/arbitraryFailures/common"
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 	"github.com/ericnorway/arbitraryFailures/publisher"
 	"github.com/ericnorway/arbitraryFailures/subscriber"
@@ -27,83 +27,103 @@ func main() {
 	}
 
 	if *clientType == "publisher" {
-		mainPub()
+		p := NewPublisherInstance(localID)
+		p.mainPub()
 	} else if *clientType == "subscriber" {
-		mainSub()
+		s := NewSubscriberInstance(localID)
+		s.mainSub()
+	}
+}
+
+type subscriberInstance struct {
+	id            uint64
+	subscriber    *subscriber.Subscriber
+	recordTimesCh chan common.RecordTime
+}
+
+func NewSubscriberInstance(id uint64) *subscriberInstance {
+	return &subscriberInstance{
+		id:            localID,
+		subscriber:    subscriber.NewSubscriber(id),
+		recordTimesCh: make(chan common.RecordTime, 16),
 	}
 }
 
 // mainSub starts a subscriber.
-func mainSub() {
+func (s *subscriberInstance) mainSub() {
 	fmt.Printf("Subscriber started.\n")
-	pubTimes := make(map[uint64]map[int64]int64)
-	allPubIDs := make(map[uint64][]int64)
-	osCh := make(chan os.Signal, 1)
-	signal.Notify(osCh, os.Interrupt)
 
-	s := subscriber.NewSubscriber(localID)
+	go s.RecordRecvTimes()
 
 	// Add topics this subscriber is interested in.
 	for _, topic := range topics {
-		s.AddTopic(topic)
+		s.subscriber.AddTopic(topic)
 	}
 
 	// Add broker information
 	for i, key := range brokerKeys {
 		id := uint64(i)
-		s.AddBroker(id, brokerAddresses[id], []byte(key))
+		s.subscriber.AddBroker(id, brokerAddresses[id], []byte(key))
 	}
 
-	go s.Start()
+	go s.subscriber.Start()
 
-	go func() {
-		for {
-			select {
-			case pub := <-s.ToUserCh:
-				if pubTimes[pub.PublisherID] == nil {
-					pubTimes[pub.PublisherID] = make(map[int64]int64)
-				}
-
-				timeNano := time.Now().UnixNano()
-				pubTimes[pub.PublisherID][pub.PublicationID] = timeNano
-				allPubIDs[pub.PublisherID] = append(allPubIDs[pub.PublisherID], pub.PublicationID)
+	for {
+		select {
+		case pub := <-s.subscriber.ToUserPubCh:
+			// Record the time sent
+			s.recordTimesCh <- common.RecordTime{
+				PublisherID:   pub.PublisherID,
+				PublicationID: pub.PublicationID,
+				Time:          time.Now().UnixNano(),
 			}
 		}
-	}()
+	}
+}
 
-	// Wait for ctrl-c
-	<-osCh
-
-	file, err := os.Create("recvTimes" + strconv.FormatUint(localID, 10) + ".txt")
+func (s *subscriberInstance) RecordRecvTimes() {
+	file, err := os.Create("recvTimes" + strconv.FormatUint(s.id, 10) + ".txt")
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return
 	}
 	defer file.Close()
 
-	for publisherID, pubIDs := range allPubIDs {
-		// Record the times sent in a file.
-		for _, pubID := range pubIDs {
-			file.Write([]byte(fmt.Sprintf("%v:%v:%v:%v\n", publisherID, pubID, localID, pubTimes[publisherID][pubID])))
+	for {
+		select {
+		case pub := <-s.recordTimesCh:
+			file.Write([]byte(fmt.Sprintf("%v:%v:%v:%v\n", pub.PublisherID, pub.PublicationID, s.id, pub.Time)))
 		}
 	}
 }
 
-// mainPub starts a publisher and publishes three publications.
-func mainPub() {
-	fmt.Printf("Publisher started.\n")
-	pubTimes := make(map[int64]int64)
-	var pubIDs []int64
+type publisherInstance struct {
+	id            uint64
+	publisher     *publisher.Publisher
+	recordTimesCh chan common.RecordTime
+}
 
-	p := publisher.NewPublisher(localID)
+func NewPublisherInstance(id uint64) *publisherInstance {
+	return &publisherInstance{
+		id:            id,
+		publisher:     publisher.NewPublisher(id),
+		recordTimesCh: make(chan common.RecordTime, 64),
+	}
+}
+
+// mainPub starts a publisher and publishes three publications.
+func (p *publisherInstance) mainPub() {
+	fmt.Printf("Publisher started.\n")
+
+	go p.RecordSendTimes()
 
 	// Add broker information
 	for i, key := range brokerKeys {
 		id := uint64(i)
-		p.AddBroker(id, brokerAddresses[id], []byte(key))
+		p.publisher.AddBroker(id, brokerAddresses[id], []byte(key))
 	}
 
-	p.Start()
+	p.publisher.Start()
 
 	mac := hmac.New(sha512.New, []byte(""))
 	time.Sleep(time.Second)
@@ -116,22 +136,24 @@ func mainPub() {
 		// Create the publication.
 		pub := &pb.Publication{
 			PubType:       publicationType,
-			PublisherID:   localID,
+			PublisherID:   p.id,
 			PublicationID: i,
 			TopicID:       1,
-			Contents:      [][]byte{
+			Contents: [][]byte{
 				sum,
 			},
 		}
 
-		// Record the time sent in a map.
-		timeNano := time.Now().UnixNano()
-		pubTimes[pub.PublicationID] = timeNano
-		pubIDs = append(pubIDs, pub.PublicationID)
+		// Record the time sent
+		p.recordTimesCh <- common.RecordTime{
+			PublisherID:   pub.PublisherID,
+			PublicationID: pub.PublicationID,
+			Time:          time.Now().UnixNano(),
+		}
 
 		for sent := false; sent == false; {
 			// Send the publication.
-			sent = p.Publish(pub)
+			sent = p.publisher.Publish(pub)
 		}
 
 		fmt.Printf(".")
@@ -140,16 +162,22 @@ func mainPub() {
 
 	// Make sure that the last few messages have time to be sent.
 	time.Sleep(time.Second)
+}
 
-	file, err := os.Create("sendTimes" + strconv.FormatUint(localID, 10) + ".txt")
+func (p *publisherInstance) RecordSendTimes() {
+	file, err := os.Create("sendTimes" + strconv.FormatUint(p.id, 10) + ".txt")
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return
 	}
 	defer file.Close()
 
-	// Record the times sent in a file.
-	for _, pubID := range pubIDs {
-		file.Write([]byte(fmt.Sprintf("%v:%v:%v\n", localID, pubID, pubTimes[pubID])))
+	for {
+		select {
+		case pub := <-p.recordTimesCh:
+			file.Write([]byte(fmt.Sprintf("%v:%v:%v\n", p.id, pub.PublicationID, pub.Time)))
+		case pub := <-p.publisher.ToUserRecordCh:
+			file.Write([]byte(fmt.Sprintf("%v:%v:%v\n", p.id, pub.PublicationID, pub.Time)))
+		}
 	}
 }
