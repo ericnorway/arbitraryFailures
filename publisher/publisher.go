@@ -70,15 +70,13 @@ func (p *Publisher) Publish(pub *pb.Publication) bool {
 	case p.addToHistoryCh <- *pub:
 	}
 
-	p.brokersMutex.RLock()
-	defer p.brokersMutex.RUnlock()
-
-	for _, broker := range p.brokers {
-		if broker.toCh != nil {
-			select {
-			case broker.toCh <- *pub:
-			}
-		}
+	switch pub.PubType {
+	case common.AB:
+		p.handleAbPublish(pub)
+	case common.BRB:
+		p.handleBrbPublish(pub)
+	case common.Chain:
+		p.handleChainPublish(pub)
 	}
 
 	return true

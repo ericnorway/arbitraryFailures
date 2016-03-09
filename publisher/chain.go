@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	//pb "github.com/ericnorway/arbitraryFailures/proto"
+	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
 
 // How far ahead and back to look in the chain
@@ -86,4 +86,29 @@ func (p *Publisher) AddChainPath(chainPath [][]string, id uint64) {
 	}
 
 	fmt.Printf("%v\n", p.chainLinks)
+}
+
+// handleChainPublish processes a Bracha's Reliable Broadcast publish.
+// It takes as input a publication.
+func (p *Publisher) handleChainPublish(pub *pb.Publication) {
+	/*if pub.MACs == nil {
+		pub.MACs = make([][]byte, chainRange)
+	}
+
+	for i := 1; i < chainRange; i++ {
+		for j := range {
+		pub.MACs[i] = common.CreatePublicationMAC(&pub, p.chainLinks[i + 1].key, common.Algorithm)
+		}
+	}
+
+	toBrokerID := p.chainLinks[1].id
+
+	p.brokersMutex.RLock()
+	defer p.brokersMutex.RUnlock()
+
+	if p.brokers[].toCh != nil {
+		select {
+		case broker.toCh <- *pub:
+		}
+	}*/
 }
