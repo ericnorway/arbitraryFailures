@@ -23,7 +23,14 @@ message Publication {
 	uint64 TopicID = 4;
 	uint64 BrokerID = 5;
 	repeated bytes Contents = 6;
-	repeated bytes MACs = 7;
+	bytes MAC = 7;
+	repeated ChainMAC ChainMACs = 8;
+}
+
+message ChainMAC {
+	string From = 1;
+	string To = 2;
+	bytes MAC = 3;
 }
 
 message PubResponse{

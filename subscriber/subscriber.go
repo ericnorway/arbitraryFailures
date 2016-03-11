@@ -124,7 +124,7 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 
 			tempBroker, exists := s.brokers[pub.BrokerID]
 
-			if !exists || pub.MACs == nil || common.CheckPublicationMAC(pub, pub.MACs[0], tempBroker.key, common.Algorithm) == false {
+			if !exists || common.CheckPublicationMAC(pub, pub.MAC, tempBroker.key, common.Algorithm) == false {
 				continue
 			}
 

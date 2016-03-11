@@ -116,8 +116,7 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 	for {
 		select {
 		case pub := <-ch:
-			pub.MACs = make([][]byte, 1)
-			pub.MACs[0] = common.CreatePublicationMAC(&pub, p.brokers[broker.id].key, common.Algorithm)
+			pub.MAC = common.CreatePublicationMAC(&pub, p.brokers[broker.id].key, common.Algorithm)
 
 			// Handle publish request and response
 			resp, err := client.Publish(context.Background(), &pub)

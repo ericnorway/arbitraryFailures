@@ -10,6 +10,7 @@ It is generated from these files:
 
 It has these top-level messages:
 	Publication
+	ChainMAC
 	PubResponse
 	EchoResponse
 	ReadyResponse
@@ -33,18 +34,36 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 type Publication struct {
-	PubType       uint32   `protobuf:"varint,1,opt,name=PubType" json:"PubType,omitempty"`
-	PublisherID   uint64   `protobuf:"varint,2,opt,name=PublisherID" json:"PublisherID,omitempty"`
-	PublicationID int64    `protobuf:"zigzag64,3,opt,name=PublicationID" json:"PublicationID,omitempty"`
-	TopicID       uint64   `protobuf:"varint,4,opt,name=TopicID" json:"TopicID,omitempty"`
-	BrokerID      uint64   `protobuf:"varint,5,opt,name=BrokerID" json:"BrokerID,omitempty"`
-	Contents      [][]byte `protobuf:"bytes,6,rep,name=Contents,proto3" json:"Contents,omitempty"`
-	MACs          [][]byte `protobuf:"bytes,7,rep,name=MACs,proto3" json:"MACs,omitempty"`
+	PubType       uint32      `protobuf:"varint,1,opt,name=PubType" json:"PubType,omitempty"`
+	PublisherID   uint64      `protobuf:"varint,2,opt,name=PublisherID" json:"PublisherID,omitempty"`
+	PublicationID int64       `protobuf:"zigzag64,3,opt,name=PublicationID" json:"PublicationID,omitempty"`
+	TopicID       uint64      `protobuf:"varint,4,opt,name=TopicID" json:"TopicID,omitempty"`
+	BrokerID      uint64      `protobuf:"varint,5,opt,name=BrokerID" json:"BrokerID,omitempty"`
+	Contents      [][]byte    `protobuf:"bytes,6,rep,name=Contents,proto3" json:"Contents,omitempty"`
+	MAC           []byte      `protobuf:"bytes,7,opt,name=MAC,proto3" json:"MAC,omitempty"`
+	ChainMACs     []*ChainMAC `protobuf:"bytes,8,rep,name=ChainMACs" json:"ChainMACs,omitempty"`
 }
 
 func (m *Publication) Reset()         { *m = Publication{} }
 func (m *Publication) String() string { return proto1.CompactTextString(m) }
 func (*Publication) ProtoMessage()    {}
+
+func (m *Publication) GetChainMACs() []*ChainMAC {
+	if m != nil {
+		return m.ChainMACs
+	}
+	return nil
+}
+
+type ChainMAC struct {
+	From string `protobuf:"bytes,1,opt,name=From" json:"From,omitempty"`
+	To   string `protobuf:"bytes,2,opt,name=To" json:"To,omitempty"`
+	MAC  []byte `protobuf:"bytes,3,opt,name=MAC,proto3" json:"MAC,omitempty"`
+}
+
+func (m *ChainMAC) Reset()         { *m = ChainMAC{} }
+func (m *ChainMAC) String() string { return proto1.CompactTextString(m) }
+func (*ChainMAC) ProtoMessage()    {}
 
 type PubResponse struct {
 	Accepted       bool   `protobuf:"varint,1,opt,name=Accepted" json:"Accepted,omitempty"`
@@ -89,6 +108,7 @@ func (*SubRequest) ProtoMessage()    {}
 
 func init() {
 	proto1.RegisterType((*Publication)(nil), "proto.Publication")
+	proto1.RegisterType((*ChainMAC)(nil), "proto.ChainMAC")
 	proto1.RegisterType((*PubResponse)(nil), "proto.PubResponse")
 	proto1.RegisterType((*EchoResponse)(nil), "proto.EchoResponse")
 	proto1.RegisterType((*ReadyResponse)(nil), "proto.ReadyResponse")
