@@ -45,7 +45,7 @@ func main() {
 	}
 
 	// Add the chain path
-	b.AddChainPath(chain, localID)
+	b.AddChainPath(chain, rChain)
 
 	// Start the broker
 	b.StartBroker()

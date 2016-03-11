@@ -13,12 +13,14 @@ var tagSubscriberKeys = "SUB_KEYS"
 var tagBrokerKeys = "BRK_KEYS"
 var tagBrokerAddrs = "BRK_ADDR"
 var tagChain = "CHAIN"
+var tagRChain = "RCHAIN"
 var localID uint64
 var publisherKeys []string
 var subscriberKeys []string
 var brokerKeys []string
 var brokerAddresses []string
-var chain [][]string
+var chain map[string][]string
+var rChain map[string][]string
 
 // ReadConfigFile reads a config file and updated the values of global variables.
 // It returns an error, if any.
@@ -28,6 +30,9 @@ func ReadConfigFile(fileName string) error {
 	if err != nil {
 		return err
 	}
+
+	chain = make(map[string][]string)
+	rChain = make(map[string][]string)
 
 	// Break the file up into lines
 	lines := strings.Split(string(bytes), "\n")
@@ -72,10 +77,41 @@ func ReadConfigFile(fileName string) error {
 				return fmt.Errorf("Error parsing the config file entry for %s.\n", lineContents[0])
 			}
 		case lineContents[0] == tagChain:
+			// If there is a value to the tag
 			if len(lineContents) == 2 {
-				temp := strings.Split(lineContents[1], ",")
-				for i := range temp {
-					chain = append(chain, strings.Split(temp[i], ":"))
+				temp := strings.Split(lineContents[1], ":")
+				node := temp[0]
+
+				// If there are children to the node
+				if len(temp) == 2 {
+					children := strings.Split(temp[1], ",")
+					if len(children) != 0 && children[0] != "" {
+						chain[node] = children
+					} else {
+						chain[node] = nil
+					}
+				} else {
+					chain[node] = nil
+				}
+			} else {
+				return fmt.Errorf("Error parsing the config file entry for %s.\n", lineContents[0])
+			}
+		case lineContents[0] == tagRChain:
+			// If there is a value to the tag
+			if len(lineContents) == 2 {
+				temp := strings.Split(lineContents[1], ":")
+				node := temp[0]
+
+				// If there are children to the node
+				if len(temp) == 2 {
+					children := strings.Split(temp[1], ",")
+					if len(children) != 0 && children[0] != "" {
+						rChain[node] = children
+					} else {
+						rChain[node] = nil
+					}
+				} else {
+					rChain[node] = nil
 				}
 			} else {
 				return fmt.Errorf("Error parsing the config file entry for %s.\n", lineContents[0])

@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ericnorway/arbitraryFailures/common"
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
 
@@ -18,97 +19,116 @@ const (
 	SubscriberEnum
 )
 
-type chainLink struct {
-	linkType uint32
-	id       uint64
-	key      []byte
+type chainNode struct {
+	nodeType       uint32
+	id             uint64
+	key            []byte
+	brokerChildren []uint64
 }
 
-// AddChainPath takes slice of slices of nodes and builds a more detailed
+// AddChainPath takes a map of slices of child nodes and builds a more detailed
 // collection of nodes to use in the Chain algorithm.
-// It takes as input a slice of slices of nodes (first index is position in
-// the path and the second index references all the nodes in that position)
-// and the local ID.
-func (p *Publisher) AddChainPath(chainPath [][]string, id uint64) {
-	position := -1
-	thisNode := fmt.Sprintf("PUBLISHER%v", id)
+// It takes as input a map of slices of child nodes (first index is the node
+// and the slice is a list of children of that node),
+// and a map of slices of parent nodes.
+func (p *Publisher) AddChainPath(chainPath map[string][]string, rChainPath map[string][]string) {
+	localNodeStr := "P" + strconv.FormatUint(p.localID, 10)
 
-	// Find the position of the local ID in the chain path.
-	for i, currentNodes := range chainPath {
-		for _, node := range currentNodes {
-			if node == thisNode {
-				position = i
+	// Build the nodes
+	for nodeStr, childrenStr := range chainPath {
+
+		if nodeStr == localNodeStr {
+			tempNode := chainNode{}
+			tempNode.nodeType = PublisherEnum
+			tempNode.id = p.localID
+			// This is the publisher. Don't need to add a key to itself.
+			tempNode.addChildren(childrenStr)
+			p.chainNodes[nodeStr] = tempNode
+		} else if strings.HasPrefix(nodeStr, "B") {
+			tempNode := chainNode{}
+			tempNode.nodeType = BrokerEnum
+			idStr := strings.TrimPrefix(nodeStr, "B")
+			tmpID, err := strconv.ParseUint(idStr, 10, 64)
+			tempNode.id = tmpID
+			if err != nil {
+				fmt.Printf("%v\n", err)
+				continue
 			}
+			tempNode.key = p.brokers[tempNode.id].key
+			tempNode.addChildren(childrenStr)
+			p.chainNodes[nodeStr] = tempNode
+		} else if strings.HasPrefix(nodeStr, "S") {
+			// Do nothing. The publisher should not know about the subscribers.
 		}
+
 	}
 
-	if position == -1 {
-		return
-	}
+	fmt.Printf("%v\n", p.chainNodes)
+}
 
-	for i, currentNodes := range chainPath {
-		// If the link is outside the range, skip it
-		if i < position-chainRange || i > position+chainRange {
-			continue
-		}
-
-		for _, node := range currentNodes {
-			var link chainLink
-
-			// Build the link
-			if strings.HasPrefix(node, "PUBLISHER") {
-				// Do nothing
-			} else if strings.HasPrefix(node, "BROKER") {
-				link.linkType = BrokerEnum
-				idStr := strings.TrimPrefix(node, "BROKER")
-				tmpID, err := strconv.ParseUint(idStr, 10, 64)
-				link.id = tmpID
-				if err != nil {
-					fmt.Printf("%v\n", err)
-					continue
-				}
-				link.key = p.brokers[link.id].key
-			} else if strings.HasPrefix(node, "SUBSCRIBER") {
-				// Do nothing
+// addChildren adds the child nodes. It takes as input a slice of child strings.
+func (n *chainNode) addChildren(children []string) {
+	for _, child := range children {
+		if strings.HasPrefix(child, "B") {
+			id, err := strconv.ParseUint(child[1:], 10, 64)
+			if err != nil {
+				fmt.Printf("Error parsing %v.\n", child)
+				continue
 			}
-
-			// Add the link to the correct position.
-			if i == position-2 {
-				p.chainLinks[-2] = append(p.chainLinks[-2], link)
-			} else if i == position-1 {
-				p.chainLinks[-1] = append(p.chainLinks[-1], link)
-			} else if i == position+1 {
-				p.chainLinks[1] = append(p.chainLinks[1], link)
-			} else if i == position+2 {
-				p.chainLinks[2] = append(p.chainLinks[2], link)
-			}
+			n.brokerChildren = append(n.brokerChildren, id)
 		}
 	}
-
-	fmt.Printf("%v\n", p.chainLinks)
 }
 
 // handleChainPublish processes a Bracha's Reliable Broadcast publish.
 // It takes as input a publication.
 func (p *Publisher) handleChainPublish(pub *pb.Publication) {
-	/*if pub.MACs == nil {
-		pub.MACs = make([][]byte, chainRange)
-	}
+	fromStr := "P" + strconv.FormatUint(p.localID, 10)
 
-	for i := 1; i < chainRange; i++ {
-		for j := range {
-		pub.MACs[i] = common.CreatePublicationMAC(&pub, p.chainLinks[i + 1].key, common.Algorithm)
+	// For this nodes children
+	for _, childID := range p.chainNodes[fromStr].brokerChildren {
+		// Need to make a new Publication just in case sending to
+		// multiple nodes.
+		tempPub := &pb.Publication{
+			PubType:       pub.PubType,
+			PublisherID:   pub.PublisherID,
+			PublicationID: pub.PublicationID,
+			TopicID:       pub.TopicID,
+			BrokerID:      pub.BrokerID,
+			Contents:      pub.Contents,
+		}
+
+		childStr := "B" + strconv.FormatUint(childID, 10)
+
+		p.addMACs(tempPub, fromStr, childStr, chainRange)
+
+		// Send the publication to that child.
+		p.brokersMutex.RLock()
+		if p.brokers[childID].toCh != nil {
+			select {
+			case p.brokers[childID].toCh <- *tempPub:
+				fmt.Printf("%v\n", tempPub)
+			}
+		}
+		p.brokersMutex.RUnlock()
+	}
+}
+
+func (p *Publisher) addMACs(pub *pb.Publication, fromStr string, nodeStr string, generations int) {
+	if generations > 1 {
+		// Add MACs for all the grandchildren
+		for _, childID := range p.chainNodes[nodeStr].brokerChildren {
+			childStr := "B" + strconv.FormatUint(childID, 10)
+			chainMAC := pb.ChainMAC{
+				From: fromStr,
+				To:   childStr,
+				MAC:  common.CreatePublicationMAC(pub, p.chainNodes[childStr].key, common.Algorithm),
+			}
+
+			pub.ChainMACs = append(pub.ChainMACs, &chainMAC)
+
+			// Recursively add child macs for next generation
+			p.addMACs(pub, fromStr, childStr, generations-1)
 		}
 	}
-
-	toBrokerID := p.chainLinks[1].id
-
-	p.brokersMutex.RLock()
-	defer p.brokersMutex.RUnlock()
-
-	if p.brokers[].toCh != nil {
-		select {
-		case broker.toCh <- *pub:
-		}
-	}*/
 }

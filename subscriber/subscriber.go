@@ -42,10 +42,9 @@ type Subscriber struct {
 	// The value is whether or not the subscriber is interested in that topic.
 	topics map[uint64]bool
 
-	// The first key references where the links are in relation to this node:
-	//    one before previous (-2), previous (-1), next (1), one after next (2)
-	// The slice contains all the links in that position.
-	chainLinks map[int32][]chainLink
+	// The key is the first letter of the node type + node ID
+	// For example a publisher node with ID of 3 would be "P3"
+	chainNodes map[string]chainNode
 }
 
 // NewSubscriber returns a new Subscriber.
@@ -60,7 +59,7 @@ func NewSubscriber(localID uint64) *Subscriber {
 		pubsReceived:      make(map[uint64]map[int64]map[uint64]string),
 		pubsLearned:       make(map[uint64]map[int64]string),
 		topics:            make(map[uint64]bool),
-		chainLinks:        make(map[int32][]chainLink),
+		chainNodes:        make(map[string]chainNode),
 	}
 }
 

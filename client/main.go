@@ -35,14 +35,16 @@ func main() {
 	}
 }
 
-type subscriberInstance struct {
+// SubscriberInstance ...
+type SubscriberInstance struct {
 	id            uint64
 	subscriber    *subscriber.Subscriber
 	recordTimesCh chan common.RecordTime
 }
 
-func NewSubscriberInstance(id uint64) *subscriberInstance {
-	return &subscriberInstance{
+// NewSubscriberInstance ...
+func NewSubscriberInstance(id uint64) *SubscriberInstance {
+	return &SubscriberInstance{
 		id:            localID,
 		subscriber:    subscriber.NewSubscriber(id),
 		recordTimesCh: make(chan common.RecordTime, 16),
@@ -50,7 +52,7 @@ func NewSubscriberInstance(id uint64) *subscriberInstance {
 }
 
 // mainSub starts a subscriber.
-func (s *subscriberInstance) mainSub() {
+func (s *SubscriberInstance) mainSub() {
 	fmt.Printf("Subscriber started.\n")
 
 	go s.RecordRecvTimes()
@@ -65,9 +67,6 @@ func (s *subscriberInstance) mainSub() {
 		id := uint64(i)
 		s.subscriber.AddBroker(id, brokerAddresses[id], []byte(key))
 	}
-
-	// Add the chain path
-	s.subscriber.AddChainPath(chain, localID)
 
 	go s.subscriber.Start()
 
@@ -84,7 +83,8 @@ func (s *subscriberInstance) mainSub() {
 	}
 }
 
-func (s *subscriberInstance) RecordRecvTimes() {
+// RecordRecvTimes ...
+func (s *SubscriberInstance) RecordRecvTimes() {
 	file, err := os.Create("recvTimes" + strconv.FormatUint(s.id, 10) + ".txt")
 	if err != nil {
 		fmt.Printf("%v\n", err)
@@ -100,14 +100,16 @@ func (s *subscriberInstance) RecordRecvTimes() {
 	}
 }
 
-type publisherInstance struct {
+// PublisherInstance ...
+type PublisherInstance struct {
 	id            uint64
 	publisher     *publisher.Publisher
 	recordTimesCh chan common.RecordTime
 }
 
-func NewPublisherInstance(id uint64) *publisherInstance {
-	return &publisherInstance{
+// NewPublisherInstance ...
+func NewPublisherInstance(id uint64) *PublisherInstance {
+	return &PublisherInstance{
 		id:            id,
 		publisher:     publisher.NewPublisher(id),
 		recordTimesCh: make(chan common.RecordTime, 64),
@@ -115,7 +117,7 @@ func NewPublisherInstance(id uint64) *publisherInstance {
 }
 
 // mainPub starts a publisher and publishes three publications.
-func (p *publisherInstance) mainPub() {
+func (p *PublisherInstance) mainPub() {
 	fmt.Printf("Publisher started.\n")
 
 	go p.RecordSendTimes()
@@ -127,7 +129,7 @@ func (p *publisherInstance) mainPub() {
 	}
 
 	// Add the chain path
-	p.publisher.AddChainPath(chain, localID)
+	p.publisher.AddChainPath(chain, rChain)
 
 	p.publisher.Start()
 
@@ -170,7 +172,8 @@ func (p *publisherInstance) mainPub() {
 	time.Sleep(time.Second)
 }
 
-func (p *publisherInstance) RecordSendTimes() {
+// RecordSendTimes ...
+func (p *PublisherInstance) RecordSendTimes() {
 	file, err := os.Create("sendTimes" + strconv.FormatUint(p.id, 10) + ".txt")
 	if err != nil {
 		fmt.Printf("%v\n", err)

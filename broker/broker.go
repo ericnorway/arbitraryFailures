@@ -79,10 +79,9 @@ type Broker struct {
 	// The value is a count of the messages received since the last history.
 	alphaCounters map[uint64]map[uint64]uint64
 
-	// The first key references where the links are in relation to this node:
-	//    one before previous (-2), previous (-1), next (1), one after next (2)
-	// The slice contains all the links in that position.
-	chainLinks map[int32][]chainLink
+	// The key is the first letter of the node type + node ID
+	// For example a publisher node with ID of 3 would be "P3".
+	chainNodes map[string]chainNode
 }
 
 // NewBroker returns a new Broker.
@@ -112,7 +111,7 @@ func NewBroker(localID uint64, localAddr string, alpha uint64) *Broker {
 		readiesSent:             make(map[uint64]map[int64]bool),
 		readiesReceived:         make(map[uint64]map[int64]map[uint64]string),
 		alphaCounters:           make(map[uint64]map[uint64]uint64),
-		chainLinks:              make(map[int32][]chainLink),
+		chainNodes:              make(map[string]chainNode),
 	}
 }
 
@@ -273,9 +272,9 @@ func (b *Broker) Chain(ctx context.Context, pub *pb.Publication) (*pb.ChainRespo
 		return &pb.ChainResponse{}, nil
 	}
 
-	//select {
-	//case b.fromBrokerChainCh <- pub:
-	//}
+	select {
+	case b.fromBrokerChainCh <- *pub:
+	}
 
 	return &pb.ChainResponse{}, nil
 }
@@ -347,11 +346,14 @@ func (b Broker) handleMessages() {
 				b.handleBrbPublish(&req)
 			} else if req.PubType == common.Chain {
 				// Handle a Chain publish request
+				b.handleChainPublish(&req)
 			}
 		case req := <-b.fromBrokerEchoCh:
 			b.handleEcho(&req)
 		case req := <-b.fromBrokerReadyCh:
 			b.handleReady(&req)
+		case req := <-b.fromBrokerChainCh:
+			b.handleChainPublish(&req)
 		case req := <-b.fromSubscriberCh:
 			b.handleSubscribe(&req)
 		}
