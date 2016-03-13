@@ -9,21 +9,10 @@ import (
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
 
-// How far ahead and back to look in the chain
-var chainRange = 2
-
-// Enumeration of node types
-const (
-	PublisherEnum = iota
-	BrokerEnum
-	SubscriberEnum
-)
-
 type chainNode struct {
-	nodeType      uint32
-	id            uint64
-	key           []byte
-	brokerParents []uint64
+	idStr   string
+	key     []byte
+	parents []string
 }
 
 // AddChainPath takes a map of slices of child nodes and builds a more detailed
@@ -35,46 +24,40 @@ func (s *Subscriber) AddChainPath(rChainPath map[string][]string) {
 
 	// Build the nodes
 	for nodeStr, parentsStr := range rChainPath {
+		tempNode := chainNode{}
 
-		if strings.HasPrefix(nodeStr, "P") {
-			// Do nothing. The subscriber should not know about the publishers.
-		} else if strings.HasPrefix(nodeStr, "B") {
-			tempNode := chainNode{}
-			tempNode.nodeType = BrokerEnum
-			idStr := strings.TrimPrefix(nodeStr, "B")
-			tmpID, err := strconv.ParseUint(idStr, 10, 64)
-			tempNode.id = tmpID
-			if err != nil {
-				fmt.Printf("%v\n", err)
-				continue
-			}
-			tempNode.key = s.brokers[tempNode.id].key
-			tempNode.addParents(parentsStr)
-			s.chainNodes[nodeStr] = tempNode
-		} else if nodeStr == localNodeStr {
-			tempNode := chainNode{}
-			tempNode.nodeType = SubscriberEnum
-			tempNode.id = s.localID
+		id, err := strconv.ParseUint(nodeStr[1:], 10, 64)
+		if err != nil {
+			fmt.Printf("Error parsing %v.\n", nodeStr)
+			continue
+		}
+
+		if nodeStr == localNodeStr {
+			tempNode.idStr = localNodeStr
 			// This is the publisher. Don't need to add a key to itself.
 			tempNode.addParents(parentsStr)
-			s.chainNodes[nodeStr] = tempNode
+		} else if strings.HasPrefix(nodeStr, "P") {
+			continue
+		} else if strings.HasPrefix(nodeStr, "B") {
+			tempNode.idStr = nodeStr
+			tempNode.key = s.brokers[id].key
+			tempNode.addParents(parentsStr)
+		} else if strings.HasPrefix(nodeStr, "S") {
+			continue
+		} else {
+			continue
 		}
+
+		s.chainNodes[nodeStr] = tempNode
 	}
 
-	fmt.Printf("%v\n\n", s.chainNodes)
+	// fmt.Printf("%v\n\n", s.chainNodes)
 }
 
 // addParents adds the parent nodes. It takes as input a slice of parent strings.
 func (n *chainNode) addParents(parents []string) {
 	for _, parent := range parents {
-		if strings.HasPrefix(parent, "B") {
-			id, err := strconv.ParseUint(parent[1:], 10, 64)
-			if err != nil {
-				fmt.Printf("Error parsing %v.\n", parent)
-				continue
-			}
-			n.brokerParents = append(n.brokerParents, id)
-		}
+		n.parents = append(n.parents, parent)
 	}
 }
 
@@ -97,6 +80,7 @@ func (s *Subscriber) handleChainPublication(pub *pb.Publication) bool {
 	}
 
 	s.pubsLearned[pub.PublisherID][pub.PublicationID] = common.GetInfo(pub)
+	fmt.Printf("Learned publication %v from publisher %v.\n", pub.PublicationID, pub.PublisherID)
 
 	return macsVerified
 }
