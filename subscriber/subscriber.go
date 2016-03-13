@@ -124,6 +124,7 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 			tempBroker, exists := s.brokers[pub.BrokerID]
 
 			if !exists || common.CheckPublicationMAC(pub, pub.MAC, tempBroker.key, common.Algorithm) == false {
+				fmt.Printf("***BAD MAC: Chain*** %v\n", *pub)
 				continue
 			}
 
@@ -188,7 +189,12 @@ func (s *Subscriber) handlePublications() {
 					}
 				}
 			} else if pub.PubType == common.Chain {
-
+				macsVerified := s.handleChainPublication(&pub)
+				if macsVerified {
+					select {
+					case s.ToUserPubCh <- pub:
+					}
+				}
 			}
 		case sub := <-s.FromUserSubCh:
 			s.brokersMutex.RLock()

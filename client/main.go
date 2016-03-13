@@ -68,6 +68,9 @@ func (s *SubscriberInstance) mainSub() {
 		s.subscriber.AddBroker(id, brokerAddresses[id], []byte(key))
 	}
 
+	// Add the chain path
+	s.subscriber.AddChainPath(rChain)
+
 	go s.subscriber.Start()
 
 	for {
@@ -129,7 +132,7 @@ func (p *PublisherInstance) mainPub() {
 	}
 
 	// Add the chain path
-	p.publisher.AddChainPath(chain, rChain)
+	p.publisher.AddChainPath(chain)
 
 	p.publisher.Start()
 

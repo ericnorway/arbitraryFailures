@@ -50,7 +50,7 @@ func (b *Broker) AddChainPath(chainPath map[string][]string, rChainPath map[stri
 			// This is the local broker. Don't need to add a key to itself.
 			tempNode.addChildren(childrenStr)
 		} else if strings.HasPrefix(nodeStr, "P") {
-			tempNode.nodeType = BrokerEnum
+			tempNode.nodeType = PublisherEnum
 			idStr := strings.TrimPrefix(nodeStr, "P")
 			tmpID, err := strconv.ParseUint(idStr, 10, 64)
 			tempNode.id = tmpID
@@ -72,7 +72,7 @@ func (b *Broker) AddChainPath(chainPath map[string][]string, rChainPath map[stri
 			tempNode.key = b.remoteBrokers[tempNode.id].key
 			tempNode.addChildren(childrenStr)
 		} else if strings.HasPrefix(nodeStr, "S") {
-			tempNode.nodeType = BrokerEnum
+			tempNode.nodeType = SubscriberEnum
 			idStr := strings.TrimPrefix(nodeStr, "S")
 			tmpID, err := strconv.ParseUint(idStr, 10, 64)
 			tempNode.id = tmpID
@@ -105,7 +105,7 @@ func (b *Broker) AddChainPath(chainPath map[string][]string, rChainPath map[stri
 			// This is the local broker. Don't need to add a key to itself.
 			tempNode.addParents(parentsStr)
 		} else if strings.HasPrefix(nodeStr, "P") {
-			tempNode.nodeType = BrokerEnum
+			tempNode.nodeType = PublisherEnum
 			idStr := strings.TrimPrefix(nodeStr, "P")
 			tmpID, err := strconv.ParseUint(idStr, 10, 64)
 			tempNode.id = tmpID
@@ -129,7 +129,7 @@ func (b *Broker) AddChainPath(chainPath map[string][]string, rChainPath map[stri
 			tempNode.key = b.remoteBrokers[tempNode.id].key
 			tempNode.addParents(parentsStr)
 		} else if strings.HasPrefix(nodeStr, "S") {
-			tempNode.nodeType = BrokerEnum
+			tempNode.nodeType = SubscriberEnum
 			idStr := strings.TrimPrefix(nodeStr, "S")
 			tmpID, err := strconv.ParseUint(idStr, 10, 64)
 			tempNode.id = tmpID
@@ -195,4 +195,87 @@ func (n *chainNode) addParents(parents []string) {
 // It takes the request as input.
 func (b Broker) handleChainPublish(pub *pb.Publication) {
 	fmt.Printf("Publication: %v.\n", pub)
+	thisNodeStr := "B" + strconv.FormatUint(b.localID, 10)
+
+	//b.verifyChainMACs(pub, thisNodeStr, thisNodeStr, chainRange)
+
+	// For this node's broker children
+	for _, childID := range b.chainNodes[thisNodeStr].brokerChildren {
+		// Need to make a new Publication just in case sending to
+		// multiple nodes.
+		tempPub := &pb.Publication{
+			PubType:       pub.PubType,
+			PublisherID:   pub.PublisherID,
+			PublicationID: pub.PublicationID,
+			TopicID:       pub.TopicID,
+			BrokerID:      b.localID,
+			Contents:      pub.Contents,
+		}
+
+		//childStr := "B" + strconv.FormatUint(childID, 10)
+
+		//b.addMACs(tempPub, thisNodeStr, childStr, chainRange)
+
+		// Send the publication to that child.
+		b.remoteBrokersMutex.RLock()
+		if b.remoteBrokers[childID].toChainCh != nil {
+			select {
+			case b.remoteBrokers[childID].toChainCh <- *tempPub:
+				fmt.Printf("%v\n", tempPub)
+			}
+		}
+		b.remoteBrokersMutex.RUnlock()
+	}
+
+	// For this node's subscriber children
+	for _, childID := range b.chainNodes[thisNodeStr].subscriberChildren {
+		fmt.Printf("Subscriber %v\n", childID)
+		// Need to make a new Publication just in case sending to
+		// multiple nodes.
+		tempPub := &pb.Publication{
+			PubType:       pub.PubType,
+			PublisherID:   pub.PublisherID,
+			PublicationID: pub.PublicationID,
+			TopicID:       pub.TopicID,
+			BrokerID:      b.localID,
+			Contents:      pub.Contents,
+		}
+
+		//childStr := "S" + strconv.FormatUint(childID, 10)
+
+		//b.addMACs(tempPub, thisNodeStr, childStr, chainRange)
+
+		// Send the publication to that child.
+		b.subscribersMutex.RLock()
+		if b.subscribers[childID].toCh != nil {
+			select {
+			case b.subscribers[childID].toCh <- *tempPub:
+				fmt.Printf("%v\n", tempPub)
+			}
+		}
+		b.subscribersMutex.RUnlock()
+	}
+
+	//b.AddMACs
+}
+
+// verifyChainMACs verifies the
+// It takes the request as input.
+func (b Broker) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr string, generations int) bool {
+
+	// If this is not the head broker node
+	if generations > 1 && len(b.chainNodes[nodeStr].brokerParents) > 0 {
+		// Check MACs for all the broker parents
+		for _, parentID := range b.chainNodes[nodeStr].brokerParents {
+			parentStr := "B" + strconv.FormatUint(parentID, 10)
+			for _, chainMAC := range pub.ChainMACs {
+				if chainMAC.To == toStr && chainMAC.From == parentStr {
+					fmt.Printf("Here")
+					b.verifyChainMACs(pub, toStr, parentStr, generations-1)
+				}
+			}
+		}
+	}
+
+	return true
 }

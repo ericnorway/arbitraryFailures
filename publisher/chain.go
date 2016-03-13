@@ -29,9 +29,8 @@ type chainNode struct {
 // AddChainPath takes a map of slices of child nodes and builds a more detailed
 // collection of nodes to use in the Chain algorithm.
 // It takes as input a map of slices of child nodes (first index is the node
-// and the slice is a list of children of that node),
-// and a map of slices of parent nodes.
-func (p *Publisher) AddChainPath(chainPath map[string][]string, rChainPath map[string][]string) {
+// and the slice is a list of children of that node).
+func (p *Publisher) AddChainPath(chainPath map[string][]string) {
 	localNodeStr := "P" + strconv.FormatUint(p.localID, 10)
 
 	// Build the nodes
@@ -85,7 +84,7 @@ func (n *chainNode) addChildren(children []string) {
 func (p *Publisher) handleChainPublish(pub *pb.Publication) {
 	fromStr := "P" + strconv.FormatUint(p.localID, 10)
 
-	// For this nodes children
+	// For this node's  broker children
 	for _, childID := range p.chainNodes[fromStr].brokerChildren {
 		// Need to make a new Publication just in case sending to
 		// multiple nodes.
@@ -116,7 +115,7 @@ func (p *Publisher) handleChainPublish(pub *pb.Publication) {
 
 func (p *Publisher) addMACs(pub *pb.Publication, fromStr string, nodeStr string, generations int) {
 	if generations > 1 {
-		// Add MACs for all the grandchildren
+		// Add MACs for all the children
 		for _, childID := range p.chainNodes[nodeStr].brokerChildren {
 			childStr := "B" + strconv.FormatUint(childID, 10)
 			chainMAC := pb.ChainMAC{
