@@ -75,6 +75,11 @@ type Broker struct {
 	readiesReceived map[uint64]map[int64]map[uint64]string
 
 	// The first key references the publisher ID.
+	// The second key references the publication ID.
+	// The value contains whether or not it was sent yet.
+	chainSent map[uint64]map[int64]bool
+
+	// The first key references the publisher ID.
 	// The second key references the topic.
 	// The value is a count of the messages received since the last history.
 	alphaCounters map[uint64]map[uint64]uint64
@@ -110,6 +115,7 @@ func NewBroker(localID uint64, localAddr string, alpha uint64) *Broker {
 		echoesReceived:          make(map[uint64]map[int64]map[uint64]string),
 		readiesSent:             make(map[uint64]map[int64]bool),
 		readiesReceived:         make(map[uint64]map[int64]map[uint64]string),
+		chainSent:               make(map[uint64]map[int64]bool),
 		alphaCounters:           make(map[uint64]map[uint64]uint64),
 		chainNodes:              make(map[string]chainNode),
 	}

@@ -120,14 +120,26 @@ func (n *chainNode) addParents(parents []string) {
 // handleAbPublish handles Authenticated Broadcast publish requests.
 // It takes the request as input.
 func (b *Broker) handleChainPublish(pub *pb.Publication) {
+	// fmt.Printf("Handle Chain Publish Publication %v, Publisher %v, Broker %v.\n", pub.PublicationID, pub.PublisherID, pub.BrokerID)
+
+	if b.chainSent[pub.PublisherID] == nil {
+		b.chainSent[pub.PublisherID] = make(map[int64]bool)
+	}
+
+	// If this publication has not been sent yet
+	if b.chainSent[pub.PublisherID][pub.PublicationID] == true {
+		// fmt.Printf("Already sent Publication %v, Publisher %v, Broker %v.\n", pub.PublicationID, pub.PublisherID, pub.BrokerID)
+		return
+	}
+
 	thisNodeStr := "B" + strconv.FormatUint(b.localID, 10)
 
 	verified := b.verifyChainMACs(pub, thisNodeStr, thisNodeStr, common.ChainRange, true)
 	if !verified {
-		fmt.Printf("Not verified\n")
+		// fmt.Printf("Not verified\n")
 		return
 	}
-	fmt.Printf("Verified\n")
+	// fmt.Printf("Verified\n")
 
 	// For this node's children
 	for _, childStr := range b.chainNodes[thisNodeStr].children {
@@ -160,7 +172,6 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) {
 			}
 			b.remoteBrokersMutex.RUnlock()
 		} else if strings.HasPrefix(childStr, "S") {
-
 			// Send the publication to that child.
 			b.subscribersMutex.RLock()
 			if b.subscribers[childID].toCh != nil {
@@ -171,6 +182,9 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) {
 			b.subscribersMutex.RUnlock()
 		}
 	}
+
+	// Mark this publication as sent
+	b.chainSent[pub.PublisherID][pub.PublicationID] = true
 }
 
 // verifyChainMACs verifies the
@@ -200,8 +214,6 @@ func (b *Broker) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr stri
 		for _, parentStr := range b.chainNodes[nodeStr].parents {
 			for _, chainMAC := range pub.ChainMACs {
 				if chainMAC.To == toStr && chainMAC.From == parentStr {
-
-					fmt.Printf("*   From: %v *\n", chainMAC.From)
 
 					// Actually check the MAC here.
 					if common.CheckPublicationMAC(pub, chainMAC.MAC, b.chainNodes[parentStr].key, common.Algorithm) == false {

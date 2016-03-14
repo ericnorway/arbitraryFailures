@@ -69,10 +69,10 @@ func (s *Subscriber) handleChainPublication(pub *pb.Publication) bool {
 	// Verify MACs
 	verified := s.verifyChainMACs(pub, thisNodeStr, thisNodeStr, common.ChainRange, true)
 	if !verified {
-		fmt.Printf("Not verified\n")
+		// fmt.Printf("Not verified\n")
 		return false
 	}
-	fmt.Printf("Verified\n")
+	// fmt.Printf("Verified\n")
 
 	// Make the map so not trying to access nil reference
 	if s.pubsLearned[pub.PublisherID] == nil {
@@ -117,8 +117,6 @@ func (s *Subscriber) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr 
 		for _, parentStr := range s.chainNodes[nodeStr].parents {
 			for _, chainMAC := range pub.ChainMACs {
 				if chainMAC.To == toStr && chainMAC.From == parentStr {
-
-					fmt.Printf("*   From: %v *\n", chainMAC.From)
 
 					// Actually check the MAC here.
 					if common.CheckPublicationMAC(pub, chainMAC.MAC, s.chainNodes[parentStr].key, common.Algorithm) == false {

@@ -92,7 +92,6 @@ func (p *Publisher) handleChainPublish(pub *pb.Publication) {
 		if p.brokers[childID].toCh != nil {
 			select {
 			case p.brokers[childID].toCh <- *tempPub:
-				fmt.Printf("%v\n", tempPub)
 			}
 		}
 		p.brokersMutex.RUnlock()
