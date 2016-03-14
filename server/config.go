@@ -102,11 +102,11 @@ func ReadConfigFile(fileName string) error {
 				temp := strings.Split(lineContents[1], ":")
 				node := temp[0]
 
-				// If there are children to the node
+				// If there are parents to the node
 				if len(temp) == 2 {
-					children := strings.Split(temp[1], ",")
-					if len(children) != 0 && children[0] != "" {
-						rChain[node] = children
+					parents := strings.Split(temp[1], ",")
+					if len(parents) != 0 && parents[0] != "" {
+						rChain[node] = parents
 					} else {
 						rChain[node] = nil
 					}

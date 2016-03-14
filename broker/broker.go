@@ -21,6 +21,7 @@ type Broker struct {
 	localID   uint64
 	localAddr string
 
+	chainRange      int
 	alpha           uint64
 	numberOfServers uint64
 	echoQuorumSize  uint64
@@ -96,6 +97,7 @@ func NewBroker(localID uint64, localAddr string, alpha uint64) *Broker {
 	return &Broker{
 		localID:                 localID,
 		localAddr:               localAddr,
+		chainRange:              common.ChainRange,
 		alpha:                   alpha,
 		numberOfServers:         4, // default
 		echoQuorumSize:          3, // default

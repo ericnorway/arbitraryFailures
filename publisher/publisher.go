@@ -16,6 +16,7 @@ import (
 type Publisher struct {
 	localID      uint64
 	currentPubID int64
+	chainRange   int
 
 	brokersMutex      sync.RWMutex
 	brokers           map[uint64]brokerInfo // The key is the BrokerID
@@ -45,6 +46,7 @@ func NewPublisher(localID uint64) *Publisher {
 	return &Publisher{
 		localID:           localID,
 		currentPubID:      0,
+		chainRange:        common.ChainRange,
 		brokers:           make(map[uint64]brokerInfo),
 		brokerConnections: 0,
 		historyRequestCh:  make(chan BrokerTopicPair, 8),

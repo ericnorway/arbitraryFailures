@@ -17,7 +17,8 @@ import (
 // publications received, a map of publications learned,
 // and a map of topics.
 type Subscriber struct {
-	localID uint64
+	localID    uint64
+	chainRange int
 
 	brokersMutex      sync.RWMutex
 	brokers           map[uint64]brokerInfo
@@ -51,6 +52,7 @@ type Subscriber struct {
 func NewSubscriber(localID uint64) *Subscriber {
 	return &Subscriber{
 		localID:           localID,
+		chainRange:        common.ChainRange,
 		brokers:           make(map[uint64]brokerInfo),
 		brokerConnections: 0,
 		fromBrokerCh:      make(chan pb.Publication, 8),

@@ -134,7 +134,7 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) {
 
 	thisNodeStr := "B" + strconv.FormatUint(b.localID, 10)
 
-	verified := b.verifyChainMACs(pub, thisNodeStr, thisNodeStr, common.ChainRange, true)
+	verified := b.verifyChainMACs(pub, thisNodeStr, thisNodeStr, b.chainRange, true)
 	if !verified {
 		// fmt.Printf("Not verified\n")
 		return
@@ -145,7 +145,7 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) {
 	for _, childStr := range b.chainNodes[thisNodeStr].children {
 		childID, err := strconv.ParseUint(childStr[1:], 10, 64)
 		if err != nil {
-			fmt.Printf("Error parsing %v.\n", childID)
+			fmt.Printf("Error parsing %v.\n", childStr)
 			continue
 		}
 
@@ -160,7 +160,7 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) {
 			Contents:      pub.Contents,
 		}
 
-		b.addMACs(tempPub, pub, thisNodeStr, childStr, common.ChainRange)
+		b.addMACs(tempPub, pub, thisNodeStr, childStr, b.chainRange)
 
 		if strings.HasPrefix(childStr, "B") {
 			// Send the publication to that child.

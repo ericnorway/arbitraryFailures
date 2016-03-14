@@ -67,7 +67,7 @@ func (s *Subscriber) handleChainPublication(pub *pb.Publication) bool {
 	thisNodeStr := "S" + strconv.FormatUint(s.localID, 10)
 
 	// Verify MACs
-	verified := s.verifyChainMACs(pub, thisNodeStr, thisNodeStr, common.ChainRange, true)
+	verified := s.verifyChainMACs(pub, thisNodeStr, thisNodeStr, s.chainRange, true)
 	if !verified {
 		// fmt.Printf("Not verified\n")
 		return false

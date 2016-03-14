@@ -70,7 +70,7 @@ func (p *Publisher) handleChainPublish(pub *pb.Publication) {
 	for _, childStr := range p.chainNodes[fromStr].children {
 		childID, err := strconv.ParseUint(childStr[1:], 10, 64)
 		if err != nil {
-			fmt.Printf("Error parsing %v.\n", childID)
+			fmt.Printf("Error parsing %v.\n", childStr)
 			continue
 		}
 
@@ -85,7 +85,7 @@ func (p *Publisher) handleChainPublish(pub *pb.Publication) {
 			Contents:      pub.Contents,
 		}
 
-		p.addMACs(tempPub, fromStr, childStr, common.ChainRange)
+		p.addMACs(tempPub, fromStr, childStr, p.chainRange)
 
 		// Send the publication to that child.
 		p.brokersMutex.RLock()
