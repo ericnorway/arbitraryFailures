@@ -119,17 +119,17 @@ func (n *chainNode) addParents(parents []string) {
 
 // handleAbPublish handles Authenticated Broadcast publish requests.
 // It takes the request as input.
-func (b *Broker) handleChainPublish(pub *pb.Publication) {
+func (b *Broker) handleChainPublish(pub *pb.Publication) bool {
 	// fmt.Printf("Handle Chain Publish Publication %v, Publisher %v, Broker %v.\n", pub.PublicationID, pub.PublisherID, pub.BrokerID)
 
 	if b.chainSent[pub.PublisherID] == nil {
 		b.chainSent[pub.PublisherID] = make(map[int64]bool)
 	}
 
-	// If this publication has not been sent yet
+	// If this publication has already been sent
 	if b.chainSent[pub.PublisherID][pub.PublicationID] == true {
 		// fmt.Printf("Already sent Publication %v, Publisher %v, Broker %v.\n", pub.PublicationID, pub.PublisherID, pub.BrokerID)
-		return
+		return false
 	}
 
 	thisNodeStr := "B" + strconv.FormatUint(b.localID, 10)
@@ -137,7 +137,7 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) {
 	verified := b.verifyChainMACs(pub, thisNodeStr, thisNodeStr, b.chainRange, true)
 	if !verified {
 		// fmt.Printf("Not verified\n")
-		return
+		return false
 	}
 	// fmt.Printf("Verified\n")
 
@@ -185,18 +185,21 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) {
 
 	// Mark this publication as sent
 	b.chainSent[pub.PublisherID][pub.PublicationID] = true
+
+	return true
 }
 
 // verifyChainMACs verifies the
 // It takes the request as input.
 func (b *Broker) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr string, generations int, passThisGeneration bool) bool {
-	// Nothing to check
+
+	// Nothing to check, no parents
 	if len(b.chainNodes[nodeStr].parents) == 0 {
 		return true
 	}
 
 	// Ignore the first generation. MAC is checked earlier.
-	if passThisGeneration {
+	if passThisGeneration == true {
 		for _, parentStr := range b.chainNodes[nodeStr].parents {
 			// Check the previous generation
 			verified := b.verifyChainMACs(pub, toStr, parentStr, generations-1, false)
@@ -209,11 +212,14 @@ func (b *Broker) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr stri
 
 	// If still in the chain range
 	if generations > 0 {
+		foundMatch := false
+
 		// Look through this node's parents and in the list of Chain MACs
 		// for a matching set of Tos and Froms
 		for _, parentStr := range b.chainNodes[nodeStr].parents {
 			for _, chainMAC := range pub.ChainMACs {
 				if chainMAC.To == toStr && chainMAC.From == parentStr {
+					foundMatch = true
 
 					// Actually check the MAC here.
 					if common.CheckPublicationMAC(pub, chainMAC.MAC, b.chainNodes[parentStr].key, common.Algorithm) == false {
@@ -228,6 +234,12 @@ func (b *Broker) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr stri
 					}
 				}
 			}
+		}
+
+		// If couldn't find a MAC for this generation.
+		if foundMatch == false {
+			fmt.Printf("***MISSING MAC: Chain*** %v\n", *pub)
+			return false
 		}
 	} else {
 		// No longer in the chain range, so all the MACs matched.

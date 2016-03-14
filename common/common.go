@@ -70,5 +70,9 @@ func Equals(a pb.Publication, b pb.Publication) bool {
 			return false
 		}
 	}
+	// Currently this is not checking each individual Chain MAC, only the length of ChainMACs slice.
+	if len(a.ChainMACs) != len(b.ChainMACs) {
+		return false
+	}
 	return true
 }

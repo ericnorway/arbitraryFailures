@@ -9,6 +9,7 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/binary"
+	// "fmt"
 	"hash"
 
 	pb "github.com/ericnorway/arbitraryFailures/proto"
@@ -77,6 +78,8 @@ func CreatePublicationMAC(pub *pb.Publication, key []byte, algorithm crypto.Hash
 func CheckPublicationMAC(pub *pb.Publication, mac []byte, key []byte, algorithm crypto.Hash) bool {
 
 	mac2 := CreatePublicationMAC(pub, key, algorithm)
+	// fmt.Printf("%v\n", mac)
+	// fmt.Printf("%v\n", mac2)
 
 	return hmac.Equal(mac, mac2)
 }
