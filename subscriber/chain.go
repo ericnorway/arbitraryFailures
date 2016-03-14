@@ -64,10 +64,15 @@ func (n *chainNode) addParents(parents []string) {
 // handleChainPublication processes an Authenticated Broadcast publication.
 // It takes as input a publication.
 func (s *Subscriber) handleChainPublication(pub *pb.Publication) bool {
-	macsVerified := false
+	thisNodeStr := "S" + strconv.FormatUint(s.localID, 10)
 
 	// Verify MACs
-	macsVerified = true
+	verified := s.verifyChainMACs(pub, thisNodeStr, thisNodeStr, common.ChainRange, true)
+	if !verified {
+		fmt.Printf("Not verified\n")
+		return false
+	}
+	fmt.Printf("Verified\n")
 
 	// Make the map so not trying to access nil reference
 	if s.pubsLearned[pub.PublisherID] == nil {
@@ -82,5 +87,58 @@ func (s *Subscriber) handleChainPublication(pub *pb.Publication) bool {
 	s.pubsLearned[pub.PublisherID][pub.PublicationID] = common.GetInfo(pub)
 	fmt.Printf("Learned publication %v from publisher %v.\n", pub.PublicationID, pub.PublisherID)
 
-	return macsVerified
+	return true
+}
+
+// verifyChainMACs verifies the
+// It takes the request as input.
+func (s *Subscriber) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr string, generations int, passThisGeneration bool) bool {
+	// Nothing to check
+	if len(s.chainNodes[nodeStr].parents) == 0 {
+		return true
+	}
+
+	// Ignore the first generation. MAC is checked earlier.
+	if passThisGeneration {
+		for _, parentStr := range s.chainNodes[nodeStr].parents {
+			// Check the previous generation
+			verified := s.verifyChainMACs(pub, toStr, parentStr, generations-1, false)
+			if verified {
+				return true
+			}
+		}
+		return false
+	}
+
+	// If still in the chain range
+	if generations > 0 {
+		// Look through this node's parents and in the list of Chain MACs
+		// for a matching set of Tos and Froms
+		for _, parentStr := range s.chainNodes[nodeStr].parents {
+			for _, chainMAC := range pub.ChainMACs {
+				if chainMAC.To == toStr && chainMAC.From == parentStr {
+
+					fmt.Printf("*   From: %v *\n", chainMAC.From)
+
+					// Actually check the MAC here.
+					if common.CheckPublicationMAC(pub, chainMAC.MAC, s.chainNodes[parentStr].key, common.Algorithm) == false {
+						fmt.Printf("***BAD MAC: Chain*** %v\n", *pub)
+						return false
+					}
+
+					// Go back one more generation
+					verified := s.verifyChainMACs(pub, toStr, parentStr, generations-1, false)
+					if verified {
+						return true
+					}
+				}
+			}
+		}
+	} else {
+		// No longer in the chain range, so all the MACs matched.
+		return true
+	}
+
+	// Not all the MACs in the chain were verified.
+	return false
 }

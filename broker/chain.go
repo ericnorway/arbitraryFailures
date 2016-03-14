@@ -119,13 +119,13 @@ func (n *chainNode) addParents(parents []string) {
 
 // handleAbPublish handles Authenticated Broadcast publish requests.
 // It takes the request as input.
-func (b Broker) handleChainPublish(pub *pb.Publication) {
+func (b *Broker) handleChainPublish(pub *pb.Publication) {
 	thisNodeStr := "B" + strconv.FormatUint(b.localID, 10)
 
 	verified := b.verifyChainMACs(pub, thisNodeStr, thisNodeStr, common.ChainRange, true)
 	if !verified {
 		fmt.Printf("Not verified\n")
-		//return
+		return
 	}
 	fmt.Printf("Verified\n")
 
@@ -175,7 +175,7 @@ func (b Broker) handleChainPublish(pub *pb.Publication) {
 
 // verifyChainMACs verifies the
 // It takes the request as input.
-func (b Broker) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr string, generations int, passThisGeneration bool) bool {
+func (b *Broker) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr string, generations int, passThisGeneration bool) bool {
 	// Nothing to check
 	if len(b.chainNodes[nodeStr].parents) == 0 {
 		return true
