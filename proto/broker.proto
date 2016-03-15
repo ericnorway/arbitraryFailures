@@ -37,7 +37,6 @@ message PubResponse{
 	bool Accepted = 1;
 	bool RequestHistory = 2;
 	bool Blocked = 3;
-	uint64 TopicID = 4;
 }
 
 message EchoResponse{}

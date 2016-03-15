@@ -22,10 +22,10 @@ type Publisher struct {
 	brokers           map[uint64]brokerInfo // The key is the BrokerID
 	brokerConnections uint64
 
-	historyRequestCh chan BrokerTopicPair
+	historyRequestCh chan HistoryRequestInfo
 	addToHistoryCh   chan pb.Publication
 
-	blockCh    chan BrokerTopicPair
+	blockCh    chan HistoryRequestInfo
 	blockTopic map[uint64]bool // The key is TopicID
 
 	ToUserRecordCh chan common.RecordTime
@@ -35,10 +35,11 @@ type Publisher struct {
 	chainNodes map[string]chainNode
 }
 
-// BrokerTopicPair is a struct of BrokerID and TopicID that can be easily sent on a channel
-type BrokerTopicPair struct {
+// HistoryRequestInfo
+type HistoryRequestInfo struct {
 	BrokerID uint64
 	TopicID  uint64
+	PubType  uint32
 }
 
 // NewPublisher returns a new Publisher.
@@ -49,9 +50,9 @@ func NewPublisher(localID uint64) *Publisher {
 		chainRange:        common.ChainRange,
 		brokers:           make(map[uint64]brokerInfo),
 		brokerConnections: 0,
-		historyRequestCh:  make(chan BrokerTopicPair, 8),
+		historyRequestCh:  make(chan HistoryRequestInfo, 8),
 		addToHistoryCh:    make(chan pb.Publication, 8),
-		blockCh:           make(chan BrokerTopicPair, 8),
+		blockCh:           make(chan HistoryRequestInfo, 8),
 		blockTopic:        make(map[uint64]bool),
 		ToUserRecordCh:    make(chan common.RecordTime, 8),
 		chainNodes:        make(map[string]chainNode),
@@ -128,13 +129,21 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 
 			if resp.RequestHistory == true {
 				select {
-				case p.historyRequestCh <- BrokerTopicPair{BrokerID: broker.id, TopicID: resp.TopicID}:
+				case p.historyRequestCh <- HistoryRequestInfo{
+					BrokerID: broker.id,
+					TopicID:  pub.TopicID,
+					PubType:  pub.PubType,
+				}:
 				}
 			}
 
 			if resp.Blocked == true {
 				select {
-				case p.blockCh <- BrokerTopicPair{BrokerID: broker.id, TopicID: resp.TopicID}:
+				case p.blockCh <- HistoryRequestInfo{
+					BrokerID: broker.id,
+					TopicID:  pub.TopicID,
+					PubType:  pub.PubType,
+				}:
 				}
 			}
 		}

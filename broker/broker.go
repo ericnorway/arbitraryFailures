@@ -217,14 +217,14 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 	// Check MAC
 	if !exists || common.CheckPublicationMAC(pub, pub.MAC, publisher.key, common.Algorithm) == false {
 		fmt.Printf("***BAD MAC: Publish*** %v\n", *pub)
-		return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: false, TopicID: pub.TopicID}, nil
+		return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: false}, nil
 	}
 
 	// If using alpha values
 	if b.alpha > 0 {
 		// Don't allow more than 2 * alpha publications for a topic and publisher without a history request
 		if b.checkDoubleAlphaCounter(pub.PublisherID, pub.TopicID) && pub.PubType != common.BRB {
-			return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: true, TopicID: pub.TopicID}, nil
+			return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: true,}, nil
 		}
 	}
 
@@ -243,7 +243,7 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 		}
 	}
 
-	return &pb.PubResponse{Accepted: true, RequestHistory: requestHistory, Blocked: false, TopicID: pub.TopicID}, nil
+	return &pb.PubResponse{Accepted: true, RequestHistory: requestHistory, Blocked: false}, nil
 }
 
 // Echo handles incoming BRB echo requests from other brokers

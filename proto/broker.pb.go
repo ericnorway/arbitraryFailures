@@ -66,10 +66,9 @@ func (m *ChainMAC) String() string { return proto1.CompactTextString(m) }
 func (*ChainMAC) ProtoMessage()    {}
 
 type PubResponse struct {
-	Accepted       bool   `protobuf:"varint,1,opt,name=Accepted" json:"Accepted,omitempty"`
-	RequestHistory bool   `protobuf:"varint,2,opt,name=RequestHistory" json:"RequestHistory,omitempty"`
-	Blocked        bool   `protobuf:"varint,3,opt,name=Blocked" json:"Blocked,omitempty"`
-	TopicID        uint64 `protobuf:"varint,4,opt,name=TopicID" json:"TopicID,omitempty"`
+	Accepted       bool `protobuf:"varint,1,opt,name=Accepted" json:"Accepted,omitempty"`
+	RequestHistory bool `protobuf:"varint,2,opt,name=RequestHistory" json:"RequestHistory,omitempty"`
+	Blocked        bool `protobuf:"varint,3,opt,name=Blocked" json:"Blocked,omitempty"`
 }
 
 func (m *PubResponse) Reset()         { *m = PubResponse{} }

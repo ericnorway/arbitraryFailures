@@ -29,25 +29,26 @@ func (p *Publisher) historyHandler() {
 		case pub := <-p.addToHistoryCh:
 			history[pub.TopicID] = append(history[pub.TopicID], pub)
 			pubsSinceLastHistory[pub.TopicID]++
-		case pair := <-p.historyRequestCh:
-			if historyRequests[pair.TopicID] == nil {
-				historyRequests[pair.TopicID] = make(map[uint64]bool)
+		case info := <-p.historyRequestCh:
+			if historyRequests[info.TopicID] == nil {
+				historyRequests[info.TopicID] = make(map[uint64]bool)
 			}
 
 			// If a history Publication was recently sent, ignore this request.
-			if pubsSinceLastHistory[pair.TopicID] < 2 {
+			if pubsSinceLastHistory[info.TopicID] < 2 {
 				continue
 			}
 
-			historyRequests[pair.TopicID][pair.BrokerID] = true
+			historyRequests[info.TopicID][info.BrokerID] = true
 
-			if len(historyRequests[pair.TopicID]) > len(p.brokers)/2 {
+			// If quorum of AB or one of Chain
+			if (info.PubType == common.AB && len(historyRequests[info.TopicID]) > len(p.brokers)/2) || info.PubType == common.Chain {
 				// Create the publication.
 				pub := &pb.Publication{
 					PubType:       common.BRB,
 					PublisherID:   p.localID,
 					PublicationID: historyID,
-					TopicID:       pair.TopicID,
+					TopicID:       info.TopicID,
 					Contents:      [][]byte{},
 				}
 
@@ -93,27 +94,27 @@ func (p *Publisher) historyHandler() {
 				p.brokersMutex.RUnlock()
 
 				// Reset these
-				historyRequests[pair.TopicID] = make(map[uint64]bool)
-				pubsSinceLastHistory[pub.TopicID] = 0
-				p.blockTopic[pair.TopicID] = false
-				blockRequests[pair.TopicID] = make(map[uint64]bool)
+				historyRequests[info.TopicID] = make(map[uint64]bool)
+				pubsSinceLastHistory[info.TopicID] = 0
+				p.blockTopic[info.TopicID] = false
+				blockRequests[info.TopicID] = make(map[uint64]bool)
 			}
-		case pair := <-p.blockCh:
-			if blockRequests[pair.TopicID] == nil {
-				blockRequests[pair.TopicID] = make(map[uint64]bool)
+		case info := <-p.blockCh:
+			if blockRequests[info.TopicID] == nil {
+				blockRequests[info.TopicID] = make(map[uint64]bool)
 			}
 
-			blockRequests[pair.TopicID][pair.BrokerID] = true
+			blockRequests[info.TopicID][info.BrokerID] = true
 
-			// If more than one broker is blocking
-			if len(blockRequests[pair.TopicID]) > len(p.brokers)/2 {
+			// If quorum of AB or one of Chain
+			if (info.PubType == common.AB && len(blockRequests[info.TopicID]) > len(p.brokers)/2) || info.PubType == common.Chain {
 				// Don't allow any more publications from this topic.
-				p.blockTopic[pair.TopicID] = true
+				p.blockTopic[info.TopicID] = true
 			}
 
 			// Send a request for history.
 			select {
-			case p.historyRequestCh <- pair:
+			case p.historyRequestCh <- info:
 			}
 		}
 	}

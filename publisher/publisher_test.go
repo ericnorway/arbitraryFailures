@@ -140,7 +140,10 @@ func TestHistory(t *testing.T) {
 		// Generate history requests
 		for _, broker := range test.publisher.brokers {
 			select {
-			case test.publisher.historyRequestCh <- BrokerTopicPair{BrokerID: broker.id, TopicID: 1}:
+			case test.publisher.historyRequestCh <- HistoryRequestInfo{
+				BrokerID: broker.id,
+				TopicID:  1,
+				PubType:  common.AB}:
 			}
 		}
 		test.publisher.brokersMutex.RUnlock()
