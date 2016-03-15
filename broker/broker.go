@@ -3,6 +3,7 @@ package broker
 import (
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"strings"
 	"sync"
@@ -21,12 +22,14 @@ type Broker struct {
 	localID   uint64
 	localAddr string
 
-	chainRange      int
-	alpha           uint64
-	numberOfServers uint64
-	echoQuorumSize  uint64
-	readyQuorumSize uint64
-	faultsTolerated uint64
+	chainRange        int
+	alpha             uint64
+	numberOfServers   uint64
+	echoQuorumSize    uint64
+	readyQuorumSize   uint64
+	faultsTolerated   uint64
+	malevolentPercent int
+	random            *rand.Rand
 
 	// PUBLISHER VARIABLES
 	publishersMutex sync.RWMutex
@@ -93,7 +96,8 @@ type Broker struct {
 // NewBroker returns a new Broker.
 // It takes as input the local broker ID, the local address and port,
 // and the alpha value.
-func NewBroker(localID uint64, localAddr string, alpha uint64) *Broker {
+func NewBroker(localID uint64, localAddr string, alpha uint64, malevolentPercent int) *Broker {
+
 	return &Broker{
 		localID:                 localID,
 		localAddr:               localAddr,
@@ -103,6 +107,8 @@ func NewBroker(localID uint64, localAddr string, alpha uint64) *Broker {
 		echoQuorumSize:          3, // default
 		readyQuorumSize:         2, // default
 		faultsTolerated:         1, // default
+		malevolentPercent:       malevolentPercent,
+		random:                  rand.New(rand.NewSource(time.Now().Unix())),
 		publishers:              make(map[uint64]publisherInfo),
 		fromPublisherCh:         make(chan pb.Publication, 32),
 		remoteBrokers:           make(map[uint64]brokerInfo),
@@ -189,18 +195,36 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string) {
 	for {
 		select {
 		case pub := <-toEchoCh:
+			if b.malevolentPercent > 0 {
+				altered := b.alterPublication(&pub)
+				if altered {
+					fmt.Printf("Altered pub: %v\n", &pub)
+				}
+			}
 			pub.MAC = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key, common.Algorithm)
 
 			_, err := client.Echo(context.Background(), &pub)
 			if err != nil {
 			}
 		case pub := <-toReadyCh:
+			if b.malevolentPercent > 0 {
+				altered := b.alterPublication(&pub)
+				if altered {
+					fmt.Printf("Altered pub: %v\n", &pub)
+				}
+			}
 			pub.MAC = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key, common.Algorithm)
 
 			_, err := client.Ready(context.Background(), &pub)
 			if err != nil {
 			}
 		case pub := <-toChainCh:
+			if b.malevolentPercent > 0 {
+				altered := b.alterPublication(&pub)
+				if altered {
+					fmt.Printf("Altered pub: %v\n", &pub)
+				}
+			}
 			pub.MAC = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key, common.Algorithm)
 
 			_, err := client.Chain(context.Background(), &pub)
@@ -319,6 +343,13 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 		for {
 			select {
 			case pub := <-ch:
+				if b.malevolentPercent > 0 {
+					altered := b.alterPublication(&pub)
+					if altered {
+						fmt.Printf("Altered pub: %v\n", &pub)
+					}
+				}
+
 				pub.MAC = common.CreatePublicationMAC(&pub, b.subscribers[id].key, common.Algorithm)
 				// fmt.Printf("Send Publication %v, Publisher %v, Broker %v to Subscriber %v.\n", pub.PublicationID, pub.PublisherID, pub.BrokerID, id)
 
@@ -382,4 +413,36 @@ func (b Broker) handleMessages() {
 // It takes as input the subscription request.
 func (b Broker) handleSubscribe(req *pb.SubRequest) {
 	b.changeTopics(req)
+}
+
+// alterPublication will malevolently alter a publications information.
+// It returns true if the publication was altered.
+// It takes as input the publication.
+func (b *Broker) alterPublication(pub *pb.Publication) bool {
+	r := b.random.Intn(101)
+
+	if r <= b.malevolentPercent {
+		alterType := r % 5
+		switch alterType {
+		case 0:
+			pub.PublicationID = pub.PublicationID + 1
+			fmt.Printf("Updated Publication ID\n")
+		case 1:
+			pub.PublisherID = pub.PublisherID + 1
+			fmt.Printf("Updated Publisher ID\n")
+		case 2:
+			pub.TopicID = pub.TopicID + 1
+			fmt.Printf("Updated Topic ID\n")
+		case 3:
+			pub.BrokerID = pub.BrokerID + 1
+			fmt.Printf("Updated Broker ID\n")
+		case 4:
+			pub.Contents[0] = []byte("Bad message")
+			fmt.Printf("Updated Content\n")
+		}
+
+		return true
+	}
+
+	return false
 }
