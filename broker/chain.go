@@ -189,8 +189,14 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) bool {
 	return true
 }
 
-// verifyChainMACs verifies the
-// It takes the request as input.
+// verifyChainMACs verifies the MACs for the Chain algorithm.
+// It returns true if the MACs in the chain are verified.
+// It takes as input the publication,
+// the local ID string (for matching to TO address),
+// the current node ID string in the tree,
+// the number of generations to check,
+// and whether or not to skip the current generation (this should be true when called initially
+// since the MAC between the local node and its parent is already checked and not in this list of MACs).
 func (b *Broker) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr string, generations int, passThisGeneration bool) bool {
 
 	// Nothing to check, no parents
@@ -250,6 +256,13 @@ func (b *Broker) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr stri
 	return false
 }
 
+// addMACs adds MACs to the chain of MACs. Some older MACs may need to be kept depending
+// on the number of generations in the chain.
+// It takes as input the new publication,
+// the old publication,
+// the local ID string (for the FROM address),
+// the current node ID string in the tree,
+// and the number of generations to add.
 func (b *Broker) addMACs(pub *pb.Publication, oldPub *pb.Publication, fromStr string, nodeStr string, generations int) {
 	// Add any old chain MACs that add going to the child node
 	for _, oldChainMAC := range oldPub.ChainMACs {
