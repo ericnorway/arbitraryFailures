@@ -67,7 +67,7 @@ func (s *Subscriber) handleChainPublication(pub *pb.Publication) bool {
 	thisNodeStr := "S" + strconv.FormatUint(s.localID, 10)
 
 	// Verify MACs
-	verified := s.verifyChainMACs(pub, thisNodeStr, thisNodeStr, s.chainRange, true)
+	verified := s.verifyChainMACs(pub, thisNodeStr, s.chainRange)
 	if !verified {
 		// fmt.Printf("Not verified\n")
 		return false
@@ -90,33 +90,55 @@ func (s *Subscriber) handleChainPublication(pub *pb.Publication) bool {
 	return true
 }
 
-// verifyChainMACs verifies the
-// It takes the request as input.
-func (s *Subscriber) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr string, generations int, passThisGeneration bool) bool {
-	// Nothing to check
-	if len(s.chainNodes[nodeStr].parents) == 0 {
+// verifyChainMACs verifies the MACs for the Chain algorithm.
+// It returns true if the MACs in the chain are verified.
+// It takes as input the publication,
+// the local ID string (for matching to TO address),
+// the number of generations to check.
+func (s *Subscriber) verifyChainMACs(pub *pb.Publication, localIDstr string, generations int) bool {
+
+	// Nothing to check, no parents
+	if len(s.chainNodes[localIDstr].parents) == 0 {
 		return true
 	}
 
-	// Ignore the first generation. MAC is checked earlier.
-	if passThisGeneration {
-		for _, parentStr := range s.chainNodes[nodeStr].parents {
+	if generations > 0 {
+		for _, parentStr := range s.chainNodes[localIDstr].parents {
 			// Check the previous generation
-			verified := s.verifyChainMACs(pub, toStr, parentStr, generations-1, false)
+			verified := s.verifyChainMACsRecursive(pub, localIDstr, parentStr, generations-1)
 			if verified {
 				return true
 			}
 		}
-		return false
+	}
+
+	// Not all the MACs in the chain were verified.
+	return false
+}
+
+// verifyChainMACsRecursive verifies the MACs for the Chain algorithm.
+// It returns true if the MACs in the chain are verified.
+// It takes as input the publication,
+// the local ID string (for matching to TO address),
+// the current node ID string in the tree (should start with the local node),
+// the number of generations to check.
+func (s *Subscriber) verifyChainMACsRecursive(pub *pb.Publication, localIDstr string, nodeStr string, generations int) bool {
+
+	// Nothing to check, no parents
+	if len(s.chainNodes[nodeStr].parents) == 0 {
+		return true
 	}
 
 	// If still in the chain range
 	if generations > 0 {
+		foundMatch := false
+
 		// Look through this node's parents and in the list of Chain MACs
 		// for a matching set of Tos and Froms
 		for _, parentStr := range s.chainNodes[nodeStr].parents {
 			for _, chainMAC := range pub.ChainMACs {
-				if chainMAC.To == toStr && chainMAC.From == parentStr {
+				if chainMAC.To == localIDstr && chainMAC.From == parentStr {
+					foundMatch = true
 
 					// Actually check the MAC here.
 					if common.CheckPublicationMAC(pub, chainMAC.MAC, s.chainNodes[parentStr].key, common.Algorithm) == false {
@@ -125,12 +147,18 @@ func (s *Subscriber) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr 
 					}
 
 					// Go back one more generation
-					verified := s.verifyChainMACs(pub, toStr, parentStr, generations-1, false)
+					verified := s.verifyChainMACsRecursive(pub, localIDstr, parentStr, generations-1)
 					if verified {
 						return true
 					}
 				}
 			}
+		}
+
+		// If couldn't find a MAC for this generation.
+		if foundMatch == false {
+			fmt.Printf("***MISSING MAC: Chain*** %v\n", *pub)
+			return false
 		}
 	} else {
 		// No longer in the chain range, so all the MACs matched.

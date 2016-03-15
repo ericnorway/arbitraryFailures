@@ -98,12 +98,17 @@ func (p *Publisher) handleChainPublish(pub *pb.Publication) {
 	}
 }
 
-func (p *Publisher) addMACs(pub *pb.Publication, fromStr string, nodeStr string, generations int) {
+// addMACsRecursive adds MACs to the chain of MACs.
+// It takes as input the publication,
+// the local ID string (for the FROM address),
+// the current node ID string in the tree (should start with the local node's children),
+// and the number of generations to add.
+func (p *Publisher) addMACs(pub *pb.Publication, localIDstr string, nodeStr string, generations int) {
 	if generations > 1 {
 		// Add MACs for all the children
 		for _, childStr := range p.chainNodes[nodeStr].children {
 			chainMAC := pb.ChainMAC{
-				From: fromStr,
+				From: localIDstr,
 				To:   childStr,
 				MAC:  common.CreatePublicationMAC(pub, p.chainNodes[childStr].key, common.Algorithm),
 			}
@@ -111,7 +116,7 @@ func (p *Publisher) addMACs(pub *pb.Publication, fromStr string, nodeStr string,
 			pub.ChainMACs = append(pub.ChainMACs, &chainMAC)
 
 			// Recursively add child macs for next generation
-			p.addMACs(pub, fromStr, childStr, generations-1)
+			p.addMACs(pub, localIDstr, childStr, generations-1)
 		}
 	}
 }

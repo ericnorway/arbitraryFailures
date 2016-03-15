@@ -134,7 +134,7 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) bool {
 
 	thisNodeStr := "B" + strconv.FormatUint(b.localID, 10)
 
-	verified := b.verifyChainMACs(pub, thisNodeStr, thisNodeStr, b.chainRange, true)
+	verified := b.verifyChainMACs(pub, thisNodeStr, b.chainRange)
 	if !verified {
 		// fmt.Printf("Not verified\n")
 		return false
@@ -160,7 +160,7 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) bool {
 			Contents:      pub.Contents,
 		}
 
-		b.addMACs(tempPub, pub, thisNodeStr, childStr, b.chainRange)
+		b.addMACsRecursive(tempPub, pub, thisNodeStr, childStr, b.chainRange)
 
 		if strings.HasPrefix(childStr, "B") {
 			// Send the publication to that child.
@@ -193,27 +193,39 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) bool {
 // It returns true if the MACs in the chain are verified.
 // It takes as input the publication,
 // the local ID string (for matching to TO address),
-// the current node ID string in the tree,
-// the number of generations to check,
-// and whether or not to skip the current generation (this should be true when called initially
-// since the MAC between the local node and its parent is already checked and not in this list of MACs).
-func (b *Broker) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr string, generations int, passThisGeneration bool) bool {
+// the number of generations to check.
+func (b *Broker) verifyChainMACs(pub *pb.Publication, localIDstr string, generations int) bool {
 
 	// Nothing to check, no parents
-	if len(b.chainNodes[nodeStr].parents) == 0 {
+	if len(b.chainNodes[localIDstr].parents) == 0 {
 		return true
 	}
 
-	// Ignore the first generation. MAC is checked earlier.
-	if passThisGeneration == true {
-		for _, parentStr := range b.chainNodes[nodeStr].parents {
+	if generations > 0 {
+		for _, parentStr := range b.chainNodes[localIDstr].parents {
 			// Check the previous generation
-			verified := b.verifyChainMACs(pub, toStr, parentStr, generations-1, false)
+			verified := b.verifyChainMACsRecursive(pub, localIDstr, parentStr, generations-1)
 			if verified {
 				return true
 			}
 		}
-		return false
+	}
+
+	// Not all the MACs in the chain were verified.
+	return false
+}
+
+// verifyChainMACsRecursive verifies the MACs for the Chain algorithm.
+// It returns true if the MACs in the chain are verified.
+// It takes as input the publication,
+// the local ID string (for matching to TO address),
+// the current node ID string in the tree (should start with the local node),
+// the number of generations to check.
+func (b *Broker) verifyChainMACsRecursive(pub *pb.Publication, localIDstr string, nodeStr string, generations int) bool {
+
+	// Nothing to check, no parents
+	if len(b.chainNodes[nodeStr].parents) == 0 {
+		return true
 	}
 
 	// If still in the chain range
@@ -224,7 +236,7 @@ func (b *Broker) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr stri
 		// for a matching set of Tos and Froms
 		for _, parentStr := range b.chainNodes[nodeStr].parents {
 			for _, chainMAC := range pub.ChainMACs {
-				if chainMAC.To == toStr && chainMAC.From == parentStr {
+				if chainMAC.To == localIDstr && chainMAC.From == parentStr {
 					foundMatch = true
 
 					// Actually check the MAC here.
@@ -234,7 +246,7 @@ func (b *Broker) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr stri
 					}
 
 					// Go back one more generation
-					verified := b.verifyChainMACs(pub, toStr, parentStr, generations-1, false)
+					verified := b.verifyChainMACsRecursive(pub, localIDstr, parentStr, generations-1)
 					if verified {
 						return true
 					}
@@ -256,14 +268,14 @@ func (b *Broker) verifyChainMACs(pub *pb.Publication, toStr string, nodeStr stri
 	return false
 }
 
-// addMACs adds MACs to the chain of MACs. Some older MACs may need to be kept depending
+// addMACsRecursive adds MACs to the chain of MACs. Some older MACs may need to be kept depending
 // on the number of generations in the chain.
 // It takes as input the new publication,
 // the old publication,
 // the local ID string (for the FROM address),
-// the current node ID string in the tree,
+// the current node ID string in the tree (should start with the local node's children),
 // and the number of generations to add.
-func (b *Broker) addMACs(pub *pb.Publication, oldPub *pb.Publication, fromStr string, nodeStr string, generations int) {
+func (b *Broker) addMACsRecursive(pub *pb.Publication, oldPub *pb.Publication, localIDstr string, nodeStr string, generations int) {
 	// Add any old chain MACs that add going to the child node
 	for _, oldChainMAC := range oldPub.ChainMACs {
 		if oldChainMAC.To == nodeStr {
@@ -275,7 +287,7 @@ func (b *Broker) addMACs(pub *pb.Publication, oldPub *pb.Publication, fromStr st
 		// Add MACs for all the broker children
 		for _, childStr := range b.chainNodes[nodeStr].children {
 			chainMAC := pb.ChainMAC{
-				From: fromStr,
+				From: localIDstr,
 				To:   childStr,
 				MAC:  common.CreatePublicationMAC(pub, b.chainNodes[childStr].key, common.Algorithm),
 			}
@@ -283,7 +295,7 @@ func (b *Broker) addMACs(pub *pb.Publication, oldPub *pb.Publication, fromStr st
 			pub.ChainMACs = append(pub.ChainMACs, &chainMAC)
 
 			// Recursively add child macs for next generation
-			b.addMACs(pub, oldPub, fromStr, childStr, generations-1)
+			b.addMACsRecursive(pub, oldPub, localIDstr, childStr, generations-1)
 		}
 	}
 }
