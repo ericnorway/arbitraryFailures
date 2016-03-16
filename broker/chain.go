@@ -10,7 +10,6 @@ import (
 )
 
 type chainNode struct {
-	idStr    string
 	key      []byte
 	children []string
 	parents  []string
@@ -39,19 +38,15 @@ func (b *Broker) AddChainPath(chainPath map[string][]string, rChainPath map[stri
 		}
 
 		if nodeStr == localNodeStr {
-			tempNode.idStr = nodeStr
 			// This is the local broker. Don't need to add a key to itself.
 			tempNode.addChildren(childrenStr)
 		} else if strings.HasPrefix(nodeStr, "P") {
-			tempNode.idStr = nodeStr
 			tempNode.key = b.publishers[id].key
 			tempNode.addChildren(childrenStr)
 		} else if strings.HasPrefix(nodeStr, "B") {
-			tempNode.idStr = nodeStr
 			tempNode.key = b.remoteBrokers[id].key
 			tempNode.addChildren(childrenStr)
 		} else if strings.HasPrefix(nodeStr, "S") {
-			tempNode.idStr = nodeStr
 			tempNode.key = b.subscribers[id].key
 			// The subscribers don't have children.
 			// (visible to this collection of brokers that is).
@@ -78,21 +73,17 @@ func (b *Broker) AddChainPath(chainPath map[string][]string, rChainPath map[stri
 		}
 
 		if nodeStr == localNodeStr {
-			tempNode.idStr = nodeStr
 			// This is the local broker. Don't need to add a key to itself.
 			tempNode.addParents(parentsStr)
 		} else if strings.HasPrefix(nodeStr, "P") {
-			tempNode.idStr = nodeStr
 			tempNode.key = b.publishers[id].key
 			// The publishers don't have parents.
 			// (visible to this collection of brokers that is).
 			// Publisher might be another broker.
 		} else if strings.HasPrefix(nodeStr, "B") {
-			tempNode.idStr = nodeStr
 			tempNode.key = b.remoteBrokers[id].key
 			tempNode.addParents(parentsStr)
 		} else if strings.HasPrefix(nodeStr, "S") {
-			tempNode.idStr = nodeStr
 			tempNode.key = b.subscribers[id].key
 			tempNode.addParents(parentsStr)
 		}
@@ -221,7 +212,7 @@ func (b *Broker) verifyChainMACs(pub *pb.Publication, localIDstr string, generat
 // the local ID string (for matching to TO address),
 // the current node ID string in the tree (should start with the local node),
 // the number of generations to check.
-func (b *Broker) verifyChainMACsRecursive(pub *pb.Publication, localIDstr string, nodeStr string, generations int) bool {
+func (b *Broker) verifyChainMACsRecursive(pub *pb.Publication, localIDStr string, nodeStr string, generations int) bool {
 
 	// Nothing to check, no parents
 	if len(b.chainNodes[nodeStr].parents) == 0 {
@@ -236,7 +227,7 @@ func (b *Broker) verifyChainMACsRecursive(pub *pb.Publication, localIDstr string
 		// for a matching set of Tos and Froms
 		for _, parentStr := range b.chainNodes[nodeStr].parents {
 			for _, chainMAC := range pub.ChainMACs {
-				if chainMAC.To == localIDstr && chainMAC.From == parentStr {
+				if chainMAC.To == localIDStr && chainMAC.From == parentStr {
 					foundMatch = true
 
 					// Actually check the MAC here.
@@ -246,7 +237,7 @@ func (b *Broker) verifyChainMACsRecursive(pub *pb.Publication, localIDstr string
 					}
 
 					// Go back one more generation
-					verified := b.verifyChainMACsRecursive(pub, localIDstr, parentStr, generations-1)
+					verified := b.verifyChainMACsRecursive(pub, localIDStr, parentStr, generations-1)
 					if verified {
 						return true
 					}
@@ -275,7 +266,7 @@ func (b *Broker) verifyChainMACsRecursive(pub *pb.Publication, localIDstr string
 // the local ID string (for the FROM address),
 // the current node ID string in the tree (should start with the local node's children),
 // and the number of generations to add.
-func (b *Broker) addMACsRecursive(pub *pb.Publication, oldPub *pb.Publication, localIDstr string, nodeStr string, generations int) {
+func (b *Broker) addMACsRecursive(pub *pb.Publication, oldPub *pb.Publication, localIDStr string, nodeStr string, generations int) {
 	// Add any old chain MACs that add going to the child node
 	for _, oldChainMAC := range oldPub.ChainMACs {
 		if oldChainMAC.To == nodeStr {
@@ -287,7 +278,7 @@ func (b *Broker) addMACsRecursive(pub *pb.Publication, oldPub *pb.Publication, l
 		// Add MACs for all the broker children
 		for _, childStr := range b.chainNodes[nodeStr].children {
 			chainMAC := pb.ChainMAC{
-				From: localIDstr,
+				From: localIDStr,
 				To:   childStr,
 				MAC:  common.CreatePublicationMAC(pub, b.chainNodes[childStr].key, common.Algorithm),
 			}
@@ -295,7 +286,7 @@ func (b *Broker) addMACsRecursive(pub *pb.Publication, oldPub *pb.Publication, l
 			pub.ChainMACs = append(pub.ChainMACs, &chainMAC)
 
 			// Recursively add child macs for next generation
-			b.addMACsRecursive(pub, oldPub, localIDstr, childStr, generations-1)
+			b.addMACsRecursive(pub, oldPub, localIDStr, childStr, generations-1)
 		}
 	}
 }

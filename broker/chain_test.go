@@ -151,7 +151,7 @@ var handleChainPublishTests = []struct {
 	want        pb.Publication
 }{
 	{
-		broker:     NewBroker(1, "localhost", 0),
+		broker:     NewBroker(1, "localhost", 0, 0),
 		desc:       "Chain length 1, position B1",
 		thisNode:   "B1",
 		chainRange: 1,
@@ -204,7 +204,7 @@ var handleChainPublishTests = []struct {
 		},
 	},
 	{
-		broker:     NewBroker(2, "localhost", 0),
+		broker:     NewBroker(2, "localhost", 0, 0),
 		desc:       "Chain length 1, position B2",
 		thisNode:   "B2",
 		chainRange: 1,
@@ -257,7 +257,7 @@ var handleChainPublishTests = []struct {
 		},
 	},
 	{
-		broker:     NewBroker(1, "localhost", 0),
+		broker:     NewBroker(1, "localhost", 0, 0),
 		desc:       "Chain length 2, position B1",
 		thisNode:   "B1",
 		chainRange: 2,
@@ -337,7 +337,7 @@ var handleChainPublishTests = []struct {
 		},
 	},
 	{
-		broker:     NewBroker(2, "localhost", 0),
+		broker:     NewBroker(2, "localhost", 0, 0),
 		desc:       "Chain length 2, position B2",
 		thisNode:   "B2",
 		chainRange: 2,
@@ -422,7 +422,7 @@ var handleChainPublishTests = []struct {
 		},
 	},
 	{
-		broker:     NewBroker(1, "localhost", 0),
+		broker:     NewBroker(1, "localhost", 0, 0),
 		desc:       "Chain length 3, position B1",
 		thisNode:   "B1",
 		chainRange: 3,
@@ -512,7 +512,7 @@ var handleChainPublishTests = []struct {
 		},
 	},
 	{
-		broker:     NewBroker(2, "localhost", 0),
+		broker:     NewBroker(2, "localhost", 0, 0),
 		desc:       "Chain length 3, position B2",
 		thisNode:   "B2",
 		chainRange: 3,

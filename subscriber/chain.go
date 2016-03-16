@@ -10,7 +10,6 @@ import (
 )
 
 type chainNode struct {
-	idStr   string
 	key     []byte
 	parents []string
 }
@@ -33,13 +32,11 @@ func (s *Subscriber) AddChainPath(rChainPath map[string][]string) {
 		}
 
 		if nodeStr == localNodeStr {
-			tempNode.idStr = localNodeStr
 			// This is the publisher. Don't need to add a key to itself.
 			tempNode.addParents(parentsStr)
 		} else if strings.HasPrefix(nodeStr, "P") {
 			continue
 		} else if strings.HasPrefix(nodeStr, "B") {
-			tempNode.idStr = nodeStr
 			tempNode.key = s.brokers[id].key
 			tempNode.addParents(parentsStr)
 		} else if strings.HasPrefix(nodeStr, "S") {
@@ -95,17 +92,17 @@ func (s *Subscriber) handleChainPublication(pub *pb.Publication) bool {
 // It takes as input the publication,
 // the local ID string (for matching to TO address),
 // the number of generations to check.
-func (s *Subscriber) verifyChainMACs(pub *pb.Publication, localIDstr string, generations int) bool {
+func (s *Subscriber) verifyChainMACs(pub *pb.Publication, localIDStr string, generations int) bool {
 
 	// Nothing to check, no parents
-	if len(s.chainNodes[localIDstr].parents) == 0 {
+	if len(s.chainNodes[localIDStr].parents) == 0 {
 		return true
 	}
 
 	if generations > 0 {
-		for _, parentStr := range s.chainNodes[localIDstr].parents {
+		for _, parentStr := range s.chainNodes[localIDStr].parents {
 			// Check the previous generation
-			verified := s.verifyChainMACsRecursive(pub, localIDstr, parentStr, generations-1)
+			verified := s.verifyChainMACsRecursive(pub, localIDStr, parentStr, generations-1)
 			if verified {
 				return true
 			}
@@ -122,7 +119,7 @@ func (s *Subscriber) verifyChainMACs(pub *pb.Publication, localIDstr string, gen
 // the local ID string (for matching to TO address),
 // the current node ID string in the tree (should start with the local node),
 // the number of generations to check.
-func (s *Subscriber) verifyChainMACsRecursive(pub *pb.Publication, localIDstr string, nodeStr string, generations int) bool {
+func (s *Subscriber) verifyChainMACsRecursive(pub *pb.Publication, localIDStr string, nodeStr string, generations int) bool {
 
 	// Nothing to check, no parents
 	if len(s.chainNodes[nodeStr].parents) == 0 {
@@ -137,7 +134,7 @@ func (s *Subscriber) verifyChainMACsRecursive(pub *pb.Publication, localIDstr st
 		// for a matching set of Tos and Froms
 		for _, parentStr := range s.chainNodes[nodeStr].parents {
 			for _, chainMAC := range pub.ChainMACs {
-				if chainMAC.To == localIDstr && chainMAC.From == parentStr {
+				if chainMAC.To == localIDStr && chainMAC.From == parentStr {
 					foundMatch = true
 
 					// Actually check the MAC here.
@@ -147,7 +144,7 @@ func (s *Subscriber) verifyChainMACsRecursive(pub *pb.Publication, localIDstr st
 					}
 
 					// Go back one more generation
-					verified := s.verifyChainMACsRecursive(pub, localIDstr, parentStr, generations-1)
+					verified := s.verifyChainMACsRecursive(pub, localIDStr, parentStr, generations-1)
 					if verified {
 						return true
 					}

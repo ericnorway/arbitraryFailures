@@ -10,7 +10,6 @@ import (
 )
 
 type chainNode struct {
-	idStr    string
 	key      []byte
 	children []string
 }
@@ -33,13 +32,11 @@ func (p *Publisher) AddChainPath(chainPath map[string][]string) {
 		}
 
 		if nodeStr == localNodeStr {
-			tempNode.idStr = nodeStr
 			// This is the publisher. Don't need to add a key to itself.
 			tempNode.addChildren(childrenStr)
 		} else if strings.HasPrefix(nodeStr, "P") {
 			continue
 		} else if strings.HasPrefix(nodeStr, "B") {
-			tempNode.idStr = nodeStr
 			tempNode.key = p.brokers[id].key
 			tempNode.addChildren(childrenStr)
 		} else if strings.HasPrefix(nodeStr, "S") {
@@ -103,12 +100,12 @@ func (p *Publisher) handleChainPublish(pub *pb.Publication) {
 // the local ID string (for the FROM address),
 // the current node ID string in the tree (should start with the local node's children),
 // and the number of generations to add.
-func (p *Publisher) addMACs(pub *pb.Publication, localIDstr string, nodeStr string, generations int) {
+func (p *Publisher) addMACs(pub *pb.Publication, localIDStr string, nodeStr string, generations int) {
 	if generations > 1 {
 		// Add MACs for all the children
 		for _, childStr := range p.chainNodes[nodeStr].children {
 			chainMAC := pb.ChainMAC{
-				From: localIDstr,
+				From: localIDStr,
 				To:   childStr,
 				MAC:  common.CreatePublicationMAC(pub, p.chainNodes[childStr].key, common.Algorithm),
 			}
@@ -116,7 +113,7 @@ func (p *Publisher) addMACs(pub *pb.Publication, localIDstr string, nodeStr stri
 			pub.ChainMACs = append(pub.ChainMACs, &chainMAC)
 
 			// Recursively add child macs for next generation
-			p.addMACs(pub, localIDstr, childStr, generations-1)
+			p.addMACs(pub, localIDStr, childStr, generations-1)
 		}
 	}
 }
