@@ -19,7 +19,6 @@ type chainNode struct {
 // It takes as input a map of slices of parent nodes (first index is the node
 // and the slice is a list of parents of that node).
 func (s *Subscriber) AddChainPath(rChainPath map[string][]string) {
-	localNodeStr := "S" + strconv.FormatUint(s.localID, 10)
 
 	// Build the nodes
 	for nodeStr, parentsStr := range rChainPath {
@@ -31,7 +30,7 @@ func (s *Subscriber) AddChainPath(rChainPath map[string][]string) {
 			continue
 		}
 
-		if nodeStr == localNodeStr {
+		if nodeStr == s.localStr {
 			// This is the publisher. Don't need to add a key to itself.
 			tempNode.addParents(parentsStr)
 		} else if strings.HasPrefix(nodeStr, "P") {
@@ -61,10 +60,9 @@ func (n *chainNode) addParents(parents []string) {
 // handleChainPublication processes an Authenticated Broadcast publication.
 // It takes as input a publication.
 func (s *Subscriber) handleChainPublication(pub *pb.Publication) bool {
-	thisNodeStr := "S" + strconv.FormatUint(s.localID, 10)
 
 	// Verify MACs
-	verified := s.verifyChainMACs(pub, thisNodeStr, s.chainRange)
+	verified := s.verifyChainMACs(pub, s.chainRange)
 	if !verified {
 		// fmt.Printf("Not verified\n")
 		return false
@@ -89,20 +87,18 @@ func (s *Subscriber) handleChainPublication(pub *pb.Publication) bool {
 
 // verifyChainMACs verifies the MACs for the Chain algorithm.
 // It returns true if the MACs in the chain are verified.
-// It takes as input the publication,
-// the local ID string (for matching to TO address),
-// the number of generations to check.
-func (s *Subscriber) verifyChainMACs(pub *pb.Publication, localIDStr string, generations int) bool {
+// It takes as input the publication, and the number of generations to check.
+func (s *Subscriber) verifyChainMACs(pub *pb.Publication, generations int) bool {
 
 	// Nothing to check, no parents
-	if len(s.chainNodes[localIDStr].parents) == 0 {
+	if len(s.chainNodes[s.localStr].parents) == 0 {
 		return true
 	}
 
 	if generations > 0 {
-		for _, parentStr := range s.chainNodes[localIDStr].parents {
+		for _, parentStr := range s.chainNodes[s.localStr].parents {
 			// Check the previous generation
-			verified := s.verifyChainMACsRecursive(pub, localIDStr, parentStr, generations-1)
+			verified := s.verifyChainMACsRecursive(pub, parentStr, generations-1)
 			if verified {
 				return true
 			}
@@ -116,13 +112,12 @@ func (s *Subscriber) verifyChainMACs(pub *pb.Publication, localIDStr string, gen
 // verifyChainMACsRecursive verifies the MACs for the Chain algorithm.
 // It returns true if the MACs in the chain are verified.
 // It takes as input the publication,
-// the local ID string (for matching to TO address),
 // the current node ID string in the tree (should start with the local node),
-// the number of generations to check.
-func (s *Subscriber) verifyChainMACsRecursive(pub *pb.Publication, localIDStr string, nodeStr string, generations int) bool {
+// and the number of generations to check.
+func (s *Subscriber) verifyChainMACsRecursive(pub *pb.Publication, currentStr string, generations int) bool {
 
 	// Nothing to check, no parents
-	if len(s.chainNodes[nodeStr].parents) == 0 {
+	if len(s.chainNodes[currentStr].parents) == 0 {
 		return true
 	}
 
@@ -132,9 +127,9 @@ func (s *Subscriber) verifyChainMACsRecursive(pub *pb.Publication, localIDStr st
 
 		// Look through this node's parents and in the list of Chain MACs
 		// for a matching set of Tos and Froms
-		for _, parentStr := range s.chainNodes[nodeStr].parents {
+		for _, parentStr := range s.chainNodes[currentStr].parents {
 			for _, chainMAC := range pub.ChainMACs {
-				if chainMAC.To == localIDStr && chainMAC.From == parentStr {
+				if chainMAC.To == s.localStr && chainMAC.From == parentStr {
 					foundMatch = true
 
 					// Actually check the MAC here.
@@ -144,7 +139,7 @@ func (s *Subscriber) verifyChainMACsRecursive(pub *pb.Publication, localIDStr st
 					}
 
 					// Go back one more generation
-					verified := s.verifyChainMACsRecursive(pub, localIDStr, parentStr, generations-1)
+					verified := s.verifyChainMACsRecursive(pub, parentStr, generations-1)
 					if verified {
 						return true
 					}

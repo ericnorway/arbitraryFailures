@@ -5,6 +5,7 @@ import (
 	"io"
 	"math/rand"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -20,6 +21,7 @@ import (
 // with read and write loops.
 type Broker struct {
 	localID   uint64
+	localStr  string
 	localAddr string
 
 	chainRange        int
@@ -100,6 +102,7 @@ func NewBroker(localID uint64, localAddr string, alpha uint64, malevolentPercent
 
 	return &Broker{
 		localID:                 localID,
+		localStr:                "B" + strconv.FormatUint(localID, 10),
 		localAddr:               localAddr,
 		chainRange:              common.ChainRange,
 		alpha:                   alpha,

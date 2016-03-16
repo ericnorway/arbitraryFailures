@@ -2,6 +2,7 @@ package publisher
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 // Publisher is a struct containing a map of channels.
 type Publisher struct {
 	localID      uint64
+	localStr     string
 	currentPubID int64
 	chainRange   int
 
@@ -46,6 +48,7 @@ type HistoryRequestInfo struct {
 func NewPublisher(localID uint64) *Publisher {
 	return &Publisher{
 		localID:           localID,
+		localStr:          "P" + strconv.FormatUint(localID, 10),
 		currentPubID:      0,
 		chainRange:        common.ChainRange,
 		brokers:           make(map[uint64]brokerInfo),

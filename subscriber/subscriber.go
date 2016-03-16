@@ -3,6 +3,7 @@ package subscriber
 import (
 	"fmt"
 	"io"
+	"strconv"
 	"sync"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 // and a map of topics.
 type Subscriber struct {
 	localID    uint64
+	localStr   string
 	chainRange int
 
 	brokersMutex      sync.RWMutex
@@ -52,6 +54,7 @@ type Subscriber struct {
 func NewSubscriber(localID uint64) *Subscriber {
 	return &Subscriber{
 		localID:           localID,
+		localStr:          "S" + strconv.FormatUint(localID, 10),
 		chainRange:        common.ChainRange,
 		brokers:           make(map[uint64]brokerInfo),
 		brokerConnections: 0,
