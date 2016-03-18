@@ -24,14 +24,14 @@ type Broker struct {
 	localStr  string
 	localAddr string
 
-	chainRange        int
-	alpha             uint64
-	numberOfServers   uint64
-	echoQuorumSize    uint64
-	readyQuorumSize   uint64
-	faultsTolerated   uint64
-	malevolentPercent int
-	random            *rand.Rand
+	chainRange       int
+	alpha            uint64
+	numberOfServers  uint64
+	echoQuorumSize   uint64
+	readyQuorumSize  uint64
+	faultsTolerated  uint64
+	maliciousPercent int
+	random           *rand.Rand
 
 	// PUBLISHER VARIABLES
 	publishersMutex sync.RWMutex
@@ -97,8 +97,8 @@ type Broker struct {
 
 // NewBroker returns a new Broker.
 // It takes as input the local broker ID, the local address and port,
-// and the alpha value.
-func NewBroker(localID uint64, localAddr string, alpha uint64, malevolentPercent int) *Broker {
+// the alpha value, and the percent of malicious messages to send.
+func NewBroker(localID uint64, localAddr string, alpha uint64, maliciousPercent int) *Broker {
 
 	return &Broker{
 		localID:                 localID,
@@ -110,7 +110,7 @@ func NewBroker(localID uint64, localAddr string, alpha uint64, malevolentPercent
 		echoQuorumSize:          3, // default
 		readyQuorumSize:         2, // default
 		faultsTolerated:         1, // default
-		malevolentPercent:       malevolentPercent,
+		maliciousPercent:        maliciousPercent,
 		random:                  rand.New(rand.NewSource(time.Now().Unix())),
 		publishers:              make(map[uint64]publisherInfo),
 		fromPublisherCh:         make(chan pb.Publication, 32),
@@ -198,7 +198,7 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string) {
 	for {
 		select {
 		case pub := <-toEchoCh:
-			if b.malevolentPercent > 0 {
+			if b.maliciousPercent > 0 {
 				altered := b.alterPublication(&pub)
 				if altered {
 					fmt.Printf("Altered pub: %v\n", &pub)
@@ -210,7 +210,7 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string) {
 			if err != nil {
 			}
 		case pub := <-toReadyCh:
-			if b.malevolentPercent > 0 {
+			if b.maliciousPercent > 0 {
 				altered := b.alterPublication(&pub)
 				if altered {
 					fmt.Printf("Altered pub: %v\n", &pub)
@@ -222,7 +222,7 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string) {
 			if err != nil {
 			}
 		case pub := <-toChainCh:
-			if b.malevolentPercent > 0 {
+			if b.maliciousPercent > 0 {
 				altered := b.alterPublication(&pub)
 				if altered {
 					fmt.Printf("Altered pub: %v\n", &pub)
@@ -355,7 +355,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 		for {
 			select {
 			case pub := <-ch:
-				if b.malevolentPercent > 0 {
+				if b.maliciousPercent > 0 {
 					altered := b.alterPublication(&pub)
 					if altered {
 						fmt.Printf("Altered pub: %v\n", &pub)
@@ -427,13 +427,13 @@ func (b Broker) handleSubscribe(req *pb.SubRequest) {
 	b.changeTopics(req)
 }
 
-// alterPublication will malevolently alter a publications information.
+// alterPublication will maliciously alter a publications information.
 // It returns true if the publication was altered.
 // It takes as input the publication.
 func (b *Broker) alterPublication(pub *pb.Publication) bool {
 	r := b.random.Intn(101)
 
-	if r <= b.malevolentPercent {
+	if r <= b.maliciousPercent {
 		alterType := r % 5
 		switch alterType {
 		case 0:

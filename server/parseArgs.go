@@ -21,7 +21,7 @@ var (
 		0,
 		"The number of AB or Chain pubs to accept before requesting a BRB pub (with history).",
 	)
-	malevolentPercent = flag.Int(
+	maliciousPercent = flag.Int(
 		"mal",
 		0,
 		"The percentage of malicious publications to send.",

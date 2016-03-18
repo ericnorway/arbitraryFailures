@@ -22,7 +22,7 @@ func main() {
 	}
 
 	// Create new broker
-	b := broker.NewBroker(localID, brokerAddresses[localID], uint64(*alpha), *malevolentPercent)
+	b := broker.NewBroker(localID, brokerAddresses[localID], uint64(*alpha), *maliciousPercent)
 
 	// Add publisher information
 	for i, key := range publisherKeys {
