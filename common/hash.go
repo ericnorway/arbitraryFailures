@@ -54,22 +54,21 @@ func CreatePublicationMAC(pub *pb.Publication, key []byte, algorithm crypto.Hash
 
 	message := ConvertPublicationToBytes(pub)
 
-	switch {
-	case algorithm == crypto.MD5:
+	switch algorithm {
+	case crypto.MD5:
 		mac = hmac.New(md5.New, key)
-	case algorithm == crypto.SHA1:
+	case crypto.SHA1:
 		mac = hmac.New(sha1.New, key)
-	case algorithm == crypto.SHA256:
+	case crypto.SHA256:
 		mac = hmac.New(sha256.New, key)
-	case algorithm == crypto.SHA512:
+	case crypto.SHA512:
 		mac = hmac.New(sha512.New, key)
 	default:
 		mac = hmac.New(md5.New, key)
 	}
 	mac.Write(message)
-	sum := mac.Sum(nil)
 
-	return sum
+	return mac.Sum(nil)
 }
 
 // CheckPublicationMAC checks whether or not a MAC is valid for a publication and key.
