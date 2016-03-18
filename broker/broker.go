@@ -247,30 +247,39 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 		return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: false}, nil
 	}
 
-	// If using alpha values
+	// If using alpha values (indicating a combination of algorithms)
 	if b.alpha > 0 {
-		// Don't allow more than 2 * alpha publications for a topic and publisher without a history request
-		if b.checkDoubleAlphaCounter(pub.PublisherID, pub.TopicID) && pub.PubType != common.BRB {
-			return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: true}, nil
+		if b.alphaCounters[pub.PublisherID] == nil {
+			b.alphaCounters[pub.PublisherID] = make(map[uint64]uint64)
 		}
-	}
 
-	select {
-	case b.fromPublisherCh <- *pub:
-	}
-
-	requestHistory := false
-
-	// If using alpha values
-	if b.alpha > 0 {
 		if pub.PubType == common.BRB {
-			b.resetAlphaCounter(pub.PublisherID, pub.TopicID)
+			select {
+			case b.fromPublisherCh <- *pub:
+			}
+			b.alphaCounters[pub.PublisherID][pub.TopicID] = 0
 		} else {
-			requestHistory = b.incrementAlphaCounter(pub.PublisherID, pub.TopicID)
+			// Don't allow more than 2 * alpha publications for a topic and publisher without a history request
+			if b.alphaCounters[pub.PublisherID][pub.TopicID] >= 2*b.alpha {
+				return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: true}, nil
+			}
+
+			select {
+			case b.fromPublisherCh <- *pub:
+			}
+
+			b.alphaCounters[pub.PublisherID][pub.TopicID]++
+			if b.alphaCounters[pub.PublisherID][pub.TopicID] == b.alpha {
+				return &pb.PubResponse{Accepted: true, RequestHistory: true, Blocked: false}, nil
+			}
+		}
+	} else {
+		select {
+		case b.fromPublisherCh <- *pub:
 		}
 	}
 
-	return &pb.PubResponse{Accepted: true, RequestHistory: requestHistory, Blocked: false}, nil
+	return &pb.PubResponse{Accepted: true, RequestHistory: false, Blocked: false}, nil
 }
 
 // Echo handles incoming BRB echo requests from other brokers
