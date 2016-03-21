@@ -434,23 +434,26 @@ func (b *Broker) alterPublication(pub *pb.Publication) bool {
 	r := b.random.Intn(101)
 
 	if r <= b.maliciousPercent {
-		alterType := r % 5
+		var alterType int
+
+		if len(pub.ChainMACs) > 0 {
+			alterType = r % 6
+		} else {
+			alterType = r % 5
+		}
 		switch alterType {
 		case 0:
 			pub.PublicationID = pub.PublicationID + 1
-			fmt.Printf("Updated Publication ID\n")
 		case 1:
 			pub.PublisherID = pub.PublisherID + 1
-			fmt.Printf("Updated Publisher ID\n")
 		case 2:
 			pub.TopicID = pub.TopicID + 1
-			fmt.Printf("Updated Topic ID\n")
 		case 3:
 			pub.BrokerID = pub.BrokerID + 1
-			fmt.Printf("Updated Broker ID\n")
 		case 4:
 			pub.Contents[0] = []byte("Bad message")
-			fmt.Printf("Updated Content\n")
+		case 5:
+			pub.ChainMACs = nil
 		}
 
 		return true
