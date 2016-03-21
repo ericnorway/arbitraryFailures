@@ -80,7 +80,11 @@ func (s *Subscriber) handleChainPublication(pub *pb.Publication) bool {
 	}
 
 	s.pubsLearned[pub.PublisherID][pub.PublicationID] = common.GetInfo(pub)
+
+
+
 	//fmt.Printf("Learned publication %v from publisher %v.\n", pub.PublicationID, pub.PublisherID)
+
 
 	return true
 }
