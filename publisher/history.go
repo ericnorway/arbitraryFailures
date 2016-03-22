@@ -35,9 +35,9 @@ func (p *Publisher) historyHandler() {
 			}
 
 			// If a history Publication was recently sent, ignore this request.
-			if pubsSinceLastHistory[info.TopicID] < 2 {
-				continue
-			}
+			//if pubsSinceLastHistory[info.TopicID] < 2 {
+			//	continue
+			//}
 
 			historyRequests[info.TopicID][info.BrokerID] = true
 
