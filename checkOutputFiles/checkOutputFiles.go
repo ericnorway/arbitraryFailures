@@ -264,11 +264,11 @@ func (r *Results) calculateAverages() {
 	// (1 - f) * x[k - 1] + f * x[k]
 	ninetyninth = int64((1-f)*float64(r.durations[k-1]) + f*float64(r.durations[k]))
 
-	fmt.Printf("Count:  %v\n", len(r.durations))
-	fmt.Printf("Mean:   %v ns\n", mean)
-	fmt.Printf("Min:    %v ns\n", r.durations[0])
-	fmt.Printf("Max:    %v ns\n", r.durations[length-1])
-	fmt.Printf("Median: %v ns\n", r.durations[length/2])
-	fmt.Printf("SD:     %v ns\n", sd)
-	fmt.Printf("99th:   %v ns\n", ninetyninth)
+	fmt.Printf("Count\t%v\n", len(r.durations))
+	fmt.Printf("Mean\t%v\tns\n", mean)
+	fmt.Printf("Min\t%v\tns\n", r.durations[0])
+	fmt.Printf("Max\t%v\tns\n", r.durations[length-1])
+	fmt.Printf("Median\t%v\tns\n", r.durations[length/2])
+	fmt.Printf("SD\t%v\tns\n", sd)
+	fmt.Printf("99th\t%v\tns\n", ninetyninth)
 }
