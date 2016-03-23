@@ -1,7 +1,7 @@
 package broker
 
 import (
-	// "fmt"
+	"fmt"
 
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
