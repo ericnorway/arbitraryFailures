@@ -1,7 +1,7 @@
 package broker
 
 import (
-	"fmt"
+	// "fmt"
 
 	pb "github.com/ericnorway/arbitraryFailures/proto"
 )
@@ -26,7 +26,6 @@ func (b Broker) handleAbPublish(pub *pb.Publication) {
 		for i, subscriber := range b.subscribers {
 			// Only if they are interested in the topic
 			if subscriber.toCh != nil && b.subscribers[i].topics[pub.TopicID] == true {
-				fmt.Printf("Publisher: %v\nPublication: %v\nTopic: %v\nSubscriber: %v\n", pub.PublisherID, pub.PublicationID, pub.TopicID, i)
 				select {
 				case subscriber.toCh <- *pub:
 				}
