@@ -465,7 +465,9 @@ func (b *Broker) alterPublication(pub *pb.Publication) bool {
 		case 3:
 			pub.BrokerID = pub.BrokerID + 1
 		case 4:
-			pub.Contents[0] = []byte("Bad message")
+			if len(pub.Contents) > 0 {
+				pub.Contents[0] = []byte("Bad message")
+			}
 		case 5:
 			pub.ChainMACs = nil
 		}
