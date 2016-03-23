@@ -76,7 +76,7 @@ func (s *SubscriberInstance) mainSub() {
 	for {
 		select {
 		case pub := <-s.subscriber.ToUserPubCh:
-			// Record the time sent
+			// Record the time received
 			s.recordTimesCh <- common.RecordTime{
 				PublisherID:   pub.PublisherID,
 				PublicationID: pub.PublicationID,

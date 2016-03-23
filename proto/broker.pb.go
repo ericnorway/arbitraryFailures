@@ -99,6 +99,7 @@ func (*ChainResponse) ProtoMessage()    {}
 type SubRequest struct {
 	SubscriberID uint64   `protobuf:"varint,1,opt,name=SubscriberID" json:"SubscriberID,omitempty"`
 	TopicIDs     []uint64 `protobuf:"varint,2,rep,name=TopicIDs" json:"TopicIDs,omitempty"`
+	MAC          []byte   `protobuf:"bytes,3,opt,name=MAC,proto3" json:"MAC,omitempty"`
 }
 
 func (m *SubRequest) Reset()         { *m = SubRequest{} }

@@ -75,10 +75,59 @@ func CreatePublicationMAC(pub *pb.Publication, key []byte, algorithm crypto.Hash
 // It returns true if it is valid, false otherwise. It takes as input the publication, the MAC,
 // the key, and the type of hash algorithm to use.
 func CheckPublicationMAC(pub *pb.Publication, mac []byte, key []byte, algorithm crypto.Hash) bool {
-
 	mac2 := CreatePublicationMAC(pub, key, algorithm)
-	// fmt.Printf("%v\n", mac)
-	// fmt.Printf("%v\n", mac2)
+	return hmac.Equal(mac, mac2)
+}
 
+// ConvertSubscriptionToBytes converts a subscription request into a byte slice.
+// It returns a byte slice. It takes as input the subscription request.
+func ConvertSubscriptionToBytes(sub *pb.SubRequest) []byte {
+	var buf bytes.Buffer
+	subscriberID := make([]byte, 8)
+	topicID := make([]byte, 8)
+
+	binary.PutUvarint(subscriberID, sub.SubscriberID)
+
+	// Write subscription information to buffer
+	buf.Write(subscriberID)
+	for _, topic := range sub.TopicIDs {
+		binary.PutUvarint(topicID, topic)
+		buf.Write(topicID)
+	}
+
+	return buf.Bytes()
+}
+
+// CreateSubscriptionMAC creates a MAC from a subscription request and key.
+// It returns a byte slice of the MAC. It takes as input the subscription request,
+// the key, and the type of hash algorithm to use.
+func CreateSubscriptionMAC(sub *pb.SubRequest, key []byte, algorithm crypto.Hash) []byte {
+
+	var mac hash.Hash
+
+	message := ConvertSubscriptionToBytes(sub)
+
+	switch algorithm {
+	case crypto.MD5:
+		mac = hmac.New(md5.New, key)
+	case crypto.SHA1:
+		mac = hmac.New(sha1.New, key)
+	case crypto.SHA256:
+		mac = hmac.New(sha256.New, key)
+	case crypto.SHA512:
+		mac = hmac.New(sha512.New, key)
+	default:
+		mac = hmac.New(md5.New, key)
+	}
+	mac.Write(message)
+
+	return mac.Sum(nil)
+}
+
+// CheckSubscriptionMAC checks whether or not a MAC is valid for a subscription request and key.
+// It returns true if it is valid, false otherwise. It takes as input the subscription, the MAC,
+// the key, and the type of hash algorithm to use.
+func CheckSubscriptionMAC(sub *pb.SubRequest, mac []byte, key []byte, algorithm crypto.Hash) bool {
+	mac2 := CreateSubscriptionMAC(sub, key, algorithm)
 	return hmac.Equal(mac, mac2)
 }

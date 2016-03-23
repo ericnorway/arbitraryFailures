@@ -344,6 +344,14 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 		return err
 	}
 
+	subscriber, exists := b.subscribers[req.SubscriberID]
+
+	// Check MAC
+	if !exists || common.CheckSubscriptionMAC(req, req.MAC, subscriber.key, common.Algorithm) == false {
+		//fmt.Printf("***BAD MAC: Subscribe*** %v\n", *req)
+		return fmt.Errorf("***BAD MAC: Subscribe*** %v\n", *req)
+	}
+
 	id := req.SubscriberID
 	ch := b.addToSubChannel(id)
 
@@ -383,6 +391,12 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 		} else if err != nil {
 			b.removeToSubChannel(id)
 			return err
+		}
+
+		// Check MAC
+		if common.CheckSubscriptionMAC(req, req.MAC, subscriber.key, common.Algorithm) == false {
+			//fmt.Printf("***BAD MAC: Subscribe*** %v\n", *req)
+			continue
 		}
 
 		select {

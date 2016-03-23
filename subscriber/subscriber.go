@@ -110,7 +110,8 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 		for {
 			select {
 			case subReq := <-ch:
-				// TODO: Add MAC
+				mac := common.CreateSubscriptionMAC(&subReq, broker.key, common.Algorithm)
+				subReq.MAC = mac
 
 				err = stream.Send(&subReq)
 				if err != nil {
@@ -126,13 +127,6 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 			pub, err := stream.Recv()
 			// fmt.Printf("Received publication %v from publisher %v and broker %v.\n", pub.PublicationID, pub.PublisherID, pub.BrokerID)
 
-			tempBroker, exists := s.brokers[pub.BrokerID]
-
-			if !exists || common.CheckPublicationMAC(pub, pub.MAC, tempBroker.key, common.Algorithm) == false {
-				//fmt.Printf("***BAD MAC: Chain*** %v\n", *pub)
-				continue
-			}
-
 			if err == io.EOF {
 				s.removeChannel(broker.id)
 				break
@@ -142,18 +136,28 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 				break
 			}
 
+			tempBroker, exists := s.brokers[pub.BrokerID]
+
+			if !exists || common.CheckPublicationMAC(pub, pub.MAC, tempBroker.key, common.Algorithm) == false {
+				//fmt.Printf("***BAD MAC: Chain*** %v\n", *pub)
+				continue
+			}
+
 			select {
 			case s.fromBrokerCh <- *pub:
 			}
 		}
 	}()
 
-	select {
 	// Send the initial subscribe request.
-	case ch <- pb.SubRequest{
+	subReq := pb.SubRequest{
 		SubscriberID: s.localID,
 		TopicIDs:     topics,
-	}:
+	}
+	mac := common.CreateSubscriptionMAC(&subReq, broker.key, common.Algorithm)
+	subReq.MAC = mac
+	select {
+	case ch <- subReq:
 	}
 
 	return true

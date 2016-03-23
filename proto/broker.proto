@@ -48,4 +48,5 @@ message ChainResponse{}
 message SubRequest {
 	uint64 SubscriberID = 1;
 	repeated uint64 TopicIDs = 2;
+	bytes MAC = 3;
 }
