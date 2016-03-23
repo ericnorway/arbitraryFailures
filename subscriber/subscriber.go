@@ -144,6 +144,7 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 
 			select {
 			case s.fromBrokerCh <- *pub:
+				fmt.Printf("Publisher: %v\nPublication: %v\nTopic: %v\nBroker: %v\n", pub.PublisherID, pub.PublicationID, pub.TopicID, pub.BrokerID)
 			}
 		}
 	}()
