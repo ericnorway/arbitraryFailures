@@ -29,6 +29,10 @@ func ReadConfigFile(fileName string) error {
 		return err
 	}
 
+	idFound := false
+	bKeysFound := false
+	bAddrFound := false
+
 	chain = make(map[string][]string)
 	rChain = make(map[string][]string)
 
@@ -47,18 +51,21 @@ func ReadConfigFile(fileName string) error {
 				if err != nil {
 					return err
 				}
+				idFound = true
 			} else {
 				return fmt.Errorf("Error parsing the config file entry for %s.\n", lineContents[0])
 			}
 		case lineContents[0] == tagBrokerKeys:
 			if len(lineContents) == 2 {
 				brokerKeys = strings.Split(lineContents[1], ",")
+				bKeysFound = true
 			} else {
 				return fmt.Errorf("Error parsing the config file entry for %s.\n", lineContents[0])
 			}
 		case lineContents[0] == tagBrokerAddrs:
 			if len(lineContents) == 2 {
 				brokerAddresses = strings.Split(lineContents[1], ",")
+				bAddrFound = true
 			} else {
 				return fmt.Errorf("Error parsing the config file entry for %s.\n", lineContents[0])
 			}
@@ -117,6 +124,17 @@ func ReadConfigFile(fileName string) error {
 			}
 		default:
 		}
+	}
+
+	// Check that the required fields are found.
+	if idFound == false {
+		return fmt.Errorf("Please add %v=<id> to the config file.", tagID)
+	}
+	if bKeysFound == false {
+		return fmt.Errorf("Please add %v=<key1>,<key2>,... to the config file.", tagBrokerKeys)
+	}
+	if bAddrFound == false {
+		return fmt.Errorf("Please add %v=<addr1>,<addr2>,... to the config file.", tagBrokerAddrs)
 	}
 
 	if len(brokerAddresses) != len(brokerKeys) {
