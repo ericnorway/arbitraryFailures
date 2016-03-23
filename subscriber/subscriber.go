@@ -129,7 +129,7 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 			tempBroker, exists := s.brokers[pub.BrokerID]
 
 			if !exists || common.CheckPublicationMAC(pub, pub.MAC, tempBroker.key, common.Algorithm) == false {
-				fmt.Printf("***BAD MAC: Chain*** %v\n", *pub)
+				//fmt.Printf("***BAD MAC: Chain*** %v\n", *pub)
 				continue
 			}
 
@@ -144,7 +144,6 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 
 			select {
 			case s.fromBrokerCh <- *pub:
-				fmt.Printf("Publisher: %v\nPublication: %v\nTopic: %v\nBroker: %v\n", pub.PublisherID, pub.PublicationID, pub.TopicID, pub.BrokerID)
 			}
 		}
 	}()
