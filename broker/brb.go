@@ -106,6 +106,14 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 			// Mark this publication as readied
 			b.readiesSent[pub.PublisherID][pub.PublicationID] = true
 			// fmt.Printf("handleEcho: Sent readies for publication %v by publisher %v.\n", pub.PublicationID, pub.PublisherID)
+
+			// For performance testing, get the time of the last step for this broker
+			select {
+			case b.ToUserRecordCh <- true:
+			default:
+				// Use the default case just in case the user isn't reading from this channel
+				// and the channel fills up.
+			}
 		}
 	}
 }
@@ -135,7 +143,7 @@ func (b Broker) handleReady(pub *pb.Publication) {
 			b.readiesSent[pub.PublisherID] = make(map[int64]bool)
 		}
 
-		// If this publication has not been echoed yet
+		// If this publication has not been readied yet
 		if foundQuorum && b.readiesSent[pub.PublisherID][pub.PublicationID] == false {
 
 			// Update broker ID
@@ -174,6 +182,14 @@ func (b Broker) handleReady(pub *pb.Publication) {
 			// Mark this publication as readied
 			b.readiesSent[pub.PublisherID][pub.PublicationID] = true
 			// fmt.Printf("handleReady: Sent readies for publication %v by publisher %v.\n", pub.PublicationID, pub.PublisherID)
+
+			// For performance testing, get the time of the last step for this broker
+			select {
+			case b.ToUserRecordCh <- true:
+			default:
+				// Use the default case just in case the user isn't reading from this channel
+				// and the channel fills up.
+			}
 		}
 	}
 }

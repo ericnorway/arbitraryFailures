@@ -33,6 +33,9 @@ type Broker struct {
 	maliciousPercent int
 	random           *rand.Rand
 
+	// For recording when the broker has finished publishing a publication
+	ToUserRecordCh chan bool
+
 	// PUBLISHER VARIABLES
 	publishersMutex sync.RWMutex
 	publishers      map[uint64]publisherInfo
@@ -112,6 +115,7 @@ func NewBroker(localID uint64, localAddr string, alpha uint64, maliciousPercent 
 		faultsTolerated:         1, // default
 		maliciousPercent:        maliciousPercent,
 		random:                  rand.New(rand.NewSource(time.Now().Unix())),
+		ToUserRecordCh:          make(chan bool, 8),
 		publishers:              make(map[uint64]publisherInfo),
 		fromPublisherCh:         make(chan pb.Publication, 32),
 		remoteBrokers:           make(map[uint64]brokerInfo),

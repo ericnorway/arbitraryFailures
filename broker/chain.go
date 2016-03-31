@@ -174,6 +174,14 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) bool {
 	// Mark this publication as sent
 	b.chainSent[pub.PublisherID][pub.PublicationID] = true
 
+	// For performance testing, get the time of the last step for this broker
+	select {
+	case b.ToUserRecordCh <- true:
+	default:
+		// Use the default case just in case the user isn't reading from this channel
+		// and the channel fills up.
+	}
+
 	return true
 }
 

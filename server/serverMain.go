@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+	"time"
 
 	//"github.com/ericnorway/arbitraryFailures/common"
 	//pb "github.com/ericnorway/arbitraryFailures/proto"
@@ -46,7 +49,34 @@ func main() {
 
 	// Add the chain path
 	b.AddChainPath(chain, rChain)
+	
+	go RecordThroughput(b)
 
 	// Start the broker
 	b.StartBroker()
 }
+
+// RecordThroughput ...
+func RecordThroughput(b *broker.Broker) {
+	file, err := os.Create("throughput" + strconv.FormatUint(localID, 10) + ".txt")
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		return
+	}
+	defer file.Close()
+	pubCount := 0
+	ticker := time.NewTicker(time.Second)
+
+	for {
+		select {
+		case <-b.ToUserRecordCh:
+			pubCount++
+		case <- ticker.C:
+			if pubCount > 0 {
+				file.Write([]byte(fmt.Sprintf("%v\n", pubCount)))
+			}
+			pubCount = 0
+		}
+	}
+}
+
