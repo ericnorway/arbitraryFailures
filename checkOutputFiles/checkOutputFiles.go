@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -239,6 +240,16 @@ func (r *Results) calculateAverages() {
 		return
 	}
 
+	outputFileName := filepath.Join(*directory, "output.txt")
+	var buf bytes.Buffer
+	for i := int64(0); i < length; i++ {
+		//fmt.Printf("%v\n", float64(r.durations[i]) / 1000000.0)
+		buf.WriteString(strconv.FormatFloat(float64(r.durations[i])/1000000.0, 'f', 6, 64))
+		buf.WriteString("\n")
+	}
+	ioutil.WriteFile(outputFileName, []byte(buf.String()), 0644)
+
+	// Sort for getting min, max, median, 99th
 	sort.Sort(r.durations)
 
 	// Calculate mean

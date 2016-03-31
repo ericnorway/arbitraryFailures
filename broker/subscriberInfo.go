@@ -77,6 +77,8 @@ func (b *Broker) removeToSubChannel(id uint64) {
 // changeTopics updates a subscriber's topics.
 // It takes as input the subscription request.
 func (b Broker) changeTopics(req *pb.SubRequest) {
+	b.subscribersMutex.Lock()
+	defer b.subscribersMutex.Unlock()
 
 	for i := range b.subscribers[req.SubscriberID].topics {
 		b.subscribers[req.SubscriberID].topics[i] = false

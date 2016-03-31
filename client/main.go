@@ -170,9 +170,9 @@ func (p *PublisherInstance) mainPub() {
 		for sent := false; sent == false; {
 			// Send the publication.
 			sent = p.publisher.Publish(pub)
-			fmt.Printf(".")
 			time.Sleep(5 * time.Millisecond)
 		}
+		fmt.Printf(".")
 	}
 
 	// Make sure that the last few messages have time to be sent.
