@@ -33,7 +33,7 @@ type Broker struct {
 	maliciousPercent int
 	random           *rand.Rand
 
-	// For recording when the broker has finished publishing a publication
+	// For counting the number of publications (throughput)
 	ToUserRecordCh chan bool
 
 	// PUBLISHER VARIABLES
