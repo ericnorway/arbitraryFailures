@@ -89,7 +89,7 @@ func (s *SubscriberInstance) mainSub() {
 
 // RecordRecvTimes ...
 func (s *SubscriberInstance) RecordRecvTimes() {
-	file, err := os.Create("recvTimes" + strconv.FormatUint(s.id, 10) + ".txt")
+	file, err := os.Create("./results/recvTimes" + strconv.FormatUint(s.id, 10) + ".txt")
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return
@@ -181,7 +181,7 @@ func (p *PublisherInstance) mainPub() {
 
 // RecordSendTimes ...
 func (p *PublisherInstance) RecordSendTimes() {
-	file, err := os.Create("sendTimes" + strconv.FormatUint(p.id, 10) + ".txt")
+	file, err := os.Create("./results/sendTimes" + strconv.FormatUint(p.id, 10) + ".txt")
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return

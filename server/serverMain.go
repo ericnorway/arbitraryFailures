@@ -58,7 +58,7 @@ func main() {
 
 // RecordThroughput ...
 func RecordThroughput(b *broker.Broker) {
-	file, err := os.Create("throughput" + strconv.FormatUint(localID, 10) + ".txt")
+	file, err := os.Create("./results/throughput" + strconv.FormatUint(localID, 10) + ".txt")
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return
