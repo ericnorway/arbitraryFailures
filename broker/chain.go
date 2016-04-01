@@ -156,6 +156,9 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) bool {
 			if b.remoteBrokers[childID].toChainCh != nil {
 				select {
 				case b.remoteBrokers[childID].toChainCh <- *tempPub:
+					if len(b.remoteBrokers[childID].toChainCh) > toChannelLength/2 {
+						b.wait()
+					}
 				}
 			}
 			b.remoteBrokersMutex.RUnlock()
@@ -165,6 +168,9 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) bool {
 			if b.subscribers[childID].toCh != nil {
 				select {
 				case b.subscribers[childID].toCh <- *tempPub:
+					if len(b.subscribers[childID].toCh) > toChannelLength/2 {
+						b.wait()
+					}
 				}
 			}
 			b.subscribersMutex.RUnlock()

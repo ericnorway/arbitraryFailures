@@ -25,8 +25,8 @@ func (b Broker) handleBrbPublish(pub *pb.Publication) {
 		// "Send" the echo request to itself
 		select {
 		case b.fromBrokerEchoCh <- *pub:
-		//default:
-		//	fmt.Printf("b.fromBrokerEchoCh full\n")
+			//default:
+			//	fmt.Printf("b.fromBrokerEchoCh full\n")
 		}
 
 		// Send the echo request to all other brokers
@@ -35,8 +35,11 @@ func (b Broker) handleBrbPublish(pub *pb.Publication) {
 			if remoteBroker.toEchoCh != nil {
 				select {
 				case remoteBroker.toEchoCh <- *pub:
-				//default:
-				//	fmt.Printf("remoteBroker.toEchoCh full\n")
+					if len(remoteBroker.toEchoCh) > toChannelLength/2 {
+						b.wait()
+					}
+					//default:
+					//	fmt.Printf("remoteBroker.toEchoCh full\n")
 				}
 			}
 		}
@@ -84,8 +87,8 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 			// "Send" the ready request to itself
 			select {
 			case b.fromBrokerReadyCh <- *pub:
-			//default:
-			//	fmt.Printf("b.fromBrokerReadyCh full\n")
+				//default:
+				//	fmt.Printf("b.fromBrokerReadyCh full\n")
 			}
 
 			// Send the ready to all other brokers
@@ -94,8 +97,11 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 				if remoteBroker.toReadyCh != nil {
 					select {
 					case remoteBroker.toReadyCh <- *pub:
-					//default:
-					//	fmt.Printf("remoteBroker.toReadyCh full\n")
+						if len(remoteBroker.toReadyCh) > toChannelLength/2 {
+							b.wait()
+						}
+						//default:
+						//	fmt.Printf("remoteBroker.toReadyCh full\n")
 					}
 				}
 			}
@@ -108,8 +114,11 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 				if subscriber.toCh != nil && b.subscribers[i].topics[pub.TopicID] == true {
 					select {
 					case subscriber.toCh <- *pub:
-					//default:
-					//	fmt.Printf("subscriber.toCh full\n")
+						if len(subscriber.toCh) > toChannelLength/2 {
+							b.wait()
+						}
+						//default:
+						//	fmt.Printf("subscriber.toCh full\n")
 					}
 				}
 			}
@@ -165,8 +174,8 @@ func (b Broker) handleReady(pub *pb.Publication) {
 			if pub.BrokerID != pub.BrokerID {
 				select {
 				case b.fromBrokerReadyCh <- *pub:
-				//default:
-				//	fmt.Printf("b.fromBrokerReadyCh full\n")
+					//default:
+					//	fmt.Printf("b.fromBrokerReadyCh full\n")
 				}
 			}
 
@@ -176,8 +185,11 @@ func (b Broker) handleReady(pub *pb.Publication) {
 				if remoteBroker.toReadyCh != nil {
 					select {
 					case remoteBroker.toReadyCh <- *pub:
-					//default:
-					//	fmt.Printf("remoteBroker.toReadyCh full\n")
+						if len(remoteBroker.toReadyCh) > toChannelLength/2 {
+							b.wait()
+						}
+						//default:
+						//	fmt.Printf("remoteBroker.toReadyCh full\n")
 					}
 				}
 			}
@@ -190,8 +202,11 @@ func (b Broker) handleReady(pub *pb.Publication) {
 				if subscriber.toCh != nil && b.subscribers[i].topics[pub.TopicID] == true {
 					select {
 					case subscriber.toCh <- *pub:
-					//default:
-					//	fmt.Printf("subscriber.toCh full\n")
+						if len(subscriber.toCh) > toChannelLength/2 {
+							b.wait()
+						}
+						//default:
+						//	fmt.Printf("subscriber.toCh full\n")
 					}
 				}
 			}

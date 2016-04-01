@@ -17,6 +17,8 @@ import (
 	// "google.golang.org/grpc/peer"
 )
 
+var toChannelLength = 256
+
 // Broker is a struct containing channels used in communicating
 // with read and write loops.
 type Broker struct {
@@ -96,6 +98,9 @@ type Broker struct {
 	// The key is the first letter of the node type + node ID
 	// For example a publisher node with ID of 3 would be "P3".
 	chainNodes map[string]chainNode
+
+	waitCh    chan bool
+	isWaiting bool
 }
 
 // NewBroker returns a new Broker.
@@ -133,6 +138,8 @@ func NewBroker(localID uint64, localAddr string, alpha uint64, maliciousPercent 
 		chainSent:               make(map[uint64]map[int64]bool),
 		alphaCounters:           make(map[uint64]map[uint64]uint64),
 		chainNodes:              make(map[string]chainNode),
+		waitCh:                  make(chan bool),
+		isWaiting:               false,
 	}
 }
 
@@ -156,6 +163,7 @@ func (b *Broker) StartBroker() {
 	pb.RegisterInterBrokerServer(grpcServer, b)
 	b.connectToOtherBrokers()
 	go b.handleMessages()
+	go b.checkWait()
 
 	fmt.Printf("*** Ready to serve incoming requests. ***\n")
 	err = grpcServer.Serve(listener)
@@ -243,6 +251,10 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string) {
 
 // Publish handles incoming Publish requests from publishers
 func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubResponse, error) {
+	if b.isWaiting {
+		return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: false}, nil
+	}
+
 	publisher, exists := b.publishers[pub.PublisherID]
 
 	// Check MAC
@@ -486,4 +498,54 @@ func (b *Broker) alterPublication(pub *pb.Publication) bool {
 	}
 
 	return false
+}
+
+func (b *Broker) wait() {
+	select {
+	case b.waitCh <- true:
+	default:
+	}
+}
+
+func (b *Broker) checkWait() {
+
+	ticker := time.NewTicker(20 * time.Millisecond)
+
+	for {
+		select {
+		case <-b.waitCh:
+			ticker = time.NewTicker(20 * time.Millisecond)
+			b.isWaiting = true
+		case <-ticker.C:
+			ticker.Stop()
+			keepWaiting := false
+
+			// Check if the broker channels have gone down
+			b.remoteBrokersMutex.RLock()
+			for _, remoteBroker := range b.remoteBrokers {
+				if len(remoteBroker.toEchoCh) > toChannelLength/2 ||
+					len(remoteBroker.toReadyCh) > toChannelLength/2 ||
+					len(remoteBroker.toChainCh) > toChannelLength/2 {
+					keepWaiting = true
+				}
+			}
+			b.remoteBrokersMutex.RUnlock()
+
+			// Check if the subscriber channels have gone down
+			b.subscribersMutex.RLock()
+			for _, subscriber := range b.subscribers {
+				if len(subscriber.toCh) > toChannelLength/2 {
+					keepWaiting = true
+				}
+			}
+			b.subscribersMutex.RUnlock()
+
+			if keepWaiting == false {
+				b.isWaiting = false
+			} else {
+				b.isWaiting = true
+				ticker = time.NewTicker(20 * time.Millisecond)
+			}
+		}
+	}
 }

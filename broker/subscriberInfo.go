@@ -50,7 +50,7 @@ func (b *Broker) addToSubChannel(id uint64) chan pb.Publication {
 	b.subscribersMutex.Lock()
 	defer b.subscribersMutex.Unlock()
 
-	ch := make(chan pb.Publication, 128)
+	ch := make(chan pb.Publication, toChannelLength)
 
 	// Update channel
 	tempSubscriber := b.subscribers[id]
