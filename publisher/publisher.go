@@ -35,6 +35,8 @@ type Publisher struct {
 	// The key is the first letter of the node type + node ID
 	// For example a publisher node with ID of 3 would be "P3"
 	chainNodes map[string]chainNode
+
+	acceptedCh chan bool
 }
 
 // HistoryRequestInfo
@@ -59,11 +61,12 @@ func NewPublisher(localID uint64) *Publisher {
 		blockTopic:        make(map[uint64]bool),
 		ToUserRecordCh:    make(chan common.RecordTime, 8),
 		chainNodes:        make(map[string]chainNode),
+		acceptedCh:        make(chan bool, 8),
 	}
 }
 
 // Publish publishes a publication to all the brokers.
-// It returns false if the topic ID is currently blocked, true otherwise.
+// It returns false if the topic ID is currently blocked or was not accepted by the brokers, true otherwise.
 // It takes as input a publication.
 func (p *Publisher) Publish(pub *pb.Publication) bool {
 	if p.blockTopic[pub.TopicID] == true {
@@ -75,16 +78,18 @@ func (p *Publisher) Publish(pub *pb.Publication) bool {
 	case p.addToHistoryCh <- *pub:
 	}
 
+	accepted := false
+
 	switch pub.PubType {
 	case common.AB:
-		p.handleAbPublish(pub)
+		accepted = p.handleAbPublish(pub)
 	case common.BRB:
-		p.handleBrbPublish(pub)
+		accepted = p.handleBrbPublish(pub)
 	case common.Chain:
-		p.handleChainPublish(pub)
+		accepted = p.handleChainPublish(pub)
 	}
 
-	return true
+	return accepted
 }
 
 // Start starts the publisher.
@@ -127,6 +132,9 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 			resp, err := client.Publish(context.Background(), &pub)
 			if err != nil {
 				fmt.Printf("Error publishing to %v, %v\n", broker.id, err)
+				select {
+				case p.acceptedCh <- false:
+				}
 				continue
 			}
 
@@ -148,6 +156,10 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 					PubType:  pub.PubType,
 				}:
 				}
+			}
+
+			select {
+			case p.acceptedCh <- resp.Accepted:
 			}
 		}
 	}

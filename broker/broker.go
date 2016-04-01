@@ -115,13 +115,13 @@ func NewBroker(localID uint64, localAddr string, alpha uint64, maliciousPercent 
 		faultsTolerated:         1, // default
 		maliciousPercent:        maliciousPercent,
 		random:                  rand.New(rand.NewSource(time.Now().Unix())),
-		ToUserRecordCh:          make(chan bool, 8),
+		ToUserRecordCh:          make(chan bool, 32),
 		publishers:              make(map[uint64]publisherInfo),
 		fromPublisherCh:         make(chan pb.Publication, 32),
 		remoteBrokers:           make(map[uint64]brokerInfo),
 		remoteBrokerConnections: 0,
-		fromBrokerEchoCh:        make(chan pb.Publication, 32),
-		fromBrokerReadyCh:       make(chan pb.Publication, 32),
+		fromBrokerEchoCh:        make(chan pb.Publication, 128),
+		fromBrokerReadyCh:       make(chan pb.Publication, 128),
 		fromBrokerChainCh:       make(chan pb.Publication, 32),
 		subscribers:             make(map[uint64]subscriberInfo),
 		fromSubscriberCh:        make(chan pb.SubRequest, 32),
@@ -260,6 +260,8 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 		if pub.PubType == common.BRB {
 			select {
 			case b.fromPublisherCh <- *pub:
+			default:
+				return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: false}, nil
 			}
 			b.alphaCounters[pub.PublisherID][pub.TopicID] = 0
 		} else {
@@ -270,6 +272,8 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 
 			select {
 			case b.fromPublisherCh <- *pub:
+			default:
+				return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: false}, nil
 			}
 
 			b.alphaCounters[pub.PublisherID][pub.TopicID]++
@@ -280,6 +284,8 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 	} else {
 		select {
 		case b.fromPublisherCh <- *pub:
+		default:
+			return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: false}, nil
 		}
 	}
 

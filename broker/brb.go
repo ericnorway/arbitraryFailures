@@ -1,7 +1,7 @@
 package broker
 
 import (
-	// "fmt"
+	//"fmt"
 
 	"github.com/ericnorway/arbitraryFailures/common"
 	pb "github.com/ericnorway/arbitraryFailures/proto"
@@ -25,13 +25,19 @@ func (b Broker) handleBrbPublish(pub *pb.Publication) {
 		// "Send" the echo request to itself
 		select {
 		case b.fromBrokerEchoCh <- *pub:
+		//default:
+		//	fmt.Printf("b.fromBrokerEchoCh full\n")
 		}
 
 		// Send the echo request to all other brokers
 		b.remoteBrokersMutex.RLock()
 		for _, remoteBroker := range b.remoteBrokers {
 			if remoteBroker.toEchoCh != nil {
-				remoteBroker.toEchoCh <- *pub
+				select {
+				case remoteBroker.toEchoCh <- *pub:
+				//default:
+				//	fmt.Printf("remoteBroker.toEchoCh full\n")
+				}
 			}
 		}
 		b.remoteBrokersMutex.RUnlock()
@@ -78,6 +84,8 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 			// "Send" the ready request to itself
 			select {
 			case b.fromBrokerReadyCh <- *pub:
+			//default:
+			//	fmt.Printf("b.fromBrokerReadyCh full\n")
 			}
 
 			// Send the ready to all other brokers
@@ -86,6 +94,8 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 				if remoteBroker.toReadyCh != nil {
 					select {
 					case remoteBroker.toReadyCh <- *pub:
+					//default:
+					//	fmt.Printf("remoteBroker.toReadyCh full\n")
 					}
 				}
 			}
@@ -98,6 +108,8 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 				if subscriber.toCh != nil && b.subscribers[i].topics[pub.TopicID] == true {
 					select {
 					case subscriber.toCh <- *pub:
+					//default:
+					//	fmt.Printf("subscriber.toCh full\n")
 					}
 				}
 			}
@@ -153,6 +165,8 @@ func (b Broker) handleReady(pub *pb.Publication) {
 			if pub.BrokerID != pub.BrokerID {
 				select {
 				case b.fromBrokerReadyCh <- *pub:
+				//default:
+				//	fmt.Printf("b.fromBrokerReadyCh full\n")
 				}
 			}
 
@@ -162,6 +176,8 @@ func (b Broker) handleReady(pub *pb.Publication) {
 				if remoteBroker.toReadyCh != nil {
 					select {
 					case remoteBroker.toReadyCh <- *pub:
+					//default:
+					//	fmt.Printf("remoteBroker.toReadyCh full\n")
 					}
 				}
 			}
@@ -174,6 +190,8 @@ func (b Broker) handleReady(pub *pb.Publication) {
 				if subscriber.toCh != nil && b.subscribers[i].topics[pub.TopicID] == true {
 					select {
 					case subscriber.toCh <- *pub:
+					//default:
+					//	fmt.Printf("subscriber.toCh full\n")
 					}
 				}
 			}
