@@ -36,7 +36,7 @@ func (b Broker) handleBrbPublish(pub *pb.Publication) {
 				select {
 				case remoteBroker.toEchoCh <- *pub:
 					if len(remoteBroker.toEchoCh) > toChannelLength/2 {
-						b.wait()
+						b.setBusy()
 					}
 					//default:
 					//	fmt.Printf("remoteBroker.toEchoCh full\n")
@@ -98,7 +98,7 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 					select {
 					case remoteBroker.toReadyCh <- *pub:
 						if len(remoteBroker.toReadyCh) > toChannelLength/2 {
-							b.wait()
+							b.setBusy()
 						}
 						//default:
 						//	fmt.Printf("remoteBroker.toReadyCh full\n")
@@ -115,7 +115,7 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 					select {
 					case subscriber.toCh <- *pub:
 						if len(subscriber.toCh) > toChannelLength/2 {
-							b.wait()
+							b.setBusy()
 						}
 						//default:
 						//	fmt.Printf("subscriber.toCh full\n")
@@ -186,7 +186,7 @@ func (b Broker) handleReady(pub *pb.Publication) {
 					select {
 					case remoteBroker.toReadyCh <- *pub:
 						if len(remoteBroker.toReadyCh) > toChannelLength/2 {
-							b.wait()
+							b.setBusy()
 						}
 						//default:
 						//	fmt.Printf("remoteBroker.toReadyCh full\n")
@@ -203,7 +203,7 @@ func (b Broker) handleReady(pub *pb.Publication) {
 					select {
 					case subscriber.toCh <- *pub:
 						if len(subscriber.toCh) > toChannelLength/2 {
-							b.wait()
+							b.setBusy()
 						}
 						//default:
 						//	fmt.Printf("subscriber.toCh full\n")

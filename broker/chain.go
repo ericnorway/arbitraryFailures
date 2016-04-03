@@ -157,7 +157,7 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) bool {
 				select {
 				case b.remoteBrokers[childID].toChainCh <- *tempPub:
 					if len(b.remoteBrokers[childID].toChainCh) > toChannelLength/2 {
-						b.wait()
+						b.setBusy()
 					}
 				}
 			}
@@ -169,7 +169,7 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) bool {
 				select {
 				case b.subscribers[childID].toCh <- *tempPub:
 					if len(b.subscribers[childID].toCh) > toChannelLength/2 {
-						b.wait()
+						b.setBusy()
 					}
 				}
 			}

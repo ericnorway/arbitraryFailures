@@ -99,8 +99,8 @@ type Broker struct {
 	// For example a publisher node with ID of 3 would be "P3".
 	chainNodes map[string]chainNode
 
-	waitCh    chan bool
-	isWaiting bool
+	busyCh chan bool
+	isBusy bool
 }
 
 // NewBroker returns a new Broker.
@@ -138,8 +138,8 @@ func NewBroker(localID uint64, localAddr string, alpha uint64, maliciousPercent 
 		chainSent:               make(map[uint64]map[int64]bool),
 		alphaCounters:           make(map[uint64]map[uint64]uint64),
 		chainNodes:              make(map[string]chainNode),
-		waitCh:                  make(chan bool),
-		isWaiting:               false,
+		busyCh:                  make(chan bool),
+		isBusy:                  false,
 	}
 }
 
@@ -163,7 +163,7 @@ func (b *Broker) StartBroker() {
 	pb.RegisterInterBrokerServer(grpcServer, b)
 	b.connectToOtherBrokers()
 	go b.handleMessages()
-	go b.checkWait()
+	go b.checkBusy()
 
 	fmt.Printf("*** Ready to serve incoming requests. ***\n")
 	err = grpcServer.Serve(listener)
@@ -251,7 +251,7 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string) {
 
 // Publish handles incoming Publish requests from publishers
 func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubResponse, error) {
-	if b.isWaiting {
+	if b.isBusy {
 		return &pb.PubResponse{Status: pb.PubResponse_WAIT}, nil
 	}
 
@@ -494,25 +494,25 @@ func (b *Broker) alterPublication(pub *pb.Publication) bool {
 	return false
 }
 
-func (b *Broker) wait() {
+func (b *Broker) setBusy() {
 	select {
-	case b.waitCh <- true:
+	case b.busyCh <- true:
 	default:
 	}
 }
 
-func (b *Broker) checkWait() {
+func (b *Broker) checkBusy() {
 
 	ticker := time.NewTicker(20 * time.Millisecond)
 
 	for {
 		select {
-		case <-b.waitCh:
+		case <-b.busyCh:
 			ticker = time.NewTicker(20 * time.Millisecond)
-			b.isWaiting = true
+			b.isBusy = true
 		case <-ticker.C:
 			ticker.Stop()
-			keepWaiting := false
+			stillBusy := false
 
 			// Check if the broker channels have gone down
 			b.remoteBrokersMutex.RLock()
@@ -520,7 +520,7 @@ func (b *Broker) checkWait() {
 				if len(remoteBroker.toEchoCh) > toChannelLength/2 ||
 					len(remoteBroker.toReadyCh) > toChannelLength/2 ||
 					len(remoteBroker.toChainCh) > toChannelLength/2 {
-					keepWaiting = true
+					stillBusy = true
 				}
 			}
 			b.remoteBrokersMutex.RUnlock()
@@ -529,15 +529,15 @@ func (b *Broker) checkWait() {
 			b.subscribersMutex.RLock()
 			for _, subscriber := range b.subscribers {
 				if len(subscriber.toCh) > toChannelLength/2 {
-					keepWaiting = true
+					stillBusy = true
 				}
 			}
 			b.subscribersMutex.RUnlock()
 
-			if keepWaiting == false {
-				b.isWaiting = false
+			if stillBusy == false {
+				b.isBusy = false
 			} else {
-				b.isWaiting = true
+				b.isBusy = true
 				ticker = time.NewTicker(20 * time.Millisecond)
 			}
 		}

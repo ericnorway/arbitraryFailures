@@ -29,7 +29,7 @@ func (b Broker) handleAbPublish(pub *pb.Publication) {
 				select {
 				case subscriber.toCh <- *pub:
 					if len(subscriber.toCh) > toChannelLength/2 {
-						b.wait()
+						b.setBusy()
 					}
 				}
 			}
