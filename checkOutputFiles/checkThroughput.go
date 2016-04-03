@@ -138,6 +138,6 @@ func calculateAverages(throughput *[]int) {
 	fmt.Printf("Min\t%v\tPPS\n", (*throughput)[0])
 	fmt.Printf("Max\t%v\tPPS\n", (*throughput)[length-1])
 	fmt.Printf("Median\t%v\tPPS\n", (*throughput)[length/2])
-	fmt.Printf("SD\t%v\tnPPS\n", sd)
+	fmt.Printf("SD\t%v\tPPS\n", sd)
 	//fmt.Printf("99th\t%v\tns\n", ninetyninth)
 }
