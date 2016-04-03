@@ -272,8 +272,6 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 		if pub.PubType == common.BRB {
 			select {
 			case b.fromPublisherCh <- *pub:
-			default:
-				return &pb.PubResponse{Status: pb.PubResponse_WAIT}, nil
 			}
 			b.alphaCounters[pub.PublisherID][pub.TopicID] = 0
 		} else {
@@ -284,8 +282,6 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 
 			select {
 			case b.fromPublisherCh <- *pub:
-			default:
-				return &pb.PubResponse{Status: pb.PubResponse_WAIT}, nil
 			}
 
 			b.alphaCounters[pub.PublisherID][pub.TopicID]++
@@ -296,8 +292,6 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 	} else {
 		select {
 		case b.fromPublisherCh <- *pub:
-		default:
-			return &pb.PubResponse{Status: pb.PubResponse_WAIT}, nil
 		}
 	}
 
