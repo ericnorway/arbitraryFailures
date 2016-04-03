@@ -252,7 +252,7 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string) {
 // Publish handles incoming Publish requests from publishers
 func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubResponse, error) {
 	if b.isWaiting {
-		return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: false}, nil
+		return &pb.PubResponse{Status: pb.PubResponse_WAIT}, nil
 	}
 
 	publisher, exists := b.publishers[pub.PublisherID]
@@ -260,7 +260,7 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 	// Check MAC
 	if !exists || common.CheckPublicationMAC(pub, pub.MAC, publisher.key, common.Algorithm) == false {
 		//fmt.Printf("***BAD MAC: Publish*** %v\n", *pub)
-		return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: false}, nil
+		return &pb.PubResponse{Status: pb.PubResponse_BAD_MAC}, nil
 	}
 
 	// If using alpha values (indicating a combination of algorithms)
@@ -273,35 +273,35 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 			select {
 			case b.fromPublisherCh <- *pub:
 			default:
-				return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: false}, nil
+				return &pb.PubResponse{Status: pb.PubResponse_WAIT}, nil
 			}
 			b.alphaCounters[pub.PublisherID][pub.TopicID] = 0
 		} else {
 			// Don't allow more than 2 * alpha publications for a topic and publisher without a history request
 			if b.alphaCounters[pub.PublisherID][pub.TopicID] >= 2*b.alpha {
-				return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: true}, nil
+				return &pb.PubResponse{Status: pb.PubResponse_BLOCKED}, nil
 			}
 
 			select {
 			case b.fromPublisherCh <- *pub:
 			default:
-				return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: false}, nil
+				return &pb.PubResponse{Status: pb.PubResponse_WAIT}, nil
 			}
 
 			b.alphaCounters[pub.PublisherID][pub.TopicID]++
 			if b.alphaCounters[pub.PublisherID][pub.TopicID] == b.alpha {
-				return &pb.PubResponse{Accepted: true, RequestHistory: true, Blocked: false}, nil
+				return &pb.PubResponse{Status: pb.PubResponse_HISTORY}, nil
 			}
 		}
 	} else {
 		select {
 		case b.fromPublisherCh <- *pub:
 		default:
-			return &pb.PubResponse{Accepted: false, RequestHistory: false, Blocked: false}, nil
+			return &pb.PubResponse{Status: pb.PubResponse_WAIT}, nil
 		}
 	}
 
-	return &pb.PubResponse{Accepted: true, RequestHistory: false, Blocked: false}, nil
+	return &pb.PubResponse{Status: pb.PubResponse_OK}, nil
 }
 
 // Echo handles incoming BRB echo requests from other brokers

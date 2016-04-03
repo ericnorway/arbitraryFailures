@@ -33,6 +33,35 @@ var _ = proto1.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+type PubResponse_Status int32
+
+const (
+	PubResponse_OK      PubResponse_Status = 0
+	PubResponse_HISTORY PubResponse_Status = 1
+	PubResponse_BLOCKED PubResponse_Status = 2
+	PubResponse_WAIT    PubResponse_Status = 3
+	PubResponse_BAD_MAC PubResponse_Status = 4
+)
+
+var PubResponse_Status_name = map[int32]string{
+	0: "OK",
+	1: "HISTORY",
+	2: "BLOCKED",
+	3: "WAIT",
+	4: "BAD_MAC",
+}
+var PubResponse_Status_value = map[string]int32{
+	"OK":      0,
+	"HISTORY": 1,
+	"BLOCKED": 2,
+	"WAIT":    3,
+	"BAD_MAC": 4,
+}
+
+func (x PubResponse_Status) String() string {
+	return proto1.EnumName(PubResponse_Status_name, int32(x))
+}
+
 type Publication struct {
 	PubType       uint32      `protobuf:"varint,1,opt,name=PubType" json:"PubType,omitempty"`
 	PublisherID   uint64      `protobuf:"varint,2,opt,name=PublisherID" json:"PublisherID,omitempty"`
@@ -66,9 +95,7 @@ func (m *ChainMAC) String() string { return proto1.CompactTextString(m) }
 func (*ChainMAC) ProtoMessage()    {}
 
 type PubResponse struct {
-	Accepted       bool `protobuf:"varint,1,opt,name=Accepted" json:"Accepted,omitempty"`
-	RequestHistory bool `protobuf:"varint,2,opt,name=RequestHistory" json:"RequestHistory,omitempty"`
-	Blocked        bool `protobuf:"varint,3,opt,name=Blocked" json:"Blocked,omitempty"`
+	Status PubResponse_Status `protobuf:"varint,1,opt,name=status,enum=proto.PubResponse_Status" json:"status,omitempty"`
 }
 
 func (m *PubResponse) Reset()         { *m = PubResponse{} }
@@ -114,6 +141,7 @@ func init() {
 	proto1.RegisterType((*ReadyResponse)(nil), "proto.ReadyResponse")
 	proto1.RegisterType((*ChainResponse)(nil), "proto.ChainResponse")
 	proto1.RegisterType((*SubRequest)(nil), "proto.SubRequest")
+	proto1.RegisterEnum("proto.PubResponse_Status", PubResponse_Status_name, PubResponse_Status_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.

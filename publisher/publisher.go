@@ -138,7 +138,13 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 				continue
 			}
 
-			if resp.RequestHistory == true {
+			accepted := false
+
+			switch resp.Status {
+			case pb.PubResponse_OK:
+				accepted = true
+			case pb.PubResponse_HISTORY:
+				accepted = true
 				select {
 				case p.historyRequestCh <- HistoryRequestInfo{
 					BrokerID: broker.id,
@@ -146,9 +152,8 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 					PubType:  pub.PubType,
 				}:
 				}
-			}
-
-			if resp.Blocked == true {
+			case pb.PubResponse_BLOCKED:
+				accepted = false
 				select {
 				case p.blockCh <- HistoryRequestInfo{
 					BrokerID: broker.id,
@@ -156,10 +161,16 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 					PubType:  pub.PubType,
 				}:
 				}
+			case pb.PubResponse_WAIT:
+				accepted = false
+			case pb.PubResponse_BAD_MAC:
+				accepted = false
+			default:
+				accepted = false
 			}
 
 			select {
-			case p.acceptedCh <- resp.Accepted:
+			case p.acceptedCh <- accepted:
 			}
 		}
 	}

@@ -27,17 +27,20 @@ func (p *Publisher) historyHandler() {
 	for {
 		select {
 		case pub := <-p.addToHistoryCh:
-			history[pub.TopicID] = append(history[pub.TopicID], pub)
-			pubsSinceLastHistory[pub.TopicID]++
+			// Don't put the history publication in the history.
+			if pub.PubType != common.BRB {
+				history[pub.TopicID] = append(history[pub.TopicID], pub)
+				pubsSinceLastHistory[pub.TopicID]++
+			}
 		case info := <-p.historyRequestCh:
 			if historyRequests[info.TopicID] == nil {
 				historyRequests[info.TopicID] = make(map[uint64]bool)
 			}
 
 			// If a history Publication was recently sent, ignore this request.
-			//if pubsSinceLastHistory[info.TopicID] < 2 {
-			//	continue
-			//}
+			if pubsSinceLastHistory[info.TopicID] < 2 {
+				continue
+			}
 
 			historyRequests[info.TopicID][info.BrokerID] = true
 
@@ -82,16 +85,11 @@ func (p *Publisher) historyHandler() {
 					// and the channel fills up.
 				}
 
-				// Send the history to all brokers
-				p.brokersMutex.RLock()
-				for _, broker := range p.brokers {
-					if broker.toCh != nil {
-						select {
-						case broker.toCh <- *pub:
-						}
-					}
+				// Publish the history
+				for sent := false; sent == false; {
+					sent = p.Publish(pub)
+					time.Sleep(time.Millisecond)
 				}
-				p.brokersMutex.RUnlock()
 
 				// Reset these
 				historyRequests[info.TopicID] = make(map[uint64]bool)
