@@ -494,6 +494,15 @@ func (b *Broker) alterPublication(pub *pb.Publication) bool {
 	return false
 }
 
+func (b *Broker) incrementPublicationCount() {
+	select {
+	case b.ToUserRecordCh <- true:
+	default:
+		// Use the default case just in case the user isn't reading from this channel
+		// and the channel fills up.
+	}
+}
+
 func (b *Broker) setBusy() {
 	select {
 	case b.busyCh <- true:
