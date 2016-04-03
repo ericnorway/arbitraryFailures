@@ -34,11 +34,6 @@ var (
 		"The algorithm to use: AB, BRB, Chain (publisher only).",
 	)
 	publicationType uint32
-	topicsRange     = flag.Int(
-		"topics",
-		1,
-		"The number of topics to use.",
-	)
 )
 
 func usage() {

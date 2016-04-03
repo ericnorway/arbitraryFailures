@@ -140,6 +140,7 @@ func (p *PublisherInstance) mainPub() {
 	mac := hmac.New(sha512.New, []byte(""))
 	time.Sleep(time.Second)
 
+	topicsRange := len(topics)
 	random := rand.New(rand.NewSource(time.Now().Unix()))
 
 	for i := int64(0); i < *pubCount; i++ {
@@ -147,7 +148,7 @@ func (p *PublisherInstance) mainPub() {
 		mac.Write([]byte(time.Now().String()))
 		sum := mac.Sum(nil)
 
-		currentTopic := uint64(random.Intn(*topicsRange) + 1)
+		currentTopic := topics[random.Intn(topicsRange)]
 
 		// Create the publication.
 		pub := &pb.Publication{
