@@ -181,7 +181,7 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) bool {
 	b.chainSent[pub.PublisherID][pub.PublicationID] = true
 
 	// For performance testing, get the time of the last step for this broker
-	b.incrementPublicationCount()
+	b.incrementPublicationCount(pub)
 
 	return true
 }

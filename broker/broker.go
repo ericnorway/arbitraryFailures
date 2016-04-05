@@ -1,6 +1,8 @@
 package broker
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"math/rand"
@@ -494,12 +496,57 @@ func (b *Broker) alterPublication(pub *pb.Publication) bool {
 	return false
 }
 
-func (b *Broker) incrementPublicationCount() {
+// incrementPublicationCount places a message on the ToUserRecordCh each time a publication
+// is finished processing. This is used in
+func (b *Broker) incrementPublicationCount(pub *pb.Publication) {
 	select {
 	case b.ToUserRecordCh <- true:
 	default:
 		// Use the default case just in case the user isn't reading from this channel
 		// and the channel fills up.
+	}
+
+	if len(pub.Contents) > 1 {
+		b.incrementPublicationCountByHistory(pub)
+	}
+}
+
+func (b *Broker) incrementPublicationCountByHistory(pub *pb.Publication) {
+	// Make the map so not trying to access nil reference
+	if b.forwardSent[pub.PublisherID] == nil {
+		b.forwardSent[pub.PublisherID] = make(map[int64]bool)
+	}
+
+	// Make the map so not trying to access nil reference
+	if b.chainSent[pub.PublisherID] == nil {
+		b.chainSent[pub.PublisherID] = make(map[int64]bool)
+	}
+
+	// For each publication in the history
+	for _, histPub := range pub.Contents {
+
+		if len(histPub) < 8 {
+			continue
+		}
+
+		buf := bytes.NewBuffer(histPub)
+
+		publicationID, _ := binary.ReadVarint(buf)
+
+		// If a quorum has not been reached yet for this individual publication in the history.
+		if b.forwardSent[pub.PublisherID][publicationID] == false && b.chainSent[pub.PublisherID][publicationID] == false {
+			b.forwardSent[pub.PublisherID][publicationID] = true
+			b.chainSent[pub.PublisherID][publicationID] = true
+
+			//fmt.Printf("Learned publication %v from publisher %v from a history publication.\n", publicationID, pub.PublisherID)
+
+			select {
+			case b.ToUserRecordCh <- true:
+			default:
+				// Use the default case just in case the user isn't reading from this channel
+				// and the channel fills up.
+			}
+		}
 	}
 }
 

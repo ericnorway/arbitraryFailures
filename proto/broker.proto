@@ -42,10 +42,6 @@ message PubResponse{
 		BAD_MAC = 4;
 	}
 	Status status = 1;
-	//bool Accepted = 1;
-	//bool RequestHistory = 2;
-	//bool Blocked = 3;
-	//bool Wait = 4;
 }
 
 message EchoResponse{}

@@ -129,7 +129,7 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 			// fmt.Printf("handleEcho: Sent readies for publication %v by publisher %v.\n", pub.PublicationID, pub.PublisherID)
 
 			// For performance testing, get the time of the last step for this broker
-			b.incrementPublicationCount()
+			b.incrementPublicationCount(pub)
 		}
 	}
 }
@@ -212,7 +212,7 @@ func (b Broker) handleReady(pub *pb.Publication) {
 			// fmt.Printf("handleReady: Sent readies for publication %v by publisher %v.\n", pub.PublicationID, pub.PublisherID)
 
 			// For performance testing, get the time of the last step for this broker
-			b.incrementPublicationCount()
+			b.incrementPublicationCount(pub)
 		}
 	}
 }

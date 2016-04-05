@@ -40,7 +40,7 @@ func (b Broker) handleAbPublish(pub *pb.Publication) {
 		b.forwardSent[pub.PublisherID][pub.PublicationID] = true
 
 		// For performance testing, get the time of the last step for this broker
-		b.incrementPublicationCount()
+		b.incrementPublicationCount(pub)
 	} else {
 		// fmt.Printf("Already forwarded publication %v by publisher %v\n", pub.PublicationID, pub.PublisherID)
 	}
