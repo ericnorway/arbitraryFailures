@@ -497,7 +497,8 @@ func (b *Broker) alterPublication(pub *pb.Publication) bool {
 }
 
 // incrementPublicationCount places a message on the ToUserRecordCh each time a publication
-// is finished processing. This is used in
+// is finished processing. This is used in calculating througput. It takes as input the publication,
+// in case the publication is a history publication.
 func (b *Broker) incrementPublicationCount(pub *pb.Publication) {
 	select {
 	case b.ToUserRecordCh <- true:
@@ -511,6 +512,8 @@ func (b *Broker) incrementPublicationCount(pub *pb.Publication) {
 	}
 }
 
+// incrementPublicationCountByHistory places a message on the ToUserRecordCh for each missed publication
+// in a history publication. This is used in calculating througput. It takes as input the publication.
 func (b *Broker) incrementPublicationCountByHistory(pub *pb.Publication) {
 	// Make the map so not trying to access nil reference
 	if b.forwardSent[pub.PublisherID] == nil {
@@ -550,6 +553,7 @@ func (b *Broker) incrementPublicationCountByHistory(pub *pb.Publication) {
 	}
 }
 
+// setBusy lets the broker know that one of the channels is filling up.
 func (b *Broker) setBusy() {
 	select {
 	case b.busyCh <- true:
@@ -557,6 +561,9 @@ func (b *Broker) setBusy() {
 	}
 }
 
+// checkBusy checks the busy channel to see if any channels are busy.
+// It then sets the busy flag for a certain amount of time, during which
+// the broker accepts no new publications.
 func (b *Broker) checkBusy() {
 
 	ticker := time.NewTicker(20 * time.Millisecond)
