@@ -26,6 +26,8 @@ if [ maliciousPct = 0 ]; then
 	done
 else
 	#malicious broker
+	# DON'T FORGET TO USE DIFFERENT CONFIG FOR MALICIOUS TESTS... For malicious AB tests to work properly,
+	# the publisher must also misbebave and ignore one of the brokers.
 	gnome-terminal -e "./broker.sh ${brokerMachines[0]} 0 $configDir $time $alpha 0"
 	gnome-terminal -e "./broker.sh ${brokerMachines[1]} 1 $configDir $time $alpha $maliciousPct"
 	gnome-terminal -e "./broker.sh ${brokerMachines[2]} 2 $configDir $time $alpha 0"
