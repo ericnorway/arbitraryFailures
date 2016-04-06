@@ -10,6 +10,6 @@ sleep 10
 
 #open as background process so it can be killed later
 fab -H $host subscriber:id=$id,configDir=$configDir --disable-known-hosts &
-id = $!
+pid=$!
 sleep `expr $time - 25`
-kill $id
+kill $pid

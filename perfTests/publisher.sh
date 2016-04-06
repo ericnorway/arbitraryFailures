@@ -13,6 +13,6 @@ sleep 20
 #open as background process so it can be killed later.
 #shouldn't need to kill it, but just it case.
 fab -H $host publisher:id=$id,configDir=$configDir,pubType=$pubType,pubCount=$pubCount --disable-known-hosts &
-id = $!
+pid=$!
 sleep `expr $time - 40`
-kill $id
+kill $pid

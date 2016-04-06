@@ -9,6 +9,6 @@ maliciousPct=$6
 
 #open as background process so it can be killed later
 fab -H $1 broker:id=$id,configDir=$configDir,alpha=$alpha,maliciousPct=$maliciousPct --disable-known-hosts &
-id = $!
+pid=$!
 sleep `expr $time - 10`
-kill $id
+kill $pid
