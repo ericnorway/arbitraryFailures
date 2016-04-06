@@ -1,5 +1,9 @@
 # arbitraryFailures
 
+To compile:<br/>
+Go into the server directory and type 'go build' to create the server app (broker).<br/>
+Go into the client directory and type 'go build' to create the client app (publisher and subscriber).<br/>
+
 To start a broker replica node:<br/>
 Run the server app with the following flags:<br/>
 -config should be the name of the config file for that node.<br/>
@@ -7,6 +11,8 @@ Run the server app with the following flags:<br/>
  0 means that you don't want to combine the algorithms.<br/>
 -mal should be the percent of messages to maliciously alter.<br/>
  The default is 0.<br/>
+Example:<br/>
+ ./server/server -config=./config/badne/broker0.txt -alpha=10 -mal=0<br/>
 
 Here is an example config file for a broker replica node:<br/>
 ID=0<br/>
@@ -14,7 +20,6 @@ PUB_KEYS=11111111,22222222,33333333,44444444<br/>
 SUB_KEYS=A1A1A1A1,B2B2B2B2,C3C3C3C3,D4D4D4D4<br/>
 BRK_KEYS=        ,AAAAAAAA,BBBBBBBB,CCCCCCCC<br/>
 BRK_ADDR=localhost:11110,localhost:11111,localhost:11112,localhost:11113<br/>
-TOPICS=1,2<br/>
 <br/>
 CHAIN=B0:B1<br/>
 CHAIN=B1:B2<br/>
@@ -34,6 +39,8 @@ To start a subscriber:<br/>
 Run the client app with the following flags:<br/>
 -config should be the name of the config file for that subscriber. <br/>
 -type should be "subscriber".<br/>
+Example:<br/>
+ ./client/client -config=./config/badne/subscriber0.txt -type=subscriber<br/>
 
 Here is an example config file for a subscriber:<br/>
 ID=0<br/>
@@ -52,12 +59,14 @@ Run the client app with the following flags:<br/>
 -type should be "publisher".<br/>
 -pubCount should be the number of publications to send.<br/>
 -pubType should be the publication algorithm to use: AB, BRB, or Chain.<br/>
--topics should be the number of topics to use.<br/>
+Example:<br/>
+ ./client/client -config=./config/badne/publisher0.txt -type=publisher -pubType=AB -pubCount=100<br/>
 
 Here is an example config file for a publisher:<br/>
 ID=0<br/>
 BRK_KEYS=11111111,55555555,99999999,13131313<br/>
 BRK_ADDR=localhost:11110,localhost:11111,localhost:11112,localhost:11113<br/>
+TOPICS=1,2<br/>
 <br/>
 CHAIN=P0:B0<br/>
 CHAIN=B0:B1<br/>
