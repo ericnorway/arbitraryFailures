@@ -4,9 +4,9 @@
 alpha=10
 pubType=Chain
 pubCount=30
-resultsDir="../results"
-testResultsDir="$resultsDir/141CH_MAL"
-configDir="./configs/badne"
+resultsDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/results"
+testResultsDir="$resultsDir/badne/141CH_MAL"
+configDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/configs/badne"
 brokerCount=4
 subscriberCount=1
 publisherCount=1

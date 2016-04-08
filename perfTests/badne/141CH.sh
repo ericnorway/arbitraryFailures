@@ -4,9 +4,9 @@
 alpha=0
 pubType=Chain
 pubCount=100
-resultsDir="../results"
-testResultsDir="$resultsDir/141CHT"
-configDir="./configs/badne"
+resultsDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/results"
+testResultsDir="$resultsDir/badne/141CH"
+configDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/configs/badne"
 brokerCount=4
 subscriberCount=1
 publisherCount=1

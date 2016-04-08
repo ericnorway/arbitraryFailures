@@ -1,16 +1,16 @@
 #!/bin/bash
 
 #variables
-alpha=10
+alpha=0
 pubType=AB
-pubCount=30
+pubCount=100
 resultsDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/results"
-testResultsDir="$resultsDir/141AB_MAL"
-configDir="./configs/badne"
+testResultsDir="$resultsDir/pitter/141AB"
+configDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/configs/pitter"
 brokerCount=4
 subscriberCount=1
 publisherCount=1
-maliciousPct=10
+maliciousPct=0
 time=150
 
 ./test.sh $alpha $pubType $pubCount $resultsDir $testResultsDir $configDir $brokerCount $subscriberCount $publisherCount $maliciousPct $time

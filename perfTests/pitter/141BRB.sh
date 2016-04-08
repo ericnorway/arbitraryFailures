@@ -2,11 +2,11 @@
 
 #variables
 alpha=0
-pubType=AB
+pubType=BRB
 pubCount=100
 resultsDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/results"
-testResultsDir="$resultsDir/141ABT"
-configDir="./configs/badne"
+testResultsDir="$resultsDir/pitter/141BRB"
+configDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/configs/pitter"
 brokerCount=4
 subscriberCount=1
 publisherCount=1

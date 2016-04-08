@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# SHOULD BE RUN DIRECTLY FROM ITS DIRECTORY
+
+./141AB.sh
+#./141BRB.sh
+#./141CH.sh

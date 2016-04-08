@@ -22,28 +22,28 @@ publisherMachines=(localhost localhost localhost localhost localhost localhost l
 if [ maliciousPct = 0 ]; then
 	#normal brokers
 	for ((id=0; id < brokerCount; id++)); do
-		gnome-terminal -e "./broker.sh ${brokerMachines[$id]} $id $configDir $time $alpha $maliciousPct"
+		gnome-terminal -e "../broker.sh ${brokerMachines[$id]} $id $configDir $time $alpha $maliciousPct"
 	done
 else
 	#malicious broker
 	# DON'T FORGET TO USE DIFFERENT CONFIG FOR MALICIOUS TESTS... For malicious AB tests to work properly,
-	# the publisher must also misbebave and ignore one of the brokers.
-	gnome-terminal -e "./broker.sh ${brokerMachines[0]} 0 $configDir $time $alpha 0"
-	gnome-terminal -e "./broker.sh ${brokerMachines[1]} 1 $configDir $time $alpha $maliciousPct"
-	gnome-terminal -e "./broker.sh ${brokerMachines[2]} 2 $configDir $time $alpha 0"
-	gnome-terminal -e "./broker.sh ${brokerMachines[3]} 3 $configDir $time $alpha 0"
+	# the publisher must also misbehave and ignore one of the brokers.
+	gnome-terminal -e "../broker.sh ${brokerMachines[0]} 0 $configDir $time $alpha 0"
+	gnome-terminal -e "../broker.sh ${brokerMachines[1]} 1 $configDir $time $alpha $maliciousPct"
+	gnome-terminal -e "../broker.sh ${brokerMachines[2]} 2 $configDir $time $alpha 0"
+	gnome-terminal -e "../broker.sh ${brokerMachines[3]} 3 $configDir $time $alpha 0"
 fi
 
 #start subscribers
 for ((id=0; id < subscriberCount; id++))
 do
-	gnome-terminal -e "./subscriber.sh ${subscriberMachines[$id]} $id $configDir $time"
+	gnome-terminal -e "../subscriber.sh ${subscriberMachines[$id]} $id $configDir $time"
 done
 
 #start publishers
 for ((id=0; id < publisherCount; id++))
 do
-	gnome-terminal -e "./publisher.sh ${publisherMachines[$id]} $id $configDir $time $pubType $pubCount"
+	gnome-terminal -e "../publisher.sh ${publisherMachines[$id]} $id $configDir $time $pubType $pubCount"
 done
 
 #wait for test to finish
@@ -54,6 +54,6 @@ rm -r $testResultsDir
 mkdir $testResultsDir
 mv $resultsDir/*.txt $testResultsDir
 
-go run ../checkOutputFiles/checkLatency.go -dir=$testResultsDir > $testResultsDir/LATENCY.txt
-go run ../checkOutputFiles/checkThroughput.go -dir=$testResultsDir > $testResultsDir/THROUGHPUT.txt
+go run ../../checkOutputFiles/checkLatency.go -dir=$testResultsDir > $testResultsDir/LATENCY.txt
+go run ../../checkOutputFiles/checkThroughput.go -dir=$testResultsDir > $testResultsDir/THROUGHPUT.txt
 
