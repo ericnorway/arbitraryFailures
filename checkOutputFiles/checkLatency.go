@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -10,25 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	//"time"
 )
-
-var (
-	help = flag.Bool(
-		"help",
-		false,
-		"Show usage help",
-	)
-	directory = flag.String(
-		"dir",
-		"",
-		"The directory of the files with send and receive times.",
-	)
-)
-
-func usage() {
-	flag.PrintDefaults()
-}
 
 type Results struct {
 	// Publisher:Publication:SentTime
@@ -45,26 +26,7 @@ func NewResults() *Results {
 	}
 }
 
-func main() {
-	flag.Usage = usage
-	flag.Parse()
-	if *help {
-		flag.Usage()
-		return
-	}
-
-	if *directory == "" {
-		*directory = "."
-	}
-
-	r := NewResults()
-
-	r.readFiles()
-	r.calculateLatencies()
-	r.calculateAverages()
-}
-
-func (r *Results) readFiles() {
+func (r *Results) readLatencyFiles() {
 	// Get all sent time file names
 	files, err := ioutil.ReadDir(*directory)
 	if err != nil {
@@ -218,6 +180,8 @@ func (r *Results) calculateLatencies() {
 			}
 		}
 	}
+	
+	r.calculateLatencyAverages()
 }
 
 type Latencies []int64
@@ -226,9 +190,9 @@ func (l Latencies) Len() int           { return len(l) }
 func (l Latencies) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
 func (l Latencies) Less(i, j int) bool { return l[i] < l[j] }
 
-// calculateAverages calculates Mean, Minimum, Maximum, Median,
+// calculateLatencyAverages calculates Mean, Minimum, Maximum, Median,
 // Standard deviation, and 99th percentile (optional)
-func (r *Results) calculateAverages() {
+func (r *Results) calculateLatencyAverages() {
 	var total int64 = 0
 	var length int64 = int64(len(r.latencies))
 	var mean int64 = 0
@@ -275,11 +239,14 @@ func (r *Results) calculateAverages() {
 	// (1 - f) * x[k - 1] + f * x[k]
 	ninetyninth = int64((1-f)*float64(r.latencies[k-1]) + f*float64(r.latencies[k]))
 
+	fmt.Printf("*********************\n")
+	fmt.Printf("LATENCY:\n")
 	fmt.Printf("Count\t%v\n", len(r.latencies))
-	fmt.Printf("Mean\t%v\tms\n", float64(mean)/1000.0)
-	fmt.Printf("Min\t%v\tms\n", float64(r.latencies[0])/1000.0)
-	fmt.Printf("Max\t%v\tms\n", float64(r.latencies[length-1])/1000.0)
-	fmt.Printf("Median\t%v\tms\n", float64(r.latencies[length/2])/1000.0)
-	fmt.Printf("SD\t%v\tms\n", float64(sd)/1000.0)
-	fmt.Printf("99th\t%v\tms\n", float64(ninetyninth)/1000.0)
+	fmt.Printf("Mean\t%.3f\tms\n", float64(mean)/1000.0)
+	fmt.Printf("Min\t%.3f\tms\n", float64(r.latencies[0])/1000.0)
+	fmt.Printf("Max\t%.3f\tms\n", float64(r.latencies[length-1])/1000.0)
+	fmt.Printf("Median\t%.3f\tms\n", float64(r.latencies[length/2])/1000.0)
+	fmt.Printf("SD\t%.3f\tms\n", float64(sd)/1000.0)
+	fmt.Printf("99th\t%.3f\tms\n", float64(ninetyninth)/1000.0)
+	fmt.Printf("*********************\n")
 }
