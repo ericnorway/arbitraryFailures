@@ -4,8 +4,8 @@
 alpha=$1
 pubType=$2
 pubCount=$3
-resultsDir=$4
-testResultsDir=$5
+baseResultsDir=$4
+resultsDir=$5
 configDir=$6
 brokerCount=$7
 subscriberCount=$8
@@ -19,7 +19,7 @@ subscriberMachines=(localhost localhost localhost localhost localhost localhost 
 publisherMachines=(localhost localhost localhost localhost localhost localhost localhost localhost)
 
 #start brokers
-if [ maliciousPct = 0 ]; then
+if [ $maliciousPct = 0 ]; then
 	#normal brokers
 	for ((id=0; id < brokerCount; id++)); do
 		gnome-terminal -e "../broker.sh ${brokerMachines[$id]} $id $configDir $time $alpha $maliciousPct"
@@ -49,11 +49,12 @@ done
 #wait for test to finish
 sleep $time
 
+testResultsDir=$resultsDir/$publisherCount$brokerCount$subscriberCount$pubType$alphaPart$malPart
+
 #move the results to the appropriate directory
 rm -r $testResultsDir
 mkdir $testResultsDir
-mv $resultsDir/*.txt $testResultsDir
+mv $baseResultsDir/*.txt $testResultsDir
 
-go run ../../checkOutputFiles/checkLatency.go -dir=$testResultsDir > $testResultsDir/LATENCY.txt
-go run ../../checkOutputFiles/checkThroughput.go -dir=$testResultsDir > $testResultsDir/THROUGHPUT.txt
-
+# Calculate the throughput and latency
+../../checkOutputFiles/checkOutputFiles -dir=$testResultsDir > $testResultsDir/RESULTS.txt

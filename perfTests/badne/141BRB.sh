@@ -4,8 +4,8 @@
 alpha=0
 pubType=BRB
 pubCount=100
-resultsDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/results"
-testResultsDir="$resultsDir/badne/141BRB"
+baseResultsDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/results"
+resultsDir="$resultsDir/badne"
 configDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/configs/badne"
 brokerCount=4
 subscriberCount=1
@@ -13,4 +13,4 @@ publisherCount=1
 maliciousPct=0
 time=150
 
-./test.sh $alpha $pubType $pubCount $resultsDir $testResultsDir $configDir $brokerCount $subscriberCount $publisherCount $maliciousPct $time
+./test.sh $alpha $pubType $pubCount $baseResultsDir $resultsDir $configDir $brokerCount $subscriberCount $publisherCount $maliciousPct $time

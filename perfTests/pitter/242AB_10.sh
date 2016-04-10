@@ -3,14 +3,14 @@
 #variables
 alpha=10
 pubType=AB
-pubCount=30
+pubCount=10000
 baseResultsDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/results"
-resultsDir="$resultsDir/badne"
-configDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/configs/badne""
+resultsDir="$baseResultsDir/pitter"
+configDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/configs/pitter"
 brokerCount=4
-subscriberCount=1
-publisherCount=1
-maliciousPct=10
-time=150
+subscriberCount=2
+publisherCount=2
+maliciousPct=0
+time=300
 
 ./test.sh $alpha $pubType $pubCount $baseResultsDir $resultsDir $configDir $brokerCount $subscriberCount $publisherCount $maliciousPct $time

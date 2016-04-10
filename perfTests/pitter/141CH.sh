@@ -3,14 +3,14 @@
 #variables
 alpha=0
 pubType=Chain
-pubCount=100
-resultsDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/results"
-testResultsDir="$resultsDir/pitter/141CH"
+pubCount=10000
+baseResultsDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/results"
+resultsDir="$baseResultsDir/pitter"
 configDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/configs/pitter"
 brokerCount=4
 subscriberCount=1
 publisherCount=1
 maliciousPct=0
-time=150
+time=200
 
-./test.sh $alpha $pubType $pubCount $resultsDir $testResultsDir $configDir $brokerCount $subscriberCount $publisherCount $maliciousPct $time
+./test.sh $alpha $pubType $pubCount $baseResultsDir $resultsDir $configDir $brokerCount $subscriberCount $publisherCount $maliciousPct $time
