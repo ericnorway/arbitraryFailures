@@ -49,6 +49,18 @@ done
 #wait for test to finish
 sleep $time
 
+if [ $maliciousPct = 0 ]; then
+	malPart=""
+else
+	malPart=_MAL
+fi
+
+if [ $alpha = 0 ]; then
+	alphaPart=""
+else
+	alphaPart=_$alpha
+fi
+
 testResultsDir=$resultsDir/$publisherCount$brokerCount$subscriberCount$pubType$alphaPart$malPart
 
 #move the results to the appropriate directory
