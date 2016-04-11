@@ -14,9 +14,9 @@ maliciousPct=${10}
 time=${11}
 
 #hosts for each machine
-brokerMachines=(localhost localhost localhost localhost localhost localhost localhost localhost)
-subscriberMachines=(localhost localhost localhost localhost localhost localhost localhost localhost)
-publisherMachines=(localhost localhost localhost localhost localhost localhost localhost localhost)
+brokerMachines=(localhost localhost localhost localhost localhost localhost localhost)
+subscriberMachines=(localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost)
+publisherMachines=(localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost)
 
 #start brokers
 if [ $maliciousPct = 0 ]; then
