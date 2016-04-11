@@ -1,5 +1,5 @@
 ID=7
-BRK_KEYS=lTyvhCql,PPhzCPgl,BalBHfKV
+BRK_KEYS=lTyvhCql,PPhzCPgl,BalBHfKV,5z8pUIxI
 BRK_ADDR=pitter30:11111,pitter31:11111,pitter32:11111,pitter33:11111
 TOPICS=8
 

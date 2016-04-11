@@ -1,5 +1,5 @@
 ID=5
-BRK_KEYS=BDxHgimE,lUNyZj0w,3EKpteqB
+BRK_KEYS=BDxHgimE,lUNyZj0w,3EKpteqB,2WlSbBTR
 BRK_ADDR=pitter30:11111,pitter31:11111,pitter32:11111,pitter33:11111
 TOPICS=6
 
