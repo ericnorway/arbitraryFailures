@@ -24,8 +24,10 @@ func main() {
 		return
 	}
 
+	numberOfBrokers := len(brokerAddresses)
+
 	// Create new broker
-	b := broker.NewBroker(localID, brokerAddresses[localID], uint64(*alpha), *maliciousPercent)
+	b := broker.NewBroker(localID, brokerAddresses[localID], numberOfBrokers, uint64(*alpha), *maliciousPercent)
 
 	// Add publisher information
 	for i, key := range publisherKeys {
@@ -49,7 +51,7 @@ func main() {
 
 	// Add the chain path
 	b.AddChainPath(chain, rChain)
-	
+
 	go RecordThroughput(b)
 
 	// Start the broker
@@ -71,7 +73,7 @@ func RecordThroughput(b *broker.Broker) {
 		select {
 		case <-b.ToUserRecordCh:
 			pubCount++
-		case <- ticker.C:
+		case <-ticker.C:
 			if pubCount > 0 {
 				file.Write([]byte(fmt.Sprintf("%v\n", pubCount)))
 			}
@@ -79,4 +81,3 @@ func RecordThroughput(b *broker.Broker) {
 		}
 	}
 }
-

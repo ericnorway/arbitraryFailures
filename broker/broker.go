@@ -30,7 +30,7 @@ type Broker struct {
 
 	chainRange       int
 	alpha            uint64
-	numberOfServers  uint64
+	numberOfBrokers  uint64
 	echoQuorumSize   uint64
 	readyQuorumSize  uint64
 	faultsTolerated  uint64
@@ -107,8 +107,11 @@ type Broker struct {
 
 // NewBroker returns a new Broker.
 // It takes as input the local broker ID, the local address and port,
-// the alpha value, and the percent of malicious messages to send.
-func NewBroker(localID uint64, localAddr string, alpha uint64, maliciousPercent int) *Broker {
+// the number of brokers, the alpha value, and the percent of malicious messages to send.
+func NewBroker(localID uint64, localAddr string, numberOfBrokers uint64, alpha uint64, maliciousPercent int) *Broker {
+	faultsTolerated := (numberOfBrokers - 1 ) / 3
+	echoQuorumSize := (numberOfBrokers + faultsTolerated + 1) / 2
+	readyQuorumSize := faultsTolerated + 1
 
 	return &Broker{
 		localID:                 localID,
@@ -116,10 +119,10 @@ func NewBroker(localID uint64, localAddr string, alpha uint64, maliciousPercent 
 		localAddr:               localAddr,
 		chainRange:              common.ChainRange,
 		alpha:                   alpha,
-		numberOfServers:         4, // default
-		echoQuorumSize:          3, // default
-		readyQuorumSize:         2, // default
-		faultsTolerated:         1, // default
+		numberOfBrokers:         numberOfBrokers,
+		echoQuorumSize:          echoQuorumSize,
+		readyQuorumSize:         readyQuorumSize,
+		faultsTolerated:         faultsTolerated,
 		maliciousPercent:        maliciousPercent,
 		random:                  rand.New(rand.NewSource(time.Now().Unix())),
 		ToUserRecordCh:          make(chan bool, 32),
