@@ -88,7 +88,7 @@ func (s *Subscriber) handleChainPublication(pub *pb.Publication) bool {
 // verifyChainMACs verifies the MACs for the Chain algorithm.
 // It returns true if the MACs in the chain are verified.
 // It takes as input the publication, and the number of generations to check.
-func (s *Subscriber) verifyChainMACs(pub *pb.Publication, generations int) bool {
+func (s *Subscriber) verifyChainMACs(pub *pb.Publication, generations uint64) bool {
 
 	// Nothing to check, no parents
 	if len(s.chainNodes[s.localStr].parents) == 0 {
@@ -114,7 +114,7 @@ func (s *Subscriber) verifyChainMACs(pub *pb.Publication, generations int) bool 
 // It takes as input the publication,
 // the current node ID string in the tree (should start with the local node),
 // and the number of generations to check.
-func (s *Subscriber) verifyChainMACsRecursive(pub *pb.Publication, currentStr string, generations int) bool {
+func (s *Subscriber) verifyChainMACsRecursive(pub *pb.Publication, currentStr string, generations uint64) bool {
 
 	// Nothing to check, no parents
 	if len(s.chainNodes[currentStr].parents) == 0 {

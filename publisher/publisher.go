@@ -18,13 +18,13 @@ type Publisher struct {
 	localID      uint64
 	localStr     string
 	currentPubID int64
-	chainRange   int
 
 	brokersMutex      sync.RWMutex
 	brokers           map[uint64]brokerInfo // The key is the BrokerID
 	numberOfBrokers   uint64
 	quorumSize        uint64
 	faultsTolerated   uint64
+	chainRange        uint64
 	brokerConnections uint64
 
 	historyRequestCh chan HistoryRequestInfo
@@ -53,16 +53,17 @@ type HistoryRequestInfo struct {
 func NewPublisher(localID uint64, numberOfBrokers uint64) *Publisher {
 	faultsTolerated := (numberOfBrokers - 1) / 3
 	quorumSize := 2*faultsTolerated + 1
+	chainRange := faultsTolerated + 1
 
 	return &Publisher{
 		localID:           localID,
 		localStr:          "P" + strconv.FormatUint(localID, 10),
 		currentPubID:      0,
-		chainRange:        common.ChainRange,
 		brokers:           make(map[uint64]brokerInfo),
 		numberOfBrokers:   numberOfBrokers,
 		quorumSize:        quorumSize,
 		faultsTolerated:   faultsTolerated,
+		chainRange:        chainRange,
 		brokerConnections: 0,
 		historyRequestCh:  make(chan HistoryRequestInfo, 8),
 		addToHistoryCh:    make(chan pb.Publication, 8),

@@ -108,7 +108,7 @@ func (p *Publisher) handleChainPublish(pub *pb.Publication) bool {
 // It takes as input the publication,
 // the current node ID string in the tree (should start with the local node's children),
 // and the number of generations to add.
-func (p *Publisher) addMACs(pub *pb.Publication, currentStr string, generations int) {
+func (p *Publisher) addMACs(pub *pb.Publication, currentStr string, generations uint64) {
 	if generations > 1 {
 		// Add MACs for all the children
 		for _, childStr := range p.chainNodes[currentStr].children {

@@ -18,15 +18,15 @@ import (
 // publications received, a map of publications learned,
 // and a map of topics.
 type Subscriber struct {
-	localID    uint64
-	localStr   string
-	chainRange int
+	localID  uint64
+	localStr string
 
 	brokersMutex      sync.RWMutex
 	brokers           map[uint64]brokerInfo
 	numberOfBrokers   uint64
 	quorumSize        uint64
 	faultsTolerated   uint64
+	chainRange        uint64
 	brokerConnections int64
 
 	fromBrokerCh  chan pb.Publication
@@ -55,17 +55,18 @@ type Subscriber struct {
 
 // NewSubscriber returns a new Subscriber.
 func NewSubscriber(localID uint64, numberOfBrokers uint64) *Subscriber {
-	faultsTolerated := (numberOfBrokers - 1 ) / 3
-	quorumSize := 2 * faultsTolerated + 1
+	faultsTolerated := (numberOfBrokers - 1) / 3
+	quorumSize := 2*faultsTolerated + 1
+	chainRange := faultsTolerated + 1
 
 	return &Subscriber{
 		localID:           localID,
 		localStr:          "S" + strconv.FormatUint(localID, 10),
-		chainRange:        common.ChainRange,
 		brokers:           make(map[uint64]brokerInfo),
 		numberOfBrokers:   numberOfBrokers,
 		quorumSize:        quorumSize,
 		faultsTolerated:   faultsTolerated,
+		chainRange:        chainRange,
 		brokerConnections: 0,
 		fromBrokerCh:      make(chan pb.Publication, 8),
 		ToUserPubCh:       make(chan pb.Publication, 8),
