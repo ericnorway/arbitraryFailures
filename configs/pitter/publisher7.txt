@@ -1,6 +1,6 @@
 ID=7
 BRK_KEYS=lTyvhCql,PPhzCPgl,BalBHfKV
-BRK_ADDR=pitter33:11111,pitter34:11111,pitter35:11111
+BRK_ADDR=pitter30:11111,pitter31:11111,pitter32:11111,pitter33:11111
 TOPICS=8
 
 CHAIN=P7:B0
