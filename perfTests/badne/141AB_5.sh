@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #variables
-alpha=0
-pubType=Chain
+alpha=5
+pubType=AB
 pubCount=100
 baseResultsDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/results"
 resultsDir="$baseResultsDir/badne"

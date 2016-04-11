@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #variables
-alpha=0
+alpha=5
 pubType=Chain
 pubCount=100
 baseResultsDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/results"
