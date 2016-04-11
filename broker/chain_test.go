@@ -143,7 +143,7 @@ var handleChainPublishTests = []struct {
 	broker      *Broker
 	desc        string
 	thisNode    string
-	chainRange  int
+	chainRange  uint64
 	ancestors   []string
 	descendants []string
 	pubReq      pb.Publication

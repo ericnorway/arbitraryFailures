@@ -28,12 +28,12 @@ type Broker struct {
 	localStr  string
 	localAddr string
 
-	chainRange       int
 	alpha            uint64
 	numberOfBrokers  uint64
 	echoQuorumSize   uint64
 	readyQuorumSize  uint64
 	faultsTolerated  uint64
+	chainRange       uint64
 	maliciousPercent int
 	random           *rand.Rand
 
@@ -112,17 +112,18 @@ func NewBroker(localID uint64, localAddr string, numberOfBrokers uint64, alpha u
 	faultsTolerated := (numberOfBrokers - 1 ) / 3
 	echoQuorumSize := (numberOfBrokers + faultsTolerated + 1) / 2
 	readyQuorumSize := faultsTolerated + 1
+	chainRange := faultsTolerated + 1
 
 	return &Broker{
 		localID:                 localID,
 		localStr:                "B" + strconv.FormatUint(localID, 10),
 		localAddr:               localAddr,
-		chainRange:              common.ChainRange,
 		alpha:                   alpha,
 		numberOfBrokers:         numberOfBrokers,
 		echoQuorumSize:          echoQuorumSize,
 		readyQuorumSize:         readyQuorumSize,
 		faultsTolerated:         faultsTolerated,
+		chainRange:              chainRange,
 		maliciousPercent:        maliciousPercent,
 		random:                  rand.New(rand.NewSource(time.Now().Unix())),
 		ToUserRecordCh:          make(chan bool, 32),

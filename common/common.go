@@ -16,8 +16,6 @@ var Message1PubID1 = []byte{2, 0, 0, 0, 0, 0, 0, 0, 83, 111, 109, 101, 32, 100, 
 var Message3PubID2 = []byte{4, 0, 0, 0, 0, 0, 0, 0, 83, 111, 109, 101, 32, 109, 111, 114, 101, 32, 100, 97, 116, 97, 46}
 var Message4PubID3 = []byte{6, 0, 0, 0, 0, 0, 0, 0, 69, 118, 101, 110, 32, 109, 111, 114, 101, 32, 100, 97, 116, 97, 46, 46, 46}
 
-var ChainRange = 2
-
 // Enumeration of the different algorithms used
 const (
 	AB    = iota // Authenticated Broadcast algorithm
