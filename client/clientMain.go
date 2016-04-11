@@ -27,11 +27,13 @@ func main() {
 		return
 	}
 
+	numberOfBrokers := uint64(len(brokerAddresses))
+
 	if *clientType == "publisher" {
-		p := NewPublisherInstance(localID)
+		p := NewPublisherInstance(localID, numberOfBrokers)
 		p.mainPub()
 	} else if *clientType == "subscriber" {
-		s := NewSubscriberInstance(localID)
+		s := NewSubscriberInstance(localID, numberOfBrokers)
 		s.mainSub()
 	}
 }
@@ -44,10 +46,10 @@ type SubscriberInstance struct {
 }
 
 // NewSubscriberInstance ...
-func NewSubscriberInstance(id uint64) *SubscriberInstance {
+func NewSubscriberInstance(id uint64, numberOfBrokers uint64) *SubscriberInstance {
 	return &SubscriberInstance{
 		id:            localID,
-		subscriber:    subscriber.NewSubscriber(id),
+		subscriber:    subscriber.NewSubscriber(id, numberOfBrokers),
 		recordTimesCh: make(chan common.RecordTime, 16),
 	}
 }
@@ -112,10 +114,10 @@ type PublisherInstance struct {
 }
 
 // NewPublisherInstance ...
-func NewPublisherInstance(id uint64) *PublisherInstance {
+func NewPublisherInstance(id uint64, numberOfBrokers uint64) *PublisherInstance {
 	return &PublisherInstance{
 		id:            id,
-		publisher:     publisher.NewPublisher(id),
+		publisher:     publisher.NewPublisher(id, numberOfBrokers),
 		recordTimesCh: make(chan common.RecordTime, 64),
 	}
 }

@@ -24,6 +24,9 @@ type Subscriber struct {
 
 	brokersMutex      sync.RWMutex
 	brokers           map[uint64]brokerInfo
+	numberOfBrokers   uint64
+	quorumSize        uint64
+	faultsTolerated   uint64
 	brokerConnections int64
 
 	fromBrokerCh  chan pb.Publication
@@ -51,12 +54,18 @@ type Subscriber struct {
 }
 
 // NewSubscriber returns a new Subscriber.
-func NewSubscriber(localID uint64) *Subscriber {
+func NewSubscriber(localID uint64, numberOfBrokers uint64) *Subscriber {
+	faultsTolerated := (numberOfBrokers - 1 ) / 3
+	quorumSize := 2 * faultsTolerated + 1
+
 	return &Subscriber{
 		localID:           localID,
 		localStr:          "S" + strconv.FormatUint(localID, 10),
 		chainRange:        common.ChainRange,
 		brokers:           make(map[uint64]brokerInfo),
+		numberOfBrokers:   numberOfBrokers,
+		quorumSize:        quorumSize,
+		faultsTolerated:   faultsTolerated,
 		brokerConnections: 0,
 		fromBrokerCh:      make(chan pb.Publication, 8),
 		ToUserPubCh:       make(chan pb.Publication, 8),
@@ -219,8 +228,8 @@ func (s *Subscriber) handlePublications() {
 
 // checkQuorum checks that a quorum has been received for a specific publisher and publication.
 // It return true if a quorum has been found, false otherwise. It takes as input
-// the publisher ID, publication ID, and quorum size.
-func (s *Subscriber) checkQuorum(publisherID uint64, publicationID int64, quorumSize uint) bool {
+// the publisher ID and publication ID.
+func (s *Subscriber) checkQuorum(publisherID uint64, publicationID int64) bool {
 	// It's nil, so nothing to check.
 	if s.pubsReceived[publisherID] == nil {
 		s.pubsReceived[publisherID] = make(map[int64]map[uint64]string)
@@ -244,10 +253,10 @@ func (s *Subscriber) checkQuorum(publisherID uint64, publicationID int64, quorum
 
 	// Just a temporary map to help with checking for a quorum. It keeps track of the number of each
 	// publication value with this publisher ID and publication ID.
-	countMap := make(map[string]uint)
+	countMap := make(map[string]uint64)
 	for _, contents := range s.pubsReceived[publisherID][publicationID] {
 		countMap[contents] = countMap[contents] + 1
-		if countMap[contents] >= quorumSize {
+		if countMap[contents] >= s.quorumSize {
 			s.pubsLearned[publisherID][publicationID] = contents
 			// fmt.Printf("Learned publication %v from publisher %v.\n", publicationID, publisherID)
 			return true

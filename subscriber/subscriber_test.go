@@ -43,7 +43,7 @@ var handlePublishTests = []struct {
 	subtests   []handlePublishTest
 }{
 	{
-		subscriber: NewSubscriber(0),
+		subscriber: NewSubscriber(0, 4),
 		desc:       "1 AB publication from 4 brokers",
 		subtests: []handlePublishTest{
 			{
@@ -114,7 +114,7 @@ var handlePublishTests = []struct {
 		},
 	},
 	{
-		subscriber: NewSubscriber(0),
+		subscriber: NewSubscriber(0, 4),
 		desc:       "2 AB publications from 4 brokers",
 		subtests: []handlePublishTest{
 			{
@@ -250,7 +250,7 @@ var handlePublishTests = []struct {
 		},
 	},
 	{
-		subscriber: NewSubscriber(0),
+		subscriber: NewSubscriber(0, 4),
 		desc:       "1 AB publication, 1 BRB from 4 brokers",
 		subtests: []handlePublishTest{
 			{
@@ -444,7 +444,7 @@ var handleHistoryTests = []struct {
 	subtests   []handleHistoryTest
 }{
 	{
-		subscriber: NewSubscriber(0),
+		subscriber: NewSubscriber(0, 4),
 		desc:       "3 AB publications from 4 brokers\n (2nd publication missing from two brokers),\n 1 BRB history publication from 4 brokers",
 		subtests: []handleHistoryTest{
 			{

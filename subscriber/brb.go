@@ -23,7 +23,7 @@ func (s *Subscriber) handleBrbPublication(pub *pb.Publication) bool {
 		// So record it
 		s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = common.GetInfo(pub)
 		// Check if there is a quorum yet for this publisher ID and publication ID
-		foundQuorum = s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
+		foundQuorum = s.checkQuorum(pub.PublisherID, pub.PublicationID)
 
 		if foundQuorum && len(pub.Contents) > 1 {
 			s.handleHistoryPublication(pub)

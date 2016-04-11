@@ -10,7 +10,7 @@ func (p *Publisher) handleBrbPublish(pub *pb.Publication) bool {
 	p.brokersMutex.RLock()
 	defer p.brokersMutex.RUnlock()
 
-	acceptCount := 0
+	acceptCount := uint64(0)
 
 	for _, broker := range p.brokers {
 		if broker.toCh != nil {
@@ -29,7 +29,7 @@ func (p *Publisher) handleBrbPublish(pub *pb.Publication) bool {
 		}
 	}
 
-	if acceptCount >= 3 {
+	if acceptCount >= p.quorumSize {
 		return true
 	}
 

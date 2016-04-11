@@ -18,6 +18,11 @@ func TestPublish(t *testing.T) {
 		}
 
 		for j, subtest := range test.subtests {
+			// Not actually going to get responses from publishers, so just preload the accept channel
+			for k := 0; k < test.numBrokers; k++ {
+				test.publisher.acceptedCh <- true
+			}
+
 			// Add publication request
 			test.publisher.Publish(&subtest.pub)
 
@@ -47,7 +52,7 @@ var publishTests = []struct {
 	subtests   []publishTest
 }{
 	{
-		publisher:  NewPublisher(0),
+		publisher:  NewPublisher(0, 4),
 		desc:       "1 AB publication",
 		numBrokers: 4,
 		subtests: []publishTest{
@@ -74,7 +79,7 @@ var publishTests = []struct {
 		},
 	},
 	{
-		publisher:  NewPublisher(0),
+		publisher:  NewPublisher(0, 4),
 		desc:       "1 BRB publication",
 		numBrokers: 4,
 		subtests: []publishTest{
@@ -114,6 +119,11 @@ func TestHistory(t *testing.T) {
 		}
 
 		for j, subtest := range test.subtests {
+			// Not actually going to get responses from publishers, so just preload the accept channel
+			for k := 0; k < test.numBrokers; k++ {
+				test.publisher.acceptedCh <- true
+			}
+
 			// Add publication request
 			test.publisher.Publish(&subtest.pub)
 
@@ -175,7 +185,7 @@ var historyTests = []struct {
 	wantHistory pb.Publication
 }{
 	{
-		publisher:  NewPublisher(1),
+		publisher:  NewPublisher(1, 4),
 		desc:       "3 AB publications, history request",
 		numBrokers: 4,
 		subtests: []historyTest{

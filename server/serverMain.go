@@ -24,7 +24,7 @@ func main() {
 		return
 	}
 
-	numberOfBrokers := len(brokerAddresses)
+	numberOfBrokers := uint64(len(brokerAddresses))
 
 	// Create new broker
 	b := broker.NewBroker(localID, brokerAddresses[localID], numberOfBrokers, uint64(*alpha), *maliciousPercent)

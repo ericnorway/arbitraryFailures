@@ -25,7 +25,7 @@ func (s *Subscriber) handleAbPublication(pub *pb.Publication) bool {
 		s.pubsReceived[pub.PublisherID][pub.PublicationID][pub.BrokerID] = common.GetInfo(pub)
 
 		// Check if there is a quorum yet for this publisher ID and publication ID
-		foundQuorum = s.checkQuorum(pub.PublisherID, pub.PublicationID, 3)
+		foundQuorum = s.checkQuorum(pub.PublisherID, pub.PublicationID)
 	}
 
 	return foundQuorum
