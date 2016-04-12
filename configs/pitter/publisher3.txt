@@ -1,7 +1,7 @@
 ID=3
 BRK_KEYS=wdBiAoJv,jnquS0Eq,yzmI6haq,fIRo7njP
 BRK_ADDR=pitter30:11111,pitter31:11111,pitter32:11111,pitter33:11111
-TOPICS=4
+TOPICS=3
 
 CHAIN=P3:B0
 CHAIN=B0:B1
