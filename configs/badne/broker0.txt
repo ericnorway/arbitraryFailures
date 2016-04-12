@@ -1,7 +1,7 @@
 ID=0
 BRK_ADDR=localhost:11110,localhost:11111,localhost:11112,localhost:11113
 BRK_KEYS=        ,nKYVfV3J,JVp1rIY4,ob1T1YEW
-SUB_KEYS=JPyOPyHS,6QDLapJG,cmnGTee8,zoU5y64w,I7sexvxO,w2gn84Xs,DUR5acW1,HzGGtiVa,cfZqUhvs,UEzPgZky,wtKSxnY6,2aJ1kzQm
+SUB_KEYS=JPyOPyHS,6QDLapJG,cmnGTee8,zoU5y64w,st4frSvi,w2gn84Xs,DUR5acW1,HzGGtiVa,cfZqUhvs,UEzPgZky,wtKSxnY6,2aJ1kzQm
 PUB_KEYS=sEGWKyTK,R6Jz2LOZ,0BDIJvco,wdBiAoJv,S2Ls4mCv,BDxHgimE,XXpfrd7i,lTyvhCql,KqCj3Zel,QUA5AYYx,TuJMI1Hx,WnOqHXZB
 
 CHAIN=B0:B1

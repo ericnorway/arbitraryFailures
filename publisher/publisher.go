@@ -110,7 +110,7 @@ func (p *Publisher) Start() {
 		go p.startBrokerClient(broker)
 	}
 
-	for p.brokerConnections < 3 {
+	for p.brokerConnections < p.numberOfBrokers {
 		fmt.Printf("Waiting for connections...\n")
 		time.Sleep(time.Second)
 	}

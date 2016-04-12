@@ -27,7 +27,7 @@ type Subscriber struct {
 	quorumSize        uint64
 	faultsTolerated   uint64
 	chainRange        uint64
-	brokerConnections int64
+	brokerConnections uint64
 
 	fromBrokerCh  chan pb.Publication
 	ToUserPubCh   chan pb.Publication
@@ -179,7 +179,7 @@ func (s *Subscriber) Start() {
 		go s.startBrokerClient(broker)
 	}
 
-	for s.brokerConnections < 3 {
+	for s.brokerConnections < s.numberOfBrokers {
 		fmt.Printf("Waiting for connections...\n")
 		time.Sleep(time.Second)
 	}

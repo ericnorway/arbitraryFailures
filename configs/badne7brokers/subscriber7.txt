@@ -1,0 +1,11 @@
+ID=7
+BRK_KEYS=HzGGtiVa,FbwHhSO9,kWdtnVXC,TqksXrgn,yDteTHwA,Jej9WopL,rZHWFOp5
+BRK_ADDR=localhost:11110,localhost:11111,localhost:11112,localhost:11113,localhost:11114,localhost:11115,localhost:11116
+TOPICS=7
+
+RCHAIN=S7:B4
+RCHAIN=B4:B3
+RCHAIN=B3:B2
+RCHAIN=B2:B1
+RCHAIN=B1:B0
+RCHAIN=B0

@@ -1,7 +1,7 @@
 ID=5
 BRK_KEYS=BDxHgimE,lUNyZj0w,3EKpteqB,2WlSbBTR
 BRK_ADDR=localhost:11110,localhost:11111,localhost:11112,localhost:11113
-TOPICS=6
+TOPICS=5
 
 CHAIN=P5:B0
 CHAIN=B0:B1

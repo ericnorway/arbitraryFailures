@@ -1,0 +1,11 @@
+ID=2
+BRK_KEYS=0BDIJvco,UM8R2t92,PcWmU5SZ,9el6Onts,qvmeQIaJ,LgVMexJO,XuVeVlaq
+BRK_ADDR=localhost:11110,localhost:11111,localhost:11112,localhost:11113,localhost:11114,localhost:11115,localhost:11116
+TOPICS=2
+
+CHAIN=P2:B0
+CHAIN=B0:B1
+CHAIN=B1:B2
+CHAIN=B2:B3
+CHAIN=B3:B4
+CHAIN=B4

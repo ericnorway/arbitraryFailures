@@ -187,7 +187,7 @@ func (b *Broker) connectToOtherBrokers() {
 	}
 
 	// Wait for connections to be established.
-	for b.remoteBrokerConnections < 3 {
+	for b.remoteBrokerConnections < b.numberOfBrokers - 1 {
 		fmt.Printf("Waiting for connections...\n")
 		time.Sleep(time.Second)
 	}
@@ -265,7 +265,7 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 
 	// Check MAC
 	if !exists || common.CheckPublicationMAC(pub, pub.MAC, publisher.key, common.Algorithm) == false {
-		//fmt.Printf("***BAD MAC: Publish*** %v\n", *pub)
+		fmt.Printf("***BAD MAC: Publish*** %v\n", *pub)
 		return &pb.PubResponse{Status: pb.PubResponse_BAD_MAC}, nil
 	}
 
@@ -370,7 +370,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 
 	// Check MAC
 	if !exists || common.CheckSubscriptionMAC(req, req.MAC, subscriber.key, common.Algorithm) == false {
-		//fmt.Printf("***BAD MAC: Subscribe*** %v\n", *req)
+		fmt.Printf("***BAD MAC: Subscribe*** %v\n", *req)
 		return fmt.Errorf("***BAD MAC: Subscribe*** %v\n", *req)
 	}
 
