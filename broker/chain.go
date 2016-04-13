@@ -165,7 +165,7 @@ func (b *Broker) handleChainPublish(pub *pb.Publication) bool {
 		} else if strings.HasPrefix(childStr, "S") {
 			// Send the publication to that child.
 			b.subscribersMutex.RLock()
-			if b.subscribers[childID].toCh != nil {
+			if b.subscribers[childID].toCh != nil && b.subscribers[childID].topics[pub.TopicID] == true {
 				select {
 				case b.subscribers[childID].toCh <- *tempPub:
 					if len(b.subscribers[childID].toCh) > toChannelLength/2 {
@@ -280,16 +280,31 @@ func (b *Broker) addMACsRecursive(pub *pb.Publication, oldPub *pb.Publication, c
 	if generations > 1 {
 		// Add MACs for all the broker children
 		for _, childStr := range b.chainNodes[currentStr].children {
-			chainMAC := pb.ChainMAC{
-				From: b.localStr,
-				To:   childStr,
-				MAC:  common.CreatePublicationMAC(pub, b.chainNodes[childStr].key, common.Algorithm),
+			addMAC := true
+
+			// Check if the subscriber is subscribed to this topic
+			if strings.HasPrefix(childStr, "S") {
+				childID, _ := strconv.ParseUint(childStr[1:], 10, 64)
+				b.subscribersMutex.RLock()
+				if b.subscribers[childID].topics[pub.TopicID] == false {
+					// Don't add the MAC is the subscriber isn't interested in this topic
+					addMAC = false
+				}
+				b.subscribersMutex.RUnlock()
 			}
 
-			pub.ChainMACs = append(pub.ChainMACs, &chainMAC)
+			if addMAC {
+				chainMAC := pb.ChainMAC{
+					From: b.localStr,
+					To:   childStr,
+					MAC:  common.CreatePublicationMAC(pub, b.chainNodes[childStr].key, common.Algorithm),
+				}
 
-			// Recursively add child macs for next generation
-			b.addMACsRecursive(pub, oldPub, childStr, generations-1)
+				pub.ChainMACs = append(pub.ChainMACs, &chainMAC)
+
+				// Recursively add child macs for next generation
+				b.addMACsRecursive(pub, oldPub, childStr, generations-1)
+			}
 		}
 	}
 }
