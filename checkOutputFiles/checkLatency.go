@@ -157,6 +157,9 @@ func (r *Results) readReceivedTimeFile(fileName string) {
 }
 
 func (r *Results) calculateLatencies() {
+	outputFileName := filepath.Join(*directory, "output.txt")
+	var buf bytes.Buffer
+
 	// For each publisher
 	for publisher := range r.sendTimes {
 		if r.recvTimes[publisher] == nil {
@@ -175,12 +178,21 @@ func (r *Results) calculateLatencies() {
 			for _, receiveTime := range r.recvTimes[publisher][publication] {
 				// Calculate the latency. Divide by 1000 to convert to microseconds
 				latency := (receiveTime - sendTime) / 1000
+
+				// Write the latency to a file too.
+				buf.WriteString(fmt.Sprintf("%d\t", publisher))
+				buf.WriteString(fmt.Sprintf("%d\t", publication))
+				buf.WriteString(strconv.FormatFloat(float64(latency)/1000.0, 'f', 6, 64))
+				buf.WriteString("\n")
+
 				// Save the latency
 				r.latencies = append(r.latencies, latency)
 			}
 		}
 	}
-	
+
+	ioutil.WriteFile(outputFileName, []byte(buf.String()), 0644)
+
 	r.calculateLatencyAverages()
 }
 
@@ -203,15 +215,6 @@ func (r *Results) calculateLatencyAverages() {
 		fmt.Printf("No results. Nothing to calculate.\n")
 		return
 	}
-
-	outputFileName := filepath.Join(*directory, "output.txt")
-	var buf bytes.Buffer
-	for i := int64(0); i < length; i++ {
-		//fmt.Printf("%v\n", float64(r.latencies[i]) / 1000.0)
-		buf.WriteString(strconv.FormatFloat(float64(r.latencies[i])/1000.0, 'f', 6, 64))
-		buf.WriteString("\n")
-	}
-	ioutil.WriteFile(outputFileName, []byte(buf.String()), 0644)
 
 	// Sort for getting min, max, median, 99th
 	sort.Sort(r.latencies)

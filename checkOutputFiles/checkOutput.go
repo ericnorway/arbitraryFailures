@@ -32,7 +32,7 @@ func main() {
 	if *directory == "" {
 		*directory = "."
 	}
-	
+
 	r := NewResults()
 	r.readLatencyFiles()
 	r.calculateLatencies()
