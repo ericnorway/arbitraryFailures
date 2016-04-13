@@ -46,6 +46,17 @@
 ./444CH_5.sh
 ./444CH_10.sh
 
+# 4 publishers, 4 brokers. 4 subscribers
+./545AB.sh
+./545AB_3.sh
+./545AB_5.sh
+./545AB_10.sh
+./545BRB.sh
+./4545CH.sh
+./545CH_3.sh
+./545CH_5.sh
+./545CH_10.sh
+
 # 6 publishers, 4 brokers. 6 subscribers
 ./646AB.sh
 ./646AB_3.sh
