@@ -1,0 +1,9 @@
+ID=4
+BRK_KEYS=st4frSvi,j7HueWxK,uy43akIk,nP4PPAql
+BRK_ADDR=localhost:11110,localhost:11111,localhost:11112,localhost:11113
+TOPICS=4
+
+RCHAIN=S4:B2
+RCHAIN=B2:B1
+RCHAIN=B1:B0
+RCHAIN=B0
