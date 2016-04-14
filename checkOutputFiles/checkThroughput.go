@@ -37,6 +37,8 @@ func readThroughputFile(fileName string, throughput *[]int) {
 		return
 	}
 
+	tempThroughput := []int{}
+
 	// Break the file up into lines
 	lines := strings.Split(string(bytes), "\n")
 
@@ -52,7 +54,57 @@ func readThroughputFile(fileName string, throughput *[]int) {
 			continue
 		}
 
-		*throughput = append(*throughput, value)
+		tempThroughput = append(tempThroughput, value)
+	}
+
+	// Remove leading zeroes (from before the publishers started)
+	removeLeadingZeroes(&tempThroughput)
+
+	// Remove trailing zeroes (from after the publishers finished)
+	removeTrailingZeroes(&tempThroughput)
+
+	*throughput = append(*throughput, tempThroughput[:]...)
+}
+
+// removeTrailingZeroes removes the leading zeroes in the slice.
+// It takes as input a pointer to the slice.
+func removeLeadingZeroes(throughput *[]int) {
+	// Just return for empty slice
+	if len(*throughput) < 1 {
+		return
+	}
+
+	// While the first element in the slice is zero
+	for i := 0; (*throughput)[i] == 0; {
+		// If final element in slice is zero
+		if len(*throughput) == 1 {
+			*throughput = []int{}
+			break
+		} else {
+			// Remove the first element
+			*throughput = append((*throughput)[:i], (*throughput)[i+1:]...)
+		}
+	}
+}
+
+// removeTrailingZeroes removes the trailing zeroes in the slice.
+// It takes as input a pointer to the slice.
+func removeTrailingZeroes(throughput *[]int) {
+	// Just return for empty slice
+	if len(*throughput) < 1 {
+		return
+	}
+
+	// While the last element in the slice is zero
+	for i := len(*throughput) - 1; (*throughput)[i] == 0; i-- {
+		// If the final element in the slice is zero
+		if len(*throughput) == 1 {
+			*throughput = []int{}
+			break
+		} else {
+			// Remove the last element
+			*throughput = append((*throughput)[:i])
+		}
 	}
 }
 

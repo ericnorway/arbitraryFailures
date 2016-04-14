@@ -74,9 +74,7 @@ func RecordThroughput(b *broker.Broker) {
 		case <-b.ToUserRecordCh:
 			pubCount++
 		case <-ticker.C:
-			if pubCount > 0 {
-				file.Write([]byte(fmt.Sprintf("%v\n", pubCount)))
-			}
+			file.Write([]byte(fmt.Sprintf("%v\n", pubCount)))
 			pubCount = 0
 		}
 	}

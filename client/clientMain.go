@@ -147,7 +147,7 @@ func (p *PublisherInstance) mainPub() {
 
 	for i := int64(0); i < *pubCount; i++ {
 		// Create a new random message.
-		mac.Write([]byte(time.Now().String()))
+		mac.Write([]byte("Test publication " + time.Now().String()))
 		sum := mac.Sum(nil)
 
 		currentTopic := topics[random.Intn(topicsRange)]

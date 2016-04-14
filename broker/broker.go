@@ -501,18 +501,21 @@ func (b *Broker) alterPublication(pub *pb.Publication) bool {
 }
 
 // incrementPublicationCount places a message on the ToUserRecordCh each time a publication
-// is finished processing. This is used in calculating througput. It takes as input the publication,
-// in case the publication is a history publication.
+// is finished processing. This is used in calculating throughput. It takes as input the publication.
 func (b *Broker) incrementPublicationCount(pub *pb.Publication) {
-	select {
-	case b.ToUserRecordCh <- true:
-	default:
-		// Use the default case just in case the user isn't reading from this channel
-		// and the channel fills up.
-	}
 
-	if len(pub.Contents) > 1 {
+	// If it is a history publication
+	if pub.PublicationID < 0 {
+		// Add any missing publications to the pub count
 		b.incrementPublicationCountByHistory(pub)
+	} else {
+		// Otherwise just increment the count
+		select {
+		case b.ToUserRecordCh <- true:
+		default:
+			// Use the default case just in case the user isn't reading from this channel
+			// and the channel fills up.
+		}
 	}
 }
 
