@@ -592,7 +592,7 @@ func (b *Broker) checkBusy() {
 	for {
 		select {
 		case <-b.busyCh:
-			ticker = time.NewTicker(20 * time.Millisecond)
+			ticker = time.NewTicker(5 * time.Millisecond)
 			b.isBusy = true
 		case <-ticker.C:
 			ticker.Stop()
@@ -601,9 +601,9 @@ func (b *Broker) checkBusy() {
 			// Check if the broker channels have gone down
 			b.remoteBrokersMutex.RLock()
 			for _, remoteBroker := range b.remoteBrokers {
-				if len(remoteBroker.toEchoCh) > toChannelLength/2 ||
-					len(remoteBroker.toReadyCh) > toChannelLength/2 ||
-					len(remoteBroker.toChainCh) > toChannelLength/2 {
+				if len(remoteBroker.toEchoCh) > toChannelLength/4 ||
+					len(remoteBroker.toReadyCh) > toChannelLength/4 ||
+					len(remoteBroker.toChainCh) > toChannelLength/4 {
 					stillBusy = true
 				}
 			}
@@ -622,7 +622,7 @@ func (b *Broker) checkBusy() {
 				b.isBusy = false
 			} else {
 				b.isBusy = true
-				ticker = time.NewTicker(20 * time.Millisecond)
+				ticker = time.NewTicker(5 * time.Millisecond)
 			}
 		}
 	}
