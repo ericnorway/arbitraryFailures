@@ -44,11 +44,33 @@ message PubResponse{
 	Status status = 1;
 }
 
-message EchoResponse{}
+message EchoResponse{
+	enum Status {
+		OK = 0;
+		BAD_MAC = 2;
+	}
 
-message ReadyResponse{}
+	Status status = 1;
+}
 
-message ChainResponse{}
+message ReadyResponse{
+	enum Status {
+		OK = 0;
+		BAD_MAC = 2;
+	}
+
+	Status status = 1;
+}
+
+message ChainResponse{
+	enum Status {
+		OK = 0;
+		WAIT = 1;
+		BAD_MAC = 2;
+	}
+
+	Status status = 1;
+}
 
 message SubRequest {
 	uint64 SubscriberID = 1;

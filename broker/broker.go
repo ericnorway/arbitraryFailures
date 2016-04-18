@@ -109,7 +109,7 @@ type Broker struct {
 // It takes as input the local broker ID, the local address and port,
 // the number of brokers, the alpha value, and the percent of malicious messages to send.
 func NewBroker(localID uint64, localAddr string, numberOfBrokers uint64, alpha uint64, maliciousPercent int) *Broker {
-	faultsTolerated := (numberOfBrokers - 1 ) / 3
+	faultsTolerated := (numberOfBrokers - 1) / 3
 	echoQuorumSize := (numberOfBrokers + faultsTolerated + 1) / 2
 	readyQuorumSize := faultsTolerated + 1
 	chainRange := faultsTolerated + 1
@@ -187,7 +187,7 @@ func (b *Broker) connectToOtherBrokers() {
 	}
 
 	// Wait for connections to be established.
-	for b.remoteBrokerConnections < b.numberOfBrokers - 1 {
+	for b.remoteBrokerConnections < b.numberOfBrokers-1 {
 		fmt.Printf("Waiting for connections...\n")
 		time.Sleep(time.Second)
 	}
@@ -248,8 +248,18 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string) {
 			}
 			pub.MAC = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key, common.Algorithm)
 
-			_, err := client.Chain(context.Background(), &pub)
-			if err != nil {
+			for sent := false; sent == false; {
+				resp, err := client.Chain(context.Background(), &pub)
+
+				if err != nil {
+					sent = false
+				} else if resp.Status == pb.ChainResponse_WAIT {
+					// b.setBusy() // TODO: Might need to set this. Need to test.
+					time.Sleep(time.Millisecond)
+					sent = false
+				} else {
+					sent = true
+				}
 			}
 		}
 	}
@@ -311,14 +321,14 @@ func (b *Broker) Echo(ctx context.Context, pub *pb.Publication) (*pb.EchoRespons
 	// Check MAC
 	if !exists || common.CheckPublicationMAC(pub, pub.MAC, remoteBroker.key, common.Algorithm) == false {
 		// fmt.Printf("***BAD MAC: Echo*** %v\n", *pub)
-		return &pb.EchoResponse{}, nil
+		return &pb.EchoResponse{Status: pb.EchoResponse_BAD_MAC}, nil
 	}
 
 	select {
 	case b.fromBrokerEchoCh <- *pub:
 	}
 
-	return &pb.EchoResponse{}, nil
+	return &pb.EchoResponse{Status: pb.EchoResponse_OK}, nil
 }
 
 // Ready handles incoming BRB ready requests from other brokers
@@ -328,31 +338,35 @@ func (b *Broker) Ready(ctx context.Context, pub *pb.Publication) (*pb.ReadyRespo
 	// Check MAC
 	if !exists || common.CheckPublicationMAC(pub, pub.MAC, remoteBroker.key, common.Algorithm) == false {
 		// fmt.Printf("***BAD MAC: Ready*** %v\n", *pub)
-		return &pb.ReadyResponse{}, nil
+		return &pb.ReadyResponse{Status: pb.ReadyResponse_BAD_MAC}, nil
 	}
 
 	select {
 	case b.fromBrokerReadyCh <- *pub:
 	}
 
-	return &pb.ReadyResponse{}, nil
+	return &pb.ReadyResponse{Status: pb.ReadyResponse_OK}, nil
 }
 
 // Chain handles incoming Chain requests from other brokers
 func (b *Broker) Chain(ctx context.Context, pub *pb.Publication) (*pb.ChainResponse, error) {
+	if b.isBusy {
+		return &pb.ChainResponse{Status: pb.ChainResponse_WAIT}, nil
+	}
+
 	remoteBroker, exists := b.remoteBrokers[pub.BrokerID]
 
 	// Check MAC
 	if !exists || common.CheckPublicationMAC(pub, pub.MAC, remoteBroker.key, common.Algorithm) == false {
 		// fmt.Printf("***BAD MAC: Chain*** %v\n", *pub)
-		return &pb.ChainResponse{}, nil
+		return &pb.ChainResponse{Status: pb.ChainResponse_BAD_MAC}, nil
 	}
 
 	select {
 	case b.fromBrokerChainCh <- *pub:
 	}
 
-	return &pb.ChainResponse{}, nil
+	return &pb.ChainResponse{Status: pb.ChainResponse_OK}, nil
 }
 
 // Subscribe handles incoming Subscribe requests from subscribers

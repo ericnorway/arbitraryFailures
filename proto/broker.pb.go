@@ -62,6 +62,75 @@ func (x PubResponse_Status) String() string {
 	return proto1.EnumName(PubResponse_Status_name, int32(x))
 }
 
+type EchoResponse_Status int32
+
+const (
+	EchoResponse_OK      EchoResponse_Status = 0
+	EchoResponse_WAIT    EchoResponse_Status = 1
+	EchoResponse_BAD_MAC EchoResponse_Status = 2
+)
+
+var EchoResponse_Status_name = map[int32]string{
+	0: "OK",
+	1: "WAIT",
+	2: "BAD_MAC",
+}
+var EchoResponse_Status_value = map[string]int32{
+	"OK":      0,
+	"WAIT":    1,
+	"BAD_MAC": 2,
+}
+
+func (x EchoResponse_Status) String() string {
+	return proto1.EnumName(EchoResponse_Status_name, int32(x))
+}
+
+type ReadyResponse_Status int32
+
+const (
+	ReadyResponse_OK      ReadyResponse_Status = 0
+	ReadyResponse_WAIT    ReadyResponse_Status = 1
+	ReadyResponse_BAD_MAC ReadyResponse_Status = 2
+)
+
+var ReadyResponse_Status_name = map[int32]string{
+	0: "OK",
+	1: "WAIT",
+	2: "BAD_MAC",
+}
+var ReadyResponse_Status_value = map[string]int32{
+	"OK":      0,
+	"WAIT":    1,
+	"BAD_MAC": 2,
+}
+
+func (x ReadyResponse_Status) String() string {
+	return proto1.EnumName(ReadyResponse_Status_name, int32(x))
+}
+
+type ChainResponse_Status int32
+
+const (
+	ChainResponse_OK      ChainResponse_Status = 0
+	ChainResponse_WAIT    ChainResponse_Status = 1
+	ChainResponse_BAD_MAC ChainResponse_Status = 2
+)
+
+var ChainResponse_Status_name = map[int32]string{
+	0: "OK",
+	1: "WAIT",
+	2: "BAD_MAC",
+}
+var ChainResponse_Status_value = map[string]int32{
+	"OK":      0,
+	"WAIT":    1,
+	"BAD_MAC": 2,
+}
+
+func (x ChainResponse_Status) String() string {
+	return proto1.EnumName(ChainResponse_Status_name, int32(x))
+}
+
 type Publication struct {
 	PubType       uint32      `protobuf:"varint,1,opt,name=PubType" json:"PubType,omitempty"`
 	PublisherID   uint64      `protobuf:"varint,2,opt,name=PublisherID" json:"PublisherID,omitempty"`
@@ -103,6 +172,7 @@ func (m *PubResponse) String() string { return proto1.CompactTextString(m) }
 func (*PubResponse) ProtoMessage()    {}
 
 type EchoResponse struct {
+	Status EchoResponse_Status `protobuf:"varint,1,opt,name=status,enum=proto.EchoResponse_Status" json:"status,omitempty"`
 }
 
 func (m *EchoResponse) Reset()         { *m = EchoResponse{} }
@@ -110,6 +180,7 @@ func (m *EchoResponse) String() string { return proto1.CompactTextString(m) }
 func (*EchoResponse) ProtoMessage()    {}
 
 type ReadyResponse struct {
+	Status ReadyResponse_Status `protobuf:"varint,1,opt,name=status,enum=proto.ReadyResponse_Status" json:"status,omitempty"`
 }
 
 func (m *ReadyResponse) Reset()         { *m = ReadyResponse{} }
@@ -117,6 +188,7 @@ func (m *ReadyResponse) String() string { return proto1.CompactTextString(m) }
 func (*ReadyResponse) ProtoMessage()    {}
 
 type ChainResponse struct {
+	Status ChainResponse_Status `protobuf:"varint,1,opt,name=status,enum=proto.ChainResponse_Status" json:"status,omitempty"`
 }
 
 func (m *ChainResponse) Reset()         { *m = ChainResponse{} }
@@ -142,6 +214,9 @@ func init() {
 	proto1.RegisterType((*ChainResponse)(nil), "proto.ChainResponse")
 	proto1.RegisterType((*SubRequest)(nil), "proto.SubRequest")
 	proto1.RegisterEnum("proto.PubResponse_Status", PubResponse_Status_name, PubResponse_Status_value)
+	proto1.RegisterEnum("proto.EchoResponse_Status", EchoResponse_Status_name, EchoResponse_Status_value)
+	proto1.RegisterEnum("proto.ReadyResponse_Status", ReadyResponse_Status_name, ReadyResponse_Status_value)
+	proto1.RegisterEnum("proto.ChainResponse_Status", ChainResponse_Status_name, ChainResponse_Status_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
