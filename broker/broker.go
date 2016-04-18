@@ -587,15 +587,20 @@ func (b *Broker) setBusy() {
 // the broker accepts no new publications.
 func (b *Broker) checkBusy() {
 
-	ticker := time.NewTicker(20 * time.Millisecond)
+	var ticker *time.Ticker
+	tickerRunning := false
 
 	for {
 		select {
 		case <-b.busyCh:
-			ticker = time.NewTicker(5 * time.Millisecond)
+			if !tickerRunning {
+				ticker = time.NewTicker(5 * time.Millisecond)
+				tickerRunning = true
+			}
 			b.isBusy = true
 		case <-ticker.C:
 			ticker.Stop()
+			tickerRunning = false
 			stillBusy := false
 
 			// Check if the broker channels have gone down
@@ -612,7 +617,7 @@ func (b *Broker) checkBusy() {
 			// Check if the subscriber channels have gone down
 			b.subscribersMutex.RLock()
 			for _, subscriber := range b.subscribers {
-				if len(subscriber.toCh) > toChannelLength/2 {
+				if len(subscriber.toCh) > toChannelLength/4 {
 					stillBusy = true
 				}
 			}
@@ -623,6 +628,7 @@ func (b *Broker) checkBusy() {
 			} else {
 				b.isBusy = true
 				ticker = time.NewTicker(5 * time.Millisecond)
+				tickerRunning = true
 			}
 		}
 	}
