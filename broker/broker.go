@@ -254,7 +254,7 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string) {
 				if err != nil {
 					sent = false
 				} else if resp.Status == pb.ChainResponse_WAIT {
-					// b.setBusy() // TODO: Might need to set this. Need to test.
+					b.setBusy()
 					time.Sleep(time.Millisecond)
 					sent = false
 				} else {
@@ -587,8 +587,8 @@ func (b *Broker) setBusy() {
 // the broker accepts no new publications.
 func (b *Broker) checkBusy() {
 
-	var ticker *time.Ticker
-	tickerRunning := false
+	ticker := time.NewTicker(5 * time.Millisecond)
+	tickerRunning := true
 
 	for {
 		select {
@@ -596,8 +596,8 @@ func (b *Broker) checkBusy() {
 			if !tickerRunning {
 				ticker = time.NewTicker(5 * time.Millisecond)
 				tickerRunning = true
+				b.isBusy = true
 			}
-			b.isBusy = true
 		case <-ticker.C:
 			ticker.Stop()
 			tickerRunning = false
