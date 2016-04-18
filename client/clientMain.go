@@ -173,7 +173,7 @@ func (p *PublisherInstance) mainPub() {
 		for sent := false; sent == false; {
 			// Send the publication.
 			sent = p.publisher.Publish(pub)
-			time.Sleep(5 * time.Millisecond)
+			time.Sleep(3 * time.Millisecond)
 		}
 		fmt.Printf(".")
 	}
