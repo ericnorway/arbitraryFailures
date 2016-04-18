@@ -301,7 +301,7 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 			}
 
 			b.alphaCounters[pub.PublisherID][pub.TopicID]++
-			if b.alphaCounters[pub.PublisherID][pub.TopicID] == b.alpha {
+			if b.alphaCounters[pub.PublisherID][pub.TopicID] >= b.alpha {
 				return &pb.PubResponse{Status: pb.PubResponse_HISTORY}, nil
 			}
 		}

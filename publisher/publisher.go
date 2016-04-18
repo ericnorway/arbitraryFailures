@@ -84,10 +84,6 @@ func (p *Publisher) Publish(pub *pb.Publication) bool {
 		return false
 	}
 
-	select {
-	case p.addToHistoryCh <- *pub:
-	}
-
 	accepted := false
 
 	switch pub.PubType {
@@ -97,6 +93,12 @@ func (p *Publisher) Publish(pub *pb.Publication) bool {
 		accepted = p.handleBrbPublish(pub)
 	case common.Chain:
 		accepted = p.handleChainPublish(pub)
+	}
+
+	if accepted {
+		select {
+		case p.addToHistoryCh <- *pub:
+		}
 	}
 
 	return accepted

@@ -11,6 +11,6 @@ brokerCount=4
 subscriberCount=3
 publisherCount=3
 maliciousPct=0
-time=300
+time=220
 
 ./test.sh $alpha $pubType $pubCount $baseResultsDir $resultsDir $configDir $brokerCount $subscriberCount $publisherCount $maliciousPct $time

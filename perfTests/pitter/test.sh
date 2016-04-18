@@ -15,8 +15,8 @@ time=${11}
 
 #hosts for each machine
 brokerMachines=(pitter30 pitter31 pitter32 pitter33)
-subscriberMachines=(pitter26 pitter27 pitter28 pitter29 pitter26 pitter27 pitter28 pitter29 pitter26 pitter27 pitter28 pitter29)
-publisherMachines=(pitter26 pitter27 pitter28 pitter29 pitter26 pitter27 pitter28 pitter29 pitter26 pitter27 pitter28 pitter29)
+subscriberMachines=(pitter26 pitter27 pitter39 pitter29 pitter26 pitter27 pitter39 pitter29 pitter26 pitter27 pitter39 pitter29)
+publisherMachines=(pitter26 pitter27 pitter39 pitter29 pitter26 pitter27 pitter39 pitter29 pitter26 pitter27 pitter39 pitter29)
 
 #start brokers
 if [ $maliciousPct = 0 ]; then
