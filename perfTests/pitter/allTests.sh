@@ -101,17 +101,6 @@
 ./12412CH_5.sh
 ./12412CH_10.sh
 
-# 4 publishers, 7 brokers, 4 subscribers
-#./474AB.sh
-#./474AB_3.sh
-#./474AB_5.sh
-#./474AB_10.sh
-#./474BRB.sh
-#./474CH.sh
-#./474CH_3.sh
-#./474CH_5.sh
-#./474CH_10.sh
-
 # 4 publishers, 4 brokers, 4 subscribers - one malicious broker
 #./444AB_MAL.sh
 #./444AB_3_MAL.sh
