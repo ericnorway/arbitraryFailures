@@ -170,10 +170,11 @@ func (p *PublisherInstance) mainPub() {
 			Time:          time.Now().UnixNano(),
 		}
 
-		for sent := false; sent == false; {
-			// Send the publication.
+		// Send the publication.
+		sent := p.publisher.Publish(pub)
+		for ; sent == false; {
+			time.Sleep(100 * time.Microsecond)
 			sent = p.publisher.Publish(pub)
-			time.Sleep(3 * time.Millisecond)
 		}
 		fmt.Printf(".")
 	}

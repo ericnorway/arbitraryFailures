@@ -2,7 +2,6 @@ package publisher
 
 import (
 	"testing"
-	"time"
 
 	"github.com/ericnorway/arbitraryFailures/common"
 	pb "github.com/ericnorway/arbitraryFailures/proto"
@@ -20,7 +19,7 @@ func TestPublish(t *testing.T) {
 		for j, subtest := range test.subtests {
 			// Not actually going to get responses from publishers, so just preload the accept channel
 			for k := 0; k < test.numBrokers; k++ {
-				test.publisher.acceptedCh <- true
+				test.publisher.statusCh <- pb.PubResponse_OK
 			}
 
 			// Add publication request
@@ -109,8 +108,6 @@ var publishTests = []struct {
 
 func TestHistory(t *testing.T) {
 	for i, test := range historyTests {
-		// Manually start just historyHandler, not the whole publisher
-		go test.publisher.historyHandler()
 
 		// Manually add broker channels
 		for j := 0; j < test.numBrokers; j++ {
@@ -119,9 +116,28 @@ func TestHistory(t *testing.T) {
 		}
 
 		for j, subtest := range test.subtests {
-			// Not actually going to get responses from publishers, so just preload the accept channel
-			for k := 0; k < test.numBrokers; k++ {
-				test.publisher.acceptedCh <- true
+			timeForHistory := false
+			if j == len(test.subtests)-1 {
+				timeForHistory = true
+			}
+
+			// Not actually going to get responses from publishers, so just preload the status channel
+			if timeForHistory {
+				for k := 0; k < test.numBrokers; k++ {
+					test.publisher.statusCh <- pb.PubResponse_HISTORY
+				}
+
+				// Preload the status channel with history responses when the channel is available
+				go func() {
+					for k := 0; k < test.numBrokers; k++ {
+						test.publisher.statusCh <- pb.PubResponse_OK
+					}
+				}()
+
+			} else {
+				for k := 0; k < test.numBrokers; k++ {
+					test.publisher.statusCh <- pb.PubResponse_OK
+				}
 			}
 
 			// Add publication request
@@ -140,23 +156,6 @@ func TestHistory(t *testing.T) {
 			}
 			test.publisher.brokersMutex.RUnlock()
 		}
-
-		// Testing is a slightly weird scenario where the publisher is not waiting on a response from the brokers.
-		// Just sleep a bit to simulate waiting for a response.
-		// Unfortunately weird timing scenarios sometimes occur otherwise. E.g. history requests come in before history is added.
-		time.Sleep(time.Millisecond)
-
-		test.publisher.brokersMutex.RLock()
-		// Generate history requests
-		for _, broker := range test.publisher.brokers {
-			select {
-			case test.publisher.historyRequestCh <- HistoryRequestInfo{
-				BrokerID: broker.id,
-				TopicID:  1,
-				PubType:  common.AB}:
-			}
-		}
-		test.publisher.brokersMutex.RUnlock()
 
 		test.publisher.brokersMutex.RLock()
 		for _, broker := range test.publisher.brokers {

@@ -27,11 +27,12 @@ type Publisher struct {
 	chainRange        uint64
 	brokerConnections uint64
 
-	historyRequestCh chan HistoryRequestInfo
-	addToHistoryCh   chan pb.Publication
-
-	blockCh    chan HistoryRequestInfo
-	blockTopic map[uint64]bool // The key is TopicID
+	// The key is the TopicID
+	pubsSinceLastHistory map[uint64]uint64
+	// The key is the TopicID. This is a map of slices.
+	history map[uint64][]pb.Publication
+	// The Publication ID for the history publications. Use negative numbers.
+	historyID int64
 
 	ToUserRecordCh chan common.RecordTime
 
@@ -39,7 +40,7 @@ type Publisher struct {
 	// For example a publisher node with ID of 3 would be "P3"
 	chainNodes map[string]chainNode
 
-	acceptedCh chan bool
+	statusCh chan pb.PubResponse_Status
 }
 
 // HistoryRequestInfo
@@ -56,22 +57,21 @@ func NewPublisher(localID uint64, numberOfBrokers uint64) *Publisher {
 	chainRange := faultsTolerated + 1
 
 	return &Publisher{
-		localID:           localID,
-		localStr:          "P" + strconv.FormatUint(localID, 10),
-		currentPubID:      0,
-		brokers:           make(map[uint64]brokerInfo),
-		numberOfBrokers:   numberOfBrokers,
-		quorumSize:        quorumSize,
-		faultsTolerated:   faultsTolerated,
-		chainRange:        chainRange,
-		brokerConnections: 0,
-		historyRequestCh:  make(chan HistoryRequestInfo, 8),
-		addToHistoryCh:    make(chan pb.Publication, 8),
-		blockCh:           make(chan HistoryRequestInfo, 8),
-		blockTopic:        make(map[uint64]bool),
-		ToUserRecordCh:    make(chan common.RecordTime, 8),
-		chainNodes:        make(map[string]chainNode),
-		acceptedCh:        make(chan bool, 8),
+		localID:              localID,
+		localStr:             "P" + strconv.FormatUint(localID, 10),
+		currentPubID:         0,
+		brokers:              make(map[uint64]brokerInfo),
+		numberOfBrokers:      numberOfBrokers,
+		quorumSize:           quorumSize,
+		faultsTolerated:      faultsTolerated,
+		chainRange:           chainRange,
+		brokerConnections:    0,
+		pubsSinceLastHistory: make(map[uint64]uint64),
+		history:              make(map[uint64][]pb.Publication),
+		historyID:            int64(-1),
+		ToUserRecordCh:       make(chan common.RecordTime, 16),
+		chainNodes:           make(map[string]chainNode),
+		statusCh:             make(chan pb.PubResponse_Status, numberOfBrokers),
 	}
 }
 
@@ -79,12 +79,32 @@ func NewPublisher(localID uint64, numberOfBrokers uint64) *Publisher {
 // It returns false if the topic ID is currently blocked or was not accepted by the brokers, true otherwise.
 // It takes as input a publication.
 func (p *Publisher) Publish(pub *pb.Publication) bool {
-	if p.blockTopic[pub.TopicID] == true {
-		fmt.Printf("Blocked\n")
+
+	accepted := p.publish(pub)
+
+	switch accepted {
+	case pb.PubResponse_OK:
+		p.addToHistory(pub)
+		return true
+	case pb.PubResponse_HISTORY:
+		p.addToHistory(pub)
+		p.publishHistory(pub.TopicID)
+		return true
+	case pb.PubResponse_BLOCKED:
+		p.publishHistory(pub.TopicID)
+		return false
+	case pb.PubResponse_BAD_MAC:
+		return false
+	case pb.PubResponse_WAIT:
 		return false
 	}
 
-	accepted := false
+	return false
+}
+
+func (p *Publisher) publish(pub *pb.Publication) pb.PubResponse_Status {
+
+	accepted := pb.PubResponse_OK
 
 	switch pub.PubType {
 	case common.AB:
@@ -95,19 +115,11 @@ func (p *Publisher) Publish(pub *pb.Publication) bool {
 		accepted = p.handleChainPublish(pub)
 	}
 
-	if accepted {
-		select {
-		case p.addToHistoryCh <- *pub:
-		}
-	}
-
 	return accepted
 }
 
 // Start starts the publisher.
 func (p *Publisher) Start() {
-	go p.historyHandler()
-
 	for _, broker := range p.brokers {
 		go p.startBrokerClient(broker)
 	}
@@ -145,44 +157,13 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 			if err != nil {
 				fmt.Printf("Error publishing to %v, %v\n", broker.id, err)
 				select {
-				case p.acceptedCh <- false:
+				case p.statusCh <- -1:
 				}
 				continue
 			}
 
-			accepted := false
-
-			switch resp.Status {
-			case pb.PubResponse_OK:
-				accepted = true
-			case pb.PubResponse_HISTORY:
-				accepted = true
-				select {
-				case p.historyRequestCh <- HistoryRequestInfo{
-					BrokerID: broker.id,
-					TopicID:  pub.TopicID,
-					PubType:  pub.PubType,
-				}:
-				}
-			case pb.PubResponse_BLOCKED:
-				accepted = false
-				select {
-				case p.blockCh <- HistoryRequestInfo{
-					BrokerID: broker.id,
-					TopicID:  pub.TopicID,
-					PubType:  pub.PubType,
-				}:
-				}
-			case pb.PubResponse_WAIT:
-				accepted = false
-			case pb.PubResponse_BAD_MAC:
-				accepted = false
-			default:
-				accepted = false
-			}
-
 			select {
-			case p.acceptedCh <- accepted:
+			case p.statusCh <- resp.Status:
 			}
 		}
 	}

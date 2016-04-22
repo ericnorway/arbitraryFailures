@@ -587,14 +587,14 @@ func (b *Broker) setBusy() {
 // the broker accepts no new publications.
 func (b *Broker) checkBusy() {
 
-	ticker := time.NewTicker(5 * time.Millisecond)
+	ticker := time.NewTicker(100 * time.Microsecond)
 	tickerRunning := true
 
 	for {
 		select {
 		case <-b.busyCh:
 			if !tickerRunning {
-				ticker = time.NewTicker(5 * time.Millisecond)
+				ticker = time.NewTicker(100 * time.Microsecond)
 				tickerRunning = true
 				b.isBusy = true
 			}
@@ -627,7 +627,7 @@ func (b *Broker) checkBusy() {
 				b.isBusy = false
 			} else {
 				b.isBusy = true
-				ticker = time.NewTicker(5 * time.Millisecond)
+				ticker = time.NewTicker(100 * time.Microsecond)
 				tickerRunning = true
 			}
 		}

@@ -58,8 +58,9 @@ func (n *chainNode) addChildren(children []string) {
 }
 
 // handleChainPublish processes a Bracha's Reliable Broadcast publish.
-// It takes as input a publication.
-func (p *Publisher) handleChainPublish(pub *pb.Publication) bool {
+// It takes as input a publication. It returns a status for the publication
+// as output.
+func (p *Publisher) handleChainPublish(pub *pb.Publication) pb.PubResponse_Status {
 
 	// For this node's broker children, should be only one
 	for _, childStr := range p.chainNodes[p.localStr].children {
@@ -92,16 +93,12 @@ func (p *Publisher) handleChainPublish(pub *pb.Publication) bool {
 		p.brokersMutex.RUnlock()
 
 		select {
-		case accepted := <-p.acceptedCh:
-			if accepted {
-				return true
-			}
+		case status := <-p.statusCh:
+			return pb.PubResponse_Status(status)
 		}
-
-		return false
 	}
 
-	return false
+	return -1
 }
 
 // addMACsRecursive adds MACs to the chain of MACs.
