@@ -62,44 +62,55 @@
 ./646AB_3.sh
 ./646AB_5.sh
 ./646AB_10.sh
-./646BRB.sh
-./646CH.sh
-./646CH_3.sh
-./646CH_5.sh
-./646CH_10.sh
+#./646BRB.sh
+#./646CH.sh
+#./646CH_3.sh
+#./646CH_5.sh
+#./646CH_10.sh
 
 # 8 publishers, 4 brokers. 8 subscribers
 ./848AB.sh
 ./848AB_3.sh
 ./848AB_5.sh
 ./848AB_10.sh
-./848BRB.sh
-./848CH.sh
-./848CH_3.sh
-./848CH_5.sh
-./848CH_10.sh
+#./848BRB.sh
+#./848CH.sh
+#./848CH_3.sh
+#./848CH_5.sh
+#./848CH_10.sh
 
 # 10 publishers, 4 brokers, 10 subscribers
 ./10410AB.sh
 ./10410AB_3.sh
 ./10410AB_5.sh
 ./10410AB_10.sh
-./10410BRB.sh
-./10410CH.sh
-./10410CH_3.sh
-./10410CH_5.sh
-./10410CH_10.sh
+#./10410BRB.sh
+#./10410CH.sh
+#./10410CH_3.sh
+#./10410CH_5.sh
+#./10410CH_10.sh
 
 # 12 publishers, 4 brokers, 12 subscribers
 ./12412AB.sh
 ./12412AB_3.sh
 ./12412AB_5.sh
 ./12412AB_10.sh
-./12412BRB.sh
-./12412CH.sh
-./12412CH_3.sh
-./12412CH_5.sh
-./12412CH_10.sh
+#./12412BRB.sh
+#./12412CH.sh
+#./12412CH_3.sh
+#./12412CH_5.sh
+#./12412CH_10.sh
+
+# 14 publishers, 4 brokers, 14 subscribers
+./14414AB.sh
+./14414AB_3.sh
+./14414AB_5.sh
+./14414AB_10.sh
+#./14414BRB.sh
+#./14414CH.sh
+#./14414CH_3.sh
+#./14414CH_5.sh
+#./14414CH_10.sh
 
 # 4 publishers, 4 brokers, 4 subscribers - one malicious broker
 #./444AB_MAL.sh
