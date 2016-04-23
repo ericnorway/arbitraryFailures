@@ -28,7 +28,7 @@ func (b Broker) handleAbPublish(pub *pb.Publication) {
 			if subscriber.toCh != nil && b.subscribers[i].topics[pub.TopicID] == true {
 				select {
 				case subscriber.toCh <- *pub:
-					if len(subscriber.toCh) > toChannelLength/2 {
+					if len(subscriber.toCh) > b.toSubscriberChLen/2 {
 						b.setBusy()
 					}
 				}

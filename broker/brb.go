@@ -35,7 +35,7 @@ func (b Broker) handleBrbPublish(pub *pb.Publication) {
 			if remoteBroker.toEchoCh != nil {
 				select {
 				case remoteBroker.toEchoCh <- *pub:
-					if len(remoteBroker.toEchoCh) > toChannelLength/2 {
+					if len(remoteBroker.toEchoCh) > b.toBrbChLen/2 {
 						b.setBusy()
 					}
 					//default:
@@ -97,7 +97,7 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 				if remoteBroker.toReadyCh != nil {
 					select {
 					case remoteBroker.toReadyCh <- *pub:
-						if len(remoteBroker.toReadyCh) > toChannelLength/2 {
+						if len(remoteBroker.toReadyCh) > b.toBrbChLen/2 {
 							b.setBusy()
 						}
 						//default:
@@ -114,7 +114,7 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 				if subscriber.toCh != nil && b.subscribers[i].topics[pub.TopicID] == true {
 					select {
 					case subscriber.toCh <- *pub:
-						if len(subscriber.toCh) > toChannelLength/2 {
+						if len(subscriber.toCh) > b.toSubscriberChLen/2 {
 							b.setBusy()
 						}
 						//default:
@@ -180,7 +180,7 @@ func (b Broker) handleReady(pub *pb.Publication) {
 				if remoteBroker.toReadyCh != nil {
 					select {
 					case remoteBroker.toReadyCh <- *pub:
-						if len(remoteBroker.toReadyCh) > toChannelLength/2 {
+						if len(remoteBroker.toReadyCh) > b.toBrbChLen/2 {
 							b.setBusy()
 						}
 						//default:
@@ -197,7 +197,7 @@ func (b Broker) handleReady(pub *pb.Publication) {
 				if subscriber.toCh != nil && b.subscribers[i].topics[pub.TopicID] == true {
 					select {
 					case subscriber.toCh <- *pub:
-						if len(subscriber.toCh) > toChannelLength/2 {
+						if len(subscriber.toCh) > b.toSubscriberChLen/2 {
 							b.setBusy()
 						}
 						//default:

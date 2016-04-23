@@ -19,7 +19,7 @@ import (
 	// "google.golang.org/grpc/peer"
 )
 
-var toChannelLength = 256
+var channelLength = 32
 
 // Broker is a struct containing channels used in communicating
 // with read and write loops.
@@ -103,6 +103,10 @@ type Broker struct {
 
 	busyCh chan bool
 	isBusy bool
+
+	toBrbChLen        int
+	toChainChLen      int
+	toSubscriberChLen int
 }
 
 // NewBroker returns a new Broker.
@@ -146,6 +150,9 @@ func NewBroker(localID uint64, localAddr string, numberOfBrokers uint64, alpha u
 		chainNodes:              make(map[string]chainNode),
 		busyCh:                  make(chan bool),
 		isBusy:                  false,
+		toBrbChLen:              int(numberOfBrokers) * channelLength,
+		toChainChLen:            channelLength,
+		toSubscriberChLen:       channelLength,
 	}
 }
 
@@ -606,9 +613,9 @@ func (b *Broker) checkBusy() {
 			// Check if the broker channels have gone down
 			b.remoteBrokersMutex.RLock()
 			for _, remoteBroker := range b.remoteBrokers {
-				if len(remoteBroker.toEchoCh) > toChannelLength/4 ||
-					len(remoteBroker.toReadyCh) > toChannelLength/4 ||
-					len(remoteBroker.toChainCh) > toChannelLength/4 {
+				if len(remoteBroker.toEchoCh) > b.toBrbChLen/4 ||
+					len(remoteBroker.toReadyCh) > b.toBrbChLen/4 ||
+					len(remoteBroker.toChainCh) > b.toChainChLen/4 {
 					stillBusy = true
 				}
 			}
@@ -617,7 +624,7 @@ func (b *Broker) checkBusy() {
 			// Check if the subscriber channels have gone down
 			b.subscribersMutex.RLock()
 			for _, subscriber := range b.subscribers {
-				if len(subscriber.toCh) > toChannelLength/4 {
+				if len(subscriber.toCh) > b.toSubscriberChLen/4 {
 					stillBusy = true
 				}
 			}

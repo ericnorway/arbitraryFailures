@@ -53,9 +53,9 @@ func (b *Broker) addBrokerChannels(id uint64) (chan pb.Publication, chan pb.Publ
 	b.remoteBrokersMutex.Lock()
 	defer b.remoteBrokersMutex.Unlock()
 
-	echoCh := make(chan pb.Publication, toChannelLength)
-	readyCh := make(chan pb.Publication, toChannelLength)
-	chainCh := make(chan pb.Publication, toChannelLength)
+	echoCh := make(chan pb.Publication, b.toBrbChLen)
+	readyCh := make(chan pb.Publication, b.toBrbChLen)
+	chainCh := make(chan pb.Publication, b.toChainChLen)
 
 	// Update channels
 	tempBroker := b.remoteBrokers[id]
