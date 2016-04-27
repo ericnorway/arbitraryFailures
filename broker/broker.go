@@ -262,7 +262,7 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string) {
 					sent = false
 				} else if resp.Status == pb.ChainResponse_WAIT {
 					b.setBusy()
-					time.Sleep(time.Millisecond)
+					time.Sleep(100 * time.Microsecond)
 					sent = false
 				} else {
 					sent = true

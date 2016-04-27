@@ -3,7 +3,7 @@
 #variables
 alpha=3
 pubType=Chain
-pubCount=10000
+pubCount=50000
 baseResultsDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/results"
 resultsDir="$baseResultsDir/pitter"
 configDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/configs/pitter7brokers"
