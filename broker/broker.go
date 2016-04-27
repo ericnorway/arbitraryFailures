@@ -135,8 +135,8 @@ func NewBroker(localID uint64, localAddr string, numberOfBrokers uint64, alpha u
 		fromPublisherCh:         make(chan pb.Publication, channelLength),
 		remoteBrokers:           make(map[uint64]brokerInfo),
 		remoteBrokerConnections: 0,
-		fromBrokerEchoCh:        make(chan pb.Publication, int(numberOfBrokers) * channelLength),
-		fromBrokerReadyCh:       make(chan pb.Publication, int(numberOfBrokers) * channelLength),
+		fromBrokerEchoCh:        make(chan pb.Publication, int(numberOfBrokers)*channelLength),
+		fromBrokerReadyCh:       make(chan pb.Publication, int(numberOfBrokers)*channelLength),
 		fromBrokerChainCh:       make(chan pb.Publication, channelLength),
 		subscribers:             make(map[uint64]subscriberInfo),
 		fromSubscriberCh:        make(chan pb.SubRequest, channelLength),
@@ -187,10 +187,33 @@ func (b *Broker) StartBroker() {
 
 // connectToOtherBrokers connects this broker to the other brokers.
 func (b *Broker) connectToOtherBrokers() {
+	count := uint64(0)
 
 	// Connect to all broker addresses except itself.
 	for _, broker := range b.remoteBrokers {
-		go b.connectToBroker(broker.id, broker.addr)
+		if b.maliciousPercent > 0 {
+			// Chain will just send to the next node in the chain.
+			// Always set chainMalicious to true to guarantee it is malicious to the next node.
+			// It won't matter if the other nodes are set to true.
+
+			// Meanwhile, just set brbMalicious to true for some random nodes (because of map)
+			// up to b.faultsTolerated number of them.
+
+			if count < b.faultsTolerated {
+				// Be malicious to broker in BRB and chain algorithms.
+				fmt.Printf("Malicious to %v\n", broker.id)
+
+				go b.connectToBroker(broker.id, broker.addr, true, true)
+			} else {
+				// Be malicious to broker in chain algorithm.
+				go b.connectToBroker(broker.id, broker.addr, false, true)
+			}
+		} else {
+			// Don't be malicious to this broker.
+			go b.connectToBroker(broker.id, broker.addr, false, false)
+		}
+
+		count++
 	}
 
 	// Wait for connections to be established.
@@ -202,8 +225,9 @@ func (b *Broker) connectToOtherBrokers() {
 }
 
 // connectToBroker connects to a single broker.
-// It takes as input the remote broker's ID and address.
-func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string) {
+// It takes as input the remote broker's ID and address. It also takes as input whether or not
+// to be malicous to this remote broker in BRB publications and chain publications.
+func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string, brbMalicious bool, chainMalicious bool) {
 	fmt.Printf("Trying to connect to %v\n", brokerAddr)
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure(), grpc.WithBlock())
@@ -223,11 +247,8 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string) {
 	for {
 		select {
 		case pub := <-toEchoCh:
-			if b.maliciousPercent > 0 {
-				altered := b.alterPublication(&pub)
-				if altered {
-					//fmt.Printf("Altered pub: %v\n", &pub)
-				}
+			if brbMalicious {
+				continue
 			}
 			pub.MAC = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key, common.Algorithm)
 
@@ -235,11 +256,8 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string) {
 			if err != nil {
 			}
 		case pub := <-toReadyCh:
-			if b.maliciousPercent > 0 {
-				altered := b.alterPublication(&pub)
-				if altered {
-					//fmt.Printf("Altered pub: %v\n", &pub)
-				}
+			if brbMalicious {
+				continue
 			}
 			pub.MAC = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key, common.Algorithm)
 
@@ -247,11 +265,8 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string) {
 			if err != nil {
 			}
 		case pub := <-toChainCh:
-			if b.maliciousPercent > 0 {
-				altered := b.alterPublication(&pub)
-				if altered {
-					//fmt.Printf("Altered pub: %v\n", &pub)
-				}
+			if chainMalicious {
+				continue
 			}
 			pub.MAC = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key, common.Algorithm)
 
@@ -327,7 +342,7 @@ func (b *Broker) Echo(ctx context.Context, pub *pb.Publication) (*pb.EchoRespons
 
 	// Check MAC
 	if !exists || common.CheckPublicationMAC(pub, pub.MAC, remoteBroker.key, common.Algorithm) == false {
-		// fmt.Printf("***BAD MAC: Echo*** %v\n", *pub)
+		fmt.Printf("***BAD MAC: Echo*** %v\n", pub)
 		return &pb.EchoResponse{Status: pb.EchoResponse_BAD_MAC}, nil
 	}
 
@@ -344,7 +359,7 @@ func (b *Broker) Ready(ctx context.Context, pub *pb.Publication) (*pb.ReadyRespo
 
 	// Check MAC
 	if !exists || common.CheckPublicationMAC(pub, pub.MAC, remoteBroker.key, common.Algorithm) == false {
-		// fmt.Printf("***BAD MAC: Ready*** %v\n", *pub)
+		fmt.Printf("***BAD MAC: Ready*** %v\n", pub)
 		return &pb.ReadyResponse{Status: pb.ReadyResponse_BAD_MAC}, nil
 	}
 
@@ -407,10 +422,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 			select {
 			case pub := <-ch:
 				if b.maliciousPercent > 0 {
-					altered := b.alterPublication(&pub)
-					if altered {
-						//fmt.Printf("Altered pub: %v\n", &pub)
-					}
+					continue
 				}
 
 				pub.MAC = common.CreatePublicationMAC(&pub, b.subscribers[id].key, common.Algorithm)
@@ -494,9 +506,9 @@ func (b *Broker) alterPublication(pub *pb.Publication) bool {
 		var alterType int
 
 		if len(pub.ChainMACs) > 0 {
-			alterType = r % 6
-		} else {
 			alterType = r % 5
+		} else {
+			alterType = r % 4
 		}
 		switch alterType {
 		case 0:
@@ -506,12 +518,10 @@ func (b *Broker) alterPublication(pub *pb.Publication) bool {
 		case 2:
 			pub.TopicID = pub.TopicID + 1
 		case 3:
-			pub.BrokerID = pub.BrokerID + 1
-		case 4:
 			if len(pub.Contents) > 0 {
 				pub.Contents[0] = []byte("Bad message")
 			}
-		case 5:
+		case 4:
 			pub.ChainMACs = nil
 		}
 
