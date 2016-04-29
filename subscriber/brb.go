@@ -25,7 +25,7 @@ func (s *Subscriber) handleBrbPublication(pub *pb.Publication) bool {
 		// Check if there is a quorum yet for this publisher ID and publication ID
 		foundQuorum = s.checkQuorum(pub.PublisherID, pub.PublicationID)
 
-		if foundQuorum && len(pub.Contents) > 1 {
+		if foundQuorum && pub.PublicationID < 0 {
 			s.handleHistoryPublication(pub)
 		}
 	}
