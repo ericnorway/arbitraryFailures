@@ -10,7 +10,7 @@ configDir="/home/stud/ericfree/go/src/github.com/ericnorway/arbitraryFailures/co
 brokerCount=4
 subscriberCount=8
 publisherCount=8
-maliciousPct=25
+maliciousPct=100
 time=260
 
 ./test.sh $alpha $pubType $pubCount $baseResultsDir $resultsDir $configDir $brokerCount $subscriberCount $publisherCount $maliciousPct $time

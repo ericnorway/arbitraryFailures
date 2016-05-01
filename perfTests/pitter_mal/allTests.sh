@@ -3,15 +3,15 @@
 # SHOULD BE RUN DIRECTLY FROM ITS DIRECTORY
 
 # 1 publisher, 4 brokers. 1 subscriber
-./141AB.sh
-./141AB_3.sh
-./141AB_5.sh
-./141AB_10.sh
-./141BRB.sh
-./141CH.sh
-./141CH_3.sh
-./141CH_5.sh
-./141CH_10.sh
+#./141AB.sh
+#./141AB_3.sh
+#./141AB_5.sh
+#./141AB_10.sh
+#./141BRB.sh
+#./141CH.sh
+#./141CH_3.sh
+#./141CH_5.sh
+#./141CH_10.sh
 
 # 2 publishers, 4 brokers. 2 subscribers
 #./242AB.sh
@@ -50,7 +50,7 @@
 #./545AB.sh
 #./545AB_3.sh
 #./545AB_5.sh
-#./545AB_10.sh
+./545AB_10.sh
 ##./545BRB.sh
 ##./545CH.sh
 ##./545CH_3.sh
