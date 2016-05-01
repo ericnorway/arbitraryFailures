@@ -13,12 +13,14 @@ var tagBrokerAddrs = "BRK_ADDR"
 var tagTopics = "TOPICS"
 var tagChain = "CHAIN"
 var tagRChain = "RCHAIN"
+var tagIgnore = "IGNORE"
 var localID uint64
 var brokerKeys []string
 var brokerAddresses []string
 var topics []uint64
 var chain map[string][]string
 var rChain map[string][]string
+var ignore map[uint64]bool
 
 // ReadConfigFile reads a config file and updated the values of global variables.
 // It returns an error, if any.
@@ -35,6 +37,7 @@ func ReadConfigFile(fileName string) error {
 
 	chain = make(map[string][]string)
 	rChain = make(map[string][]string)
+	ignore = make(map[uint64]bool)
 
 	// Break the file up into lines
 	lines := strings.Split(string(bytes), "\n")
@@ -118,6 +121,20 @@ func ReadConfigFile(fileName string) error {
 					}
 				} else {
 					rChain[node] = nil
+				}
+			} else {
+				return fmt.Errorf("Error parsing the config file entry for %s.\n", lineContents[0])
+			}
+		case lineContents[0] == tagIgnore:
+			if len(lineContents) == 2 {
+				ignoreStrings := strings.Split(lineContents[1], ",")
+				for _, ignoreString := range ignoreStrings {
+					ignoreID, err := strconv.ParseUint(ignoreString, 10, 64)
+					if err != nil {
+						return err
+					}
+
+					ignore[ignoreID] = true
 				}
 			} else {
 				return fmt.Errorf("Error parsing the config file entry for %s.\n", lineContents[0])

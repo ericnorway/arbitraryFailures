@@ -120,11 +120,13 @@ func (p *Publisher) publish(pub *pb.Publication) pb.PubResponse_Status {
 
 // Start starts the publisher.
 func (p *Publisher) Start() {
+	count := uint64(len(p.brokers))
+
 	for _, broker := range p.brokers {
 		go p.startBrokerClient(broker)
 	}
 
-	for p.brokerConnections < p.numberOfBrokers {
+	for p.brokerConnections < count {
 		fmt.Printf("Waiting for connections...\n")
 		time.Sleep(time.Second)
 	}

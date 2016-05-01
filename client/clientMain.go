@@ -131,7 +131,11 @@ func (p *PublisherInstance) mainPub() {
 	// Add broker information
 	for i, key := range brokerKeys {
 		id := uint64(i)
-		p.publisher.AddBroker(id, brokerAddresses[id], []byte(key))
+		if ignore[id] == false {
+			p.publisher.AddBroker(id, brokerAddresses[id], []byte(key))
+		} else {
+			fmt.Printf("Ignoring broker %v\n", id)
+		}
 	}
 
 	// Add the chain path
@@ -172,7 +176,7 @@ func (p *PublisherInstance) mainPub() {
 
 		// Send the publication.
 		sent := p.publisher.Publish(pub)
-		for ; sent == false; {
+		for sent == false {
 			time.Sleep(100 * time.Microsecond)
 			sent = p.publisher.Publish(pub)
 		}

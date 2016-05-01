@@ -21,6 +21,9 @@ import (
 
 var channelLength = 32
 
+// For a malicious broker
+var badMessage = []byte("Bad message")
+
 // Broker is a struct containing channels used in communicating
 // with read and write loops.
 type Broker struct {
@@ -201,7 +204,7 @@ func (b *Broker) connectToOtherBrokers() {
 
 			if count < b.faultsTolerated {
 				// Be malicious to broker in BRB and chain algorithms.
-				fmt.Printf("Malicious to %v\n", broker.id)
+				fmt.Printf("Malicious to broker %v\n", broker.id)
 
 				go b.connectToBroker(broker.id, broker.addr, true, true)
 			} else {
@@ -248,7 +251,11 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string, brbMaliciou
 		select {
 		case pub := <-toEchoCh:
 			if brbMalicious {
-				continue
+				if b.maliciousPercent > 100 {
+					continue
+				} else {
+					pub = b.alterPublication(&pub)
+				}
 			}
 			pub.MAC = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key, common.Algorithm)
 
@@ -257,7 +264,11 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string, brbMaliciou
 			}
 		case pub := <-toReadyCh:
 			if brbMalicious {
-				continue
+				if b.maliciousPercent > 100 {
+					continue
+				} else {
+					pub = b.alterPublication(&pub)
+				}
 			}
 			pub.MAC = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key, common.Algorithm)
 
@@ -266,7 +277,11 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string, brbMaliciou
 			}
 		case pub := <-toChainCh:
 			if chainMalicious {
-				continue
+				if b.maliciousPercent > 100 {
+					continue
+				} else {
+					pub = b.alterPublication(&pub)
+				}
 			}
 			pub.MAC = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key, common.Algorithm)
 
@@ -342,7 +357,7 @@ func (b *Broker) Echo(ctx context.Context, pub *pb.Publication) (*pb.EchoRespons
 
 	// Check MAC
 	if !exists || common.CheckPublicationMAC(pub, pub.MAC, remoteBroker.key, common.Algorithm) == false {
-		fmt.Printf("***BAD MAC: Echo*** %v\n", pub)
+		// fmt.Printf("***BAD MAC: Echo*** %v\n", pub)
 		return &pb.EchoResponse{Status: pb.EchoResponse_BAD_MAC}, nil
 	}
 
@@ -359,7 +374,7 @@ func (b *Broker) Ready(ctx context.Context, pub *pb.Publication) (*pb.ReadyRespo
 
 	// Check MAC
 	if !exists || common.CheckPublicationMAC(pub, pub.MAC, remoteBroker.key, common.Algorithm) == false {
-		fmt.Printf("***BAD MAC: Ready*** %v\n", pub)
+		// fmt.Printf("***BAD MAC: Ready*** %v\n", pub)
 		return &pb.ReadyResponse{Status: pb.ReadyResponse_BAD_MAC}, nil
 	}
 
@@ -422,7 +437,11 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 			select {
 			case pub := <-ch:
 				if b.maliciousPercent > 0 {
-					continue
+					if b.maliciousPercent > 100 {
+						continue
+					} else {
+						pub = b.alterPublication(&pub)
+					}
 				}
 
 				pub.MAC = common.CreatePublicationMAC(&pub, b.subscribers[id].key, common.Algorithm)
@@ -499,36 +518,51 @@ func (b Broker) handleSubscribe(req *pb.SubRequest) {
 // alterPublication will maliciously alter a publications information.
 // It returns true if the publication was altered.
 // It takes as input the publication.
-func (b *Broker) alterPublication(pub *pb.Publication) bool {
+func (b *Broker) alterPublication(pub *pb.Publication) pb.Publication {
+	tempPub := pb.Publication{
+		PubType:       pub.PubType,
+		PublisherID:   pub.PublisherID,
+		PublicationID: pub.PublicationID,
+		TopicID:       pub.TopicID,
+		BrokerID:      pub.BrokerID,
+	}
+
+	for i := range pub.Contents {
+		tempPub.Contents = append(tempPub.Contents, pub.Contents[i])
+	}
+	for i := range pub.ChainMACs {
+		tempPub.ChainMACs = append(tempPub.ChainMACs, pub.ChainMACs[i])
+	}
+
 	r := b.random.Intn(101)
 
 	if r <= b.maliciousPercent {
 		var alterType int
 
-		if len(pub.ChainMACs) > 0 {
-			alterType = r % 5
+		if len(tempPub.ChainMACs) > 0 {
+			alterType = r % 6
 		} else {
-			alterType = r % 4
+			alterType = r % 5
 		}
 		switch alterType {
 		case 0:
-			pub.PublicationID = pub.PublicationID + 1
+			tempPub.PublicationID = tempPub.PublicationID + 1
 		case 1:
-			pub.PublisherID = pub.PublisherID + 1
+			tempPub.PublisherID = tempPub.PublisherID + 1
 		case 2:
-			pub.TopicID = pub.TopicID + 1
+			tempPub.BrokerID = tempPub.BrokerID + 1
 		case 3:
-			if len(pub.Contents) > 0 {
-				pub.Contents[0] = []byte("Bad message")
-			}
+			tempPub.TopicID = tempPub.TopicID + 1
 		case 4:
-			pub.ChainMACs = nil
+			if len(tempPub.Contents) > 0 {
+				tempPub.Contents[0] = badMessage
+			}
+		case 5:
+			tempPub.ChainMACs = nil
 		}
-
-		return true
 	}
 
-	return false
+	return tempPub
 }
 
 // incrementPublicationCount places a message on the ToUserRecordCh each time a publication
