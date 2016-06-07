@@ -82,7 +82,8 @@ var convertPublicationToBytesTests = []struct {
 
 func TestCreatePublicationMAC(t *testing.T) {
 	for i, test := range createPublicationMACTests {
-		buf := CreatePublicationMAC(&test.pub, test.key, test.alg)
+		Algorithm = test.alg
+		buf := CreatePublicationMAC(&test.pub, test.key)
 
 		if !bytes.Equal(buf, test.want) {
 			t.Errorf("CreatePublicationMAC\ntest nr:%d\ndescription: %s\nwant: %v\ngot: %v\n",
@@ -167,7 +168,8 @@ var createPublicationMACTests = []struct {
 
 func TestCheckPublicationMAC(t *testing.T) {
 	for i, test := range checkPublicationMACTests {
-		valid := CheckPublicationMAC(&test.pub, test.mac, test.key, test.alg)
+		Algorithm = test.alg
+		valid := CheckPublicationMAC(&test.pub, test.mac, test.key)
 
 		if valid != test.want {
 			t.Errorf("CheckPublicationMAC\ntest nr:%d\ndescription: %s\nwant: %v\ngot: %v\n",

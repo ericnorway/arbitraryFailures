@@ -257,7 +257,7 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string, brbMaliciou
 					pub = b.alterPublication(&pub)
 				}
 			}
-			pub.MAC = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key, common.Algorithm)
+			pub.MAC = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key)
 
 			_, err := client.Echo(context.Background(), &pub)
 			if err != nil {
@@ -270,7 +270,7 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string, brbMaliciou
 					pub = b.alterPublication(&pub)
 				}
 			}
-			pub.MAC = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key, common.Algorithm)
+			pub.MAC = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key)
 
 			_, err := client.Ready(context.Background(), &pub)
 			if err != nil {
@@ -283,7 +283,7 @@ func (b *Broker) connectToBroker(brokerID uint64, brokerAddr string, brbMaliciou
 					pub = b.alterPublication(&pub)
 				}
 			}
-			pub.MAC = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key, common.Algorithm)
+			pub.MAC = common.CreatePublicationMAC(&pub, b.remoteBrokers[brokerID].key)
 
 			for sent := false; sent == false; {
 				resp, err := client.Chain(context.Background(), &pub)
@@ -311,7 +311,7 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 	publisher, exists := b.publishers[pub.PublisherID]
 
 	// Check MAC
-	if !exists || common.CheckPublicationMAC(pub, pub.MAC, publisher.key, common.Algorithm) == false {
+	if !exists || common.CheckPublicationMAC(pub, pub.MAC, publisher.key) == false {
 		fmt.Printf("***BAD MAC: Publish*** %v\n", *pub)
 		return &pb.PubResponse{Status: pb.PubResponse_BAD_MAC}, nil
 	}
@@ -356,7 +356,7 @@ func (b *Broker) Echo(ctx context.Context, pub *pb.Publication) (*pb.EchoRespons
 	remoteBroker, exists := b.remoteBrokers[pub.BrokerID]
 
 	// Check MAC
-	if !exists || common.CheckPublicationMAC(pub, pub.MAC, remoteBroker.key, common.Algorithm) == false {
+	if !exists || common.CheckPublicationMAC(pub, pub.MAC, remoteBroker.key) == false {
 		// fmt.Printf("***BAD MAC: Echo*** %v\n", pub)
 		return &pb.EchoResponse{Status: pb.EchoResponse_BAD_MAC}, nil
 	}
@@ -373,7 +373,7 @@ func (b *Broker) Ready(ctx context.Context, pub *pb.Publication) (*pb.ReadyRespo
 	remoteBroker, exists := b.remoteBrokers[pub.BrokerID]
 
 	// Check MAC
-	if !exists || common.CheckPublicationMAC(pub, pub.MAC, remoteBroker.key, common.Algorithm) == false {
+	if !exists || common.CheckPublicationMAC(pub, pub.MAC, remoteBroker.key) == false {
 		// fmt.Printf("***BAD MAC: Ready*** %v\n", pub)
 		return &pb.ReadyResponse{Status: pb.ReadyResponse_BAD_MAC}, nil
 	}
@@ -394,7 +394,7 @@ func (b *Broker) Chain(ctx context.Context, pub *pb.Publication) (*pb.ChainRespo
 	remoteBroker, exists := b.remoteBrokers[pub.BrokerID]
 
 	// Check MAC
-	if !exists || common.CheckPublicationMAC(pub, pub.MAC, remoteBroker.key, common.Algorithm) == false {
+	if !exists || common.CheckPublicationMAC(pub, pub.MAC, remoteBroker.key) == false {
 		// fmt.Printf("***BAD MAC: Chain*** %v\n", *pub)
 		return &pb.ChainResponse{Status: pb.ChainResponse_BAD_MAC}, nil
 	}
@@ -420,7 +420,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	subscriber, exists := b.subscribers[req.SubscriberID]
 
 	// Check MAC
-	if !exists || common.CheckSubscriptionMAC(req, req.MAC, subscriber.key, common.Algorithm) == false {
+	if !exists || common.CheckSubscriptionMAC(req, req.MAC, subscriber.key) == false {
 		fmt.Printf("***BAD MAC: Subscribe*** %v\n", *req)
 		return fmt.Errorf("***BAD MAC: Subscribe*** %v\n", *req)
 	}
@@ -444,7 +444,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 					}
 				}
 
-				pub.MAC = common.CreatePublicationMAC(&pub, b.subscribers[id].key, common.Algorithm)
+				pub.MAC = common.CreatePublicationMAC(&pub, b.subscribers[id].key)
 				// fmt.Printf("Send Publication %v, Publisher %v, Broker %v to Subscriber %v.\n", pub.PublicationID, pub.PublisherID, pub.BrokerID, id)
 
 				err := stream.Send(&pub)
@@ -468,7 +468,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 		}
 
 		// Check MAC
-		if common.CheckSubscriptionMAC(req, req.MAC, subscriber.key, common.Algorithm) == false {
+		if common.CheckSubscriptionMAC(req, req.MAC, subscriber.key) == false {
 			//fmt.Printf("***BAD MAC: Subscribe*** %v\n", *req)
 			continue
 		}

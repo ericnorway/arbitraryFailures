@@ -112,7 +112,7 @@ func (p *Publisher) addMACs(pub *pb.Publication, currentStr string, generations 
 			chainMAC := pb.ChainMAC{
 				From: p.localStr,
 				To:   childStr,
-				MAC:  common.CreatePublicationMAC(pub, p.chainNodes[childStr].key, common.Algorithm),
+				MAC:  common.CreatePublicationMAC(pub, p.chainNodes[childStr].key),
 			}
 
 			pub.ChainMACs = append(pub.ChainMACs, &chainMAC)

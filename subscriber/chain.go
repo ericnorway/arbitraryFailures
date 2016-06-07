@@ -133,7 +133,7 @@ func (s *Subscriber) verifyChainMACsRecursive(pub *pb.Publication, currentStr st
 					foundMatch = true
 
 					// Actually check the MAC here.
-					if common.CheckPublicationMAC(pub, chainMAC.MAC, s.chainNodes[parentStr].key, common.Algorithm) == false {
+					if common.CheckPublicationMAC(pub, chainMAC.MAC, s.chainNodes[parentStr].key) == false {
 						//fmt.Printf("***BAD MAC: Chain*** %v\n", *pub)
 						return false
 					}

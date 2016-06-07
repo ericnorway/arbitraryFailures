@@ -120,7 +120,7 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 		for {
 			select {
 			case subReq := <-ch:
-				mac := common.CreateSubscriptionMAC(&subReq, broker.key, common.Algorithm)
+				mac := common.CreateSubscriptionMAC(&subReq, broker.key)
 				subReq.MAC = mac
 
 				err = stream.Send(&subReq)
@@ -148,7 +148,7 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 
 			tempBroker, exists := s.brokers[pub.BrokerID]
 
-			if !exists || common.CheckPublicationMAC(pub, pub.MAC, tempBroker.key, common.Algorithm) == false {
+			if !exists || common.CheckPublicationMAC(pub, pub.MAC, tempBroker.key) == false {
 				//fmt.Printf("***BAD MAC: Chain*** %v\n", *pub)
 				continue
 			}
@@ -164,7 +164,7 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 		SubscriberID: s.localID,
 		TopicIDs:     topics,
 	}
-	mac := common.CreateSubscriptionMAC(&subReq, broker.key, common.Algorithm)
+	mac := common.CreateSubscriptionMAC(&subReq, broker.key)
 	subReq.MAC = mac
 	select {
 	case ch <- subReq:

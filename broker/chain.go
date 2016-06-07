@@ -235,7 +235,7 @@ func (b *Broker) verifyChainMACsRecursive(pub *pb.Publication, currentStr string
 					foundMatch = true
 
 					// Actually check the MAC here.
-					if common.CheckPublicationMAC(pub, chainMAC.MAC, b.chainNodes[parentStr].key, common.Algorithm) == false {
+					if common.CheckPublicationMAC(pub, chainMAC.MAC, b.chainNodes[parentStr].key) == false {
 						//fmt.Printf("***BAD MAC: Chain*** %v\n", *pub)
 						return false
 					}
@@ -297,7 +297,7 @@ func (b *Broker) addMACsRecursive(pub *pb.Publication, oldPub *pb.Publication, c
 				chainMAC := pb.ChainMAC{
 					From: b.localStr,
 					To:   childStr,
-					MAC:  common.CreatePublicationMAC(pub, b.chainNodes[childStr].key, common.Algorithm),
+					MAC:  common.CreatePublicationMAC(pub, b.chainNodes[childStr].key),
 				}
 
 				pub.ChainMACs = append(pub.ChainMACs, &chainMAC)
