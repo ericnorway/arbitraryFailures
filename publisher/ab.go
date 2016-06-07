@@ -13,19 +13,15 @@ func (p *Publisher) handleAbPublish(pub *pb.Publication) pb.PubResponse_Status {
 
 	for _, broker := range p.brokers {
 		if broker.toCh != nil {
-			select {
-			case broker.toCh <- *pub:
-			}
+			broker.toCh <- *pub
 		}
 	}
 
 	statuses := make(map[pb.PubResponse_Status]uint64)
 
 	for i := 0; i < len(p.brokers); i++ {
-		select {
-		case status := <-p.statusCh:
-			statuses[status]++
-		}
+		status := <-p.statusCh
+		statuses[status]++
 	}
 
 	if statuses[pb.PubResponse_WAIT] > 0 {

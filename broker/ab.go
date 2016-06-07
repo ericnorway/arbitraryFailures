@@ -26,11 +26,9 @@ func (b Broker) handleAbPublish(pub *pb.Publication) {
 		for _, subscriber := range b.subscribers {
 			// Only if they are interested in the topic
 			if subscriber.toCh != nil && subscriber.topics[pub.TopicID] == true {
-				select {
-				case subscriber.toCh <- *pub:
-					if len(subscriber.toCh) > b.toSubscriberChLen/2 {
-						b.setBusy()
-					}
+				subscriber.toCh <- *pub
+				if len(subscriber.toCh) > b.toSubscriberChLen/2 {
+					b.setBusy()
 				}
 			}
 		}

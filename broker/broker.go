@@ -323,9 +323,7 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 		}
 
 		if pub.PubType == common.BRB {
-			select {
-			case b.fromPublisherCh <- *pub:
-			}
+			b.fromPublisherCh <- *pub
 			b.alphaCounters[pub.PublisherID][pub.TopicID] = 0
 		} else {
 			// Don't allow more than 2 * alpha publications for a topic and publisher without a history request
@@ -333,9 +331,7 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 				return &pb.PubResponse{Status: pb.PubResponse_BLOCKED}, nil
 			}
 
-			select {
-			case b.fromPublisherCh <- *pub:
-			}
+			b.fromPublisherCh <- *pub
 
 			b.alphaCounters[pub.PublisherID][pub.TopicID]++
 			if b.alphaCounters[pub.PublisherID][pub.TopicID] >= b.alpha {
@@ -343,9 +339,7 @@ func (b *Broker) Publish(ctx context.Context, pub *pb.Publication) (*pb.PubRespo
 			}
 		}
 	} else {
-		select {
-		case b.fromPublisherCh <- *pub:
-		}
+		b.fromPublisherCh <- *pub
 	}
 
 	return &pb.PubResponse{Status: pb.PubResponse_OK}, nil
@@ -361,9 +355,7 @@ func (b *Broker) Echo(ctx context.Context, pub *pb.Publication) (*pb.EchoRespons
 		return &pb.EchoResponse{Status: pb.EchoResponse_BAD_MAC}, nil
 	}
 
-	select {
-	case b.fromBrokerEchoCh <- *pub:
-	}
+	b.fromBrokerEchoCh <- *pub
 
 	return &pb.EchoResponse{Status: pb.EchoResponse_OK}, nil
 }
@@ -378,9 +370,7 @@ func (b *Broker) Ready(ctx context.Context, pub *pb.Publication) (*pb.ReadyRespo
 		return &pb.ReadyResponse{Status: pb.ReadyResponse_BAD_MAC}, nil
 	}
 
-	select {
-	case b.fromBrokerReadyCh <- *pub:
-	}
+	b.fromBrokerReadyCh <- *pub
 
 	return &pb.ReadyResponse{Status: pb.ReadyResponse_OK}, nil
 }
@@ -399,9 +389,7 @@ func (b *Broker) Chain(ctx context.Context, pub *pb.Publication) (*pb.ChainRespo
 		return &pb.ChainResponse{Status: pb.ChainResponse_BAD_MAC}, nil
 	}
 
-	select {
-	case b.fromBrokerChainCh <- *pub:
-	}
+	b.fromBrokerChainCh <- *pub
 
 	return &pb.ChainResponse{Status: pb.ChainResponse_OK}, nil
 }
@@ -434,24 +422,22 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 	// Write loop
 	go func() {
 		for {
-			select {
-			case pub := <-ch:
-				if b.maliciousPercent > 0 {
-					if b.maliciousPercent > 100 {
-						continue
-					} else {
-						pub = b.alterPublication(&pub)
-					}
+			pub := <-ch
+			if b.maliciousPercent > 0 {
+				if b.maliciousPercent > 100 {
+					continue
+				} else {
+					pub = b.alterPublication(&pub)
 				}
+			}
 
-				pub.MAC = common.CreatePublicationMAC(&pub, b.subscribers[id].key)
-				// fmt.Printf("Send Publication %v, Publisher %v, Broker %v to Subscriber %v.\n", pub.PublicationID, pub.PublisherID, pub.BrokerID, id)
+			pub.MAC = common.CreatePublicationMAC(&pub, b.subscribers[id].key)
+			// fmt.Printf("Send Publication %v, Publisher %v, Broker %v to Subscriber %v.\n", pub.PublicationID, pub.PublisherID, pub.BrokerID, id)
 
-				err := stream.Send(&pub)
-				if err != nil {
-					b.removeToSubChannel(id)
-					break
-				}
+			err := stream.Send(&pub)
+			if err != nil {
+				b.removeToSubChannel(id)
+				break
 			}
 		}
 	}()
@@ -473,9 +459,7 @@ func (b *Broker) Subscribe(stream pb.SubBroker_SubscribeServer) error {
 			continue
 		}
 
-		select {
-		case b.fromSubscriberCh <- *req:
-		}
+		b.fromSubscriberCh <- *req
 	}
 
 	return nil

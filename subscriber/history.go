@@ -47,9 +47,7 @@ func (s *Subscriber) handleHistoryPublication(pub *pb.Publication) {
 			//fmt.Printf("Learned publication %v from publisher %v from a history publication.\n", publicationID, pub.PublisherID)
 
 			// Send it to the user.
-			select {
-			case s.ToUserPubCh <- *pub:
-			}
+			s.ToUserPubCh <- *pub
 		}
 	}
 }

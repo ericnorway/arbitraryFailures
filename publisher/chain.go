@@ -86,16 +86,12 @@ func (p *Publisher) handleChainPublish(pub *pb.Publication) pb.PubResponse_Statu
 		// Send the publication to that child.
 		p.brokersMutex.RLock()
 		if p.brokers[childID].toCh != nil {
-			select {
-			case p.brokers[childID].toCh <- *tempPub:
-			}
+			p.brokers[childID].toCh <- *tempPub
 		}
 		p.brokersMutex.RUnlock()
 
-		select {
-		case status := <-p.statusCh:
-			return pb.PubResponse_Status(status)
-		}
+		status := <-p.statusCh
+		return pb.PubResponse_Status(status)
 	}
 
 	return -1

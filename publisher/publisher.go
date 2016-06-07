@@ -150,23 +150,17 @@ func (p *Publisher) startBrokerClient(broker brokerInfo) {
 	ch := p.addChannel(broker.id)
 
 	for {
-		select {
-		case pub := <-ch:
-			pub.MAC = common.CreatePublicationMAC(&pub, p.brokers[broker.id].key)
+		pub := <-ch
+		pub.MAC = common.CreatePublicationMAC(&pub, p.brokers[broker.id].key)
 
-			// Handle publish request and response
-			resp, err := client.Publish(context.Background(), &pub)
-			if err != nil {
-				fmt.Printf("Error publishing to %v, %v\n", broker.id, err)
-				select {
-				case p.statusCh <- -1:
-				}
-				continue
-			}
-
-			select {
-			case p.statusCh <- resp.Status:
-			}
+		// Handle publish request and response
+		resp, err := client.Publish(context.Background(), &pub)
+		if err != nil {
+			fmt.Printf("Error publishing to %v, %v\n", broker.id, err)
+			p.statusCh <- -1
+			continue
 		}
+
+		p.statusCh <- resp.Status
 	}
 }

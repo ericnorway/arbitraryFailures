@@ -23,23 +23,15 @@ func (b Broker) handleBrbPublish(pub *pb.Publication) {
 		pub.BrokerID = b.localID
 
 		// "Send" the echo request to itself
-		select {
-		case b.fromBrokerEchoCh <- *pub:
-			//default:
-			//	fmt.Printf("b.fromBrokerEchoCh full\n")
-		}
+		b.fromBrokerEchoCh <- *pub
 
 		// Send the echo request to all other brokers
 		b.remoteBrokersMutex.RLock()
 		for _, remoteBroker := range b.remoteBrokers {
 			if remoteBroker.toEchoCh != nil {
-				select {
-				case remoteBroker.toEchoCh <- *pub:
-					if len(remoteBroker.toEchoCh) > b.toBrbChLen/2 {
-						b.setBusy()
-					}
-					//default:
-					//	fmt.Printf("remoteBroker.toEchoCh full\n")
+				remoteBroker.toEchoCh <- *pub
+				if len(remoteBroker.toEchoCh) > b.toBrbChLen/2 {
+					b.setBusy()
 				}
 			}
 		}
@@ -85,23 +77,15 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 			pub.BrokerID = b.localID
 
 			// "Send" the ready request to itself
-			select {
-			case b.fromBrokerReadyCh <- *pub:
-				//default:
-				//	fmt.Printf("b.fromBrokerReadyCh full\n")
-			}
+			b.fromBrokerReadyCh <- *pub
 
 			// Send the ready to all other brokers
 			b.remoteBrokersMutex.RLock()
 			for _, remoteBroker := range b.remoteBrokers {
 				if remoteBroker.toReadyCh != nil {
-					select {
-					case remoteBroker.toReadyCh <- *pub:
-						if len(remoteBroker.toReadyCh) > b.toBrbChLen/2 {
-							b.setBusy()
-						}
-						//default:
-						//	fmt.Printf("remoteBroker.toReadyCh full\n")
+					remoteBroker.toReadyCh <- *pub
+					if len(remoteBroker.toReadyCh) > b.toBrbChLen/2 {
+						b.setBusy()
 					}
 				}
 			}
@@ -112,13 +96,9 @@ func (b Broker) handleEcho(pub *pb.Publication) {
 			for _, subscriber := range b.subscribers {
 				// Only if they are interested in the topic
 				if subscriber.toCh != nil && subscriber.topics[pub.TopicID] == true {
-					select {
-					case subscriber.toCh <- *pub:
-						if len(subscriber.toCh) > b.toSubscriberChLen/2 {
-							b.setBusy()
-						}
-						//default:
-						//	fmt.Printf("subscriber.toCh full\n")
+					subscriber.toCh <- *pub
+					if len(subscriber.toCh) > b.toSubscriberChLen/2 {
+						b.setBusy()
 					}
 				}
 			}
@@ -167,24 +147,16 @@ func (b Broker) handleReady(pub *pb.Publication) {
 
 			// "Send" the ready request to itself, if not already from self
 			if pub.BrokerID != pub.BrokerID {
-				select {
-				case b.fromBrokerReadyCh <- *pub:
-					//default:
-					//	fmt.Printf("b.fromBrokerReadyCh full\n")
-				}
+				b.fromBrokerReadyCh <- *pub
 			}
 
 			// Send the ready to all other brokers
 			b.remoteBrokersMutex.RLock()
 			for _, remoteBroker := range b.remoteBrokers {
 				if remoteBroker.toReadyCh != nil {
-					select {
-					case remoteBroker.toReadyCh <- *pub:
-						if len(remoteBroker.toReadyCh) > b.toBrbChLen/2 {
-							b.setBusy()
-						}
-						//default:
-						//	fmt.Printf("remoteBroker.toReadyCh full\n")
+					remoteBroker.toReadyCh <- *pub
+					if len(remoteBroker.toReadyCh) > b.toBrbChLen/2 {
+						b.setBusy()
 					}
 				}
 			}
@@ -195,13 +167,9 @@ func (b Broker) handleReady(pub *pb.Publication) {
 			for _, subscriber := range b.subscribers {
 				// Only if they are interested in the topic
 				if subscriber.toCh != nil && subscriber.topics[pub.TopicID] == true {
-					select {
-					case subscriber.toCh <- *pub:
-						if len(subscriber.toCh) > b.toSubscriberChLen/2 {
-							b.setBusy()
-						}
-						//default:
-						//	fmt.Printf("subscriber.toCh full\n")
+					subscriber.toCh <- *pub
+					if len(subscriber.toCh) > b.toSubscriberChLen/2 {
+						b.setBusy()
 					}
 				}
 			}

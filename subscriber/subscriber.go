@@ -118,15 +118,13 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 	// Write loop
 	go func() {
 		for {
-			select {
-			case subReq := <-ch:
-				mac := common.CreateSubscriptionMAC(&subReq, broker.key)
-				subReq.MAC = mac
+			subReq := <-ch
+			mac := common.CreateSubscriptionMAC(&subReq, broker.key)
+			subReq.MAC = mac
 
-				err = stream.Send(&subReq)
-				if err != nil {
-					return
-				}
+			err = stream.Send(&subReq)
+			if err != nil {
+				return
 			}
 		}
 	}()
@@ -153,9 +151,7 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 				continue
 			}
 
-			select {
-			case s.fromBrokerCh <- *pub:
-			}
+			s.fromBrokerCh <- *pub
 		}
 	}()
 
@@ -166,9 +162,7 @@ func (s *Subscriber) startBrokerClient(broker brokerInfo) bool {
 	}
 	mac := common.CreateSubscriptionMAC(&subReq, broker.key)
 	subReq.MAC = mac
-	select {
-	case ch <- subReq:
-	}
+	ch <- subReq
 
 	return true
 }
@@ -196,31 +190,23 @@ func (s *Subscriber) handlePublications() {
 			if pub.PubType == common.AB {
 				foundQuorum := s.handleAbPublication(&pub)
 				if foundQuorum {
-					select {
-					case s.ToUserPubCh <- pub:
-					}
+					s.ToUserPubCh <- pub
 				}
 			} else if pub.PubType == common.BRB {
 				foundQuorum := s.handleBrbPublication(&pub)
 				if foundQuorum {
-					select {
-					case s.ToUserPubCh <- pub:
-					}
+					s.ToUserPubCh <- pub
 				}
 			} else if pub.PubType == common.Chain {
 				macsVerified := s.handleChainPublication(&pub)
 				if macsVerified {
-					select {
-					case s.ToUserPubCh <- pub:
-					}
+					s.ToUserPubCh <- pub
 				}
 			}
 		case sub := <-s.FromUserSubCh:
 			s.brokersMutex.RLock()
 			for _, broker := range s.brokers {
-				select {
-				case broker.toCh <- sub:
-				}
+				broker.toCh <- sub
 			}
 			s.brokersMutex.RUnlock()
 		}
