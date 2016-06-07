@@ -23,9 +23,9 @@ func (b Broker) handleAbPublish(pub *pb.Publication) {
 
 		// Forward the publication to all subscribers
 		b.subscribersMutex.RLock()
-		for i, subscriber := range b.subscribers {
+		for _, subscriber := range b.subscribers {
 			// Only if they are interested in the topic
-			if subscriber.toCh != nil && b.subscribers[i].topics[pub.TopicID] == true {
+			if subscriber.toCh != nil && subscriber.topics[pub.TopicID] == true {
 				select {
 				case subscriber.toCh <- *pub:
 					if len(subscriber.toCh) > b.toSubscriberChLen/2 {
